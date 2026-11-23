@@ -36,7 +36,14 @@ add_action( 'admin_init', function() {
         },
         'default' => function_exists( 'bap_get_default_protected_paths' ) ? bap_get_default_protected_paths() : "/wp-admin/*\n/wp-login.php"
     ]);
-
+    register_setting( 'bap_settings_group', 'bap_2fa_enabled', [
+        'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
+        'default'           => '0',
+    ]);
+    register_setting( 'bap_settings_group', 'bap_2fa_enforce_admins', [
+        'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
+        'default'           => '0',
+    ]);
     register_setting( 'bap_settings_group', 'bap_hibp_enabled', [
         'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
         'default'           => '1',

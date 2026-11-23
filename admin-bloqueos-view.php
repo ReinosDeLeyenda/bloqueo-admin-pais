@@ -212,6 +212,20 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <p class="description">Consulta segura mediante hash parcial SHA-1 (nunca se envía la contraseña real por internet).</p>
                     </td>
                 </tr>
+                <tr>
+                    <th>Autenticación en Dos Factores (2FA)</th>
+                    <td>
+                        <label style="display:block;margin-bottom:6px;">
+                            <input type="checkbox" name="bap_2fa_enabled" value="1" <?php checked( get_option( 'bap_2fa_enabled', '0' ), '1' ); ?> />
+                            Habilitar 2FA (App Autenticadora TOTP, Código por Email y Códigos de Respaldo) en los perfiles de usuario
+                        </label>
+                        <label style="display:block;">
+                            <input type="checkbox" name="bap_2fa_enforce_admins" value="1" <?php checked( get_option( 'bap_2fa_enforce_admins', '0' ), '1' ); ?> />
+                            Obligar 2FA a todos los <strong>Administradores</strong> (si no han configurado App, usará su Email automáticamente)
+                        </label>
+                        <p class="description">Cada usuario puede elegir su método y ver su código QR en <strong>Usuarios &rarr; Perfil</strong>.</p>
+                    </td>
+                </tr>
             </table>
             <?php submit_button( 'Guardar reglas de bloqueo' ); ?>
         </form>
