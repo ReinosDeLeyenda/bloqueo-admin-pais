@@ -3,7 +3,7 @@
  * Plugin Name: Bloqueo Admin por País e IP
  * Plugin URI: https://github.com/ReinosDeLeyenda/bloqueo-admin-pais
  * Description: Bloquea wp-admin, wp-login.php y el frontend por país, ASN, AbuseIPDB, Tor, FireHOL e IP usando bases de datos locales.
- * Version: 1.0
+ * Version: 1.0.1
  * Author: ReinosDeLeyenda
  * License: GPLv2 or later
  */
@@ -278,6 +278,37 @@ register_deactivation_hook( __FILE__, function() {
         insert_with_markers( $htaccess_file, 'Bloqueo Admin Pais', [] );
     }
     wp_clear_scheduled_hook( 'bap_auto_update_dbs_event' );
+
+    $recipients = [];
+    foreach ( bap_parse_list( get_option( 'bap_notify_emails', '' ), false ) as $email ) {
+        $clean = sanitize_email( $email );
+        if ( is_email( $clean ) ) {
+            $recipients[] = $clean;
+        }
+    }
+    if ( empty( $recipients ) ) {
+        $admin_email = sanitize_email( (string) get_option( 'admin_email', '' ) );
+        if ( is_email( $admin_email ) ) {
+            $recipients[] = $admin_email;
+        }
+    }
+
+    if ( ! empty( $recipients ) ) {
+        $site_name = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
+        $user      = wp_get_current_user();
+        $user_info = ( $user && $user->exists() ) ? $user->user_login . ' (' . $user->user_email . ')' : 'Desconocido';
+        $ip        = bap_get_user_ip();
+
+        $subject = sprintf( '[%s] Aviso: Plugin Bloqueo Admin desactivado', $site_name );
+        $body    = "Hola,\n\n"
+                 . "El plugin \"Bloqueo Admin por País e IP\" ha sido DESACTIVADO en " . home_url() . ".\n"
+                 . "Mientras permanezca desactivado, las reglas de bloqueo de acceso no estarán protegiendo el sitio.\n\n"
+                 . "- Fecha y hora: " . current_time( 'Y-m-d H:i:s' ) . "\n"
+                 . "- Usuario: {$user_info}\n"
+                 . "- IP: {$ip}\n";
+
+        wp_mail( array_unique( $recipients ), $subject, $body );
+    }
 });
 
 function bap_is_verified_seo_bot() {

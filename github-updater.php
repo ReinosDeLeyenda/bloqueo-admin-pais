@@ -12,8 +12,9 @@ function bap_get_github_latest_release() {
         return $cached;
     }
 
-    $url = 'https://github.com' . BAP_GITHUB_REPO . '/releases/latest';
-    $res = wp_remote_get( $url, [
+    $host = 'api' . '.github.com';
+    $url  = 'https://' . $host . '/repos/' . BAP_GITHUB_REPO . '/releases/latest';
+    $res  = wp_remote_get( $url, [
         'timeout' => 10,
         'headers' => [
             'Accept'     => 'application/vnd.github.v3+json',
@@ -115,3 +116,7 @@ add_filter( 'upgrader_source_selection', function( $source, $remote_source, $upg
     }
     return $source;
 }, 10, 4 );
+
+add_action( 'delete_site_transient_update_plugins', function() {
+    delete_transient( 'bap_gh_release_' . md5( BAP_GITHUB_REPO ) );
+});
