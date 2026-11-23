@@ -44,6 +44,10 @@ add_action( 'admin_init', function() {
         'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
         'default'           => '0',
     ]);
+    register_setting( 'bap_settings_group', 'bap_2fa_remember_device', [
+        'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
+        'default'           => '1',
+    ]);
     register_setting( 'bap_settings_group', 'bap_hibp_enabled', [
         'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
         'default'           => '1',

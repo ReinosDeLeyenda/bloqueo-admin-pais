@@ -103,7 +103,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
     $keys = [
         'bap_db_auto_update_freq',
         'bap_hibp_enabled', 'bap_hibp_check_login', 'bap_hibp_login_action',
-        'bap_2fa_enabled', 'bap_2fa_enforce_admins',
+        'bap_2fa_enabled', 'bap_2fa_enforce_admins', 'bap_2fa_remember_device',
         'bap_protected_paths', 'bap_enable_htaccess', 'bap_country_mode', 'bap_asn_mode',
         'bap_block_nonexistent_users', 'bap_block_tor', 'bap_block_firehol',
         'bap_allowed_countries', 'bap_blocked_countries', 'bap_allowed_asns', 'bap_blocked_asns',

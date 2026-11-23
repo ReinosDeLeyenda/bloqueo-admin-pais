@@ -114,11 +114,58 @@ function bap_2fa_user_requires_2fa( $user ) {
     return false;
 }
 
+function bap_2fa_is_trusted_device( $user_id ) {
+    if ( '1' !== (string) get_option( 'bap_2fa_remember_device', '1' ) ) {
+        return false;
+    }
+    $cookie_name = 'bap_2fa_trust_' . $user_id;
+    if ( empty( $_COOKIE[ $cookie_name ] ) ) {
+        return false;
+    }
+    $raw_cookie = sanitize_text_field( wp_unslash( $_COOKIE[ $cookie_name ] ) );
+    $tokens     = get_user_meta( $user_id, '_bap_2fa_trusted_devices', true );
+    if ( ! is_array( $tokens ) ) {
+        return false;
+    }
+    $now = time();
+    foreach ( $tokens as $item ) {
+        if ( ! empty( $item['hash'] ) && ! empty( $item['expires'] ) && $now < (int) $item['expires'] ) {
+            if ( hash_equals( $item['hash'], hash( 'sha256', $raw_cookie . AUTH_SALT ) ) ) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function bap_2fa_trust_current_device( $user_id ) {
+    $raw_token = bin2hex( random_bytes( 24 ) );
+    $expires   = time() + ( 30 * DAY_IN_SECONDS );
+    $tokens    = get_user_meta( $user_id, '_bap_2fa_trusted_devices', true );
+    if ( ! is_array( $tokens ) ) {
+        $tokens = [];
+    }
+    $now      = time();
+    $tokens   = array_values( array_filter( $tokens, fn( $t ) => ! empty( $t['expires'] ) && $now < (int) $t['expires'] ) );
+    $tokens[] = [
+        'hash'    => hash( 'sha256', $raw_token . AUTH_SALT ),
+        'expires' => $expires,
+    ];
+    if ( count( $tokens ) > 10 ) {
+        $tokens = array_slice( $tokens, -10 );
+    }
+    update_user_meta( $user_id, '_bap_2fa_trusted_devices', $tokens );
+
+    if ( ! headers_sent() ) {
+        setcookie( 'bap_2fa_trust_' . $user_id, $raw_token, $expires, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+    }
+}
+
 add_action( 'wp_login', function( $user_login, $user ) {
     if ( wp_doing_ajax() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) || ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) ) {
         return;
     }
-    if ( ! bap_2fa_user_requires_2fa( $user ) ) {
+    if ( ! bap_2fa_user_requires_2fa( $user ) || bap_2fa_is_trusted_device( $user->ID ) ) {
         return;
     }
 
@@ -190,6 +237,9 @@ add_action( 'login_form_bap_2fa', function() {
 
         if ( $valid ) {
             delete_transient( 'bap_2fa_login_' . $token );
+            if ( ! empty( $_POST['bap_2fa_trust'] ) && '1' === (string) get_option( 'bap_2fa_remember_device', '1' ) ) {
+                bap_2fa_trust_current_device( $user->ID );
+            }
             wp_set_auth_cookie( $user->ID, ! empty( $state['remember'] ) );
             wp_safe_redirect( $state['redirect_to'] );
             exit;
@@ -220,6 +270,9 @@ add_action( 'login_form_bap_2fa', function() {
     echo '</p>';
     echo '<p><label for="bap_2fa_code">Código de verificación</label>';
     echo '<input type="text" name="bap_2fa_code" id="bap_2fa_code" class="input" size="20" autocomplete="one-time-code" autofocus required style="text-align:center;letter-spacing:4px;font-size:20px;" /></p>';
+    if ( '1' === (string) get_option( 'bap_2fa_remember_device', '1' ) ) {
+        echo '<p style="margin-bottom:14px;"><label><input type="checkbox" name="bap_2fa_trust" value="1" /> No volver a pedir en este dispositivo durante 30 días</label></p>';
+    }
     echo '<p class="submit"><input type="submit" class="button button-primary button-large" value="Verificar acceso" /></p>';
     if ( 'email' === $state['method'] ) {
         echo '<p style="text-align:center;margin-top:12px;"><a href="' . esc_url( add_query_arg( [ 'action' => 'bap_2fa', 'bap_token' => $token, 'resend' => '1' ], wp_login_url() ) ) . '">Reenviar código por email</a></p>';
@@ -233,6 +286,8 @@ function bap_2fa_render_profile_fields( $user ) {
     if ( '1' !== (string) get_option( 'bap_2fa_enabled', '0' ) ) {
         return;
     }
+    wp_enqueue_script( 'bap-local-qr', plugin_dir_url( __FILE__ ) . 'bap-qr.js', [], '1.0.4', true );
+
     $method = get_user_meta( $user->ID, '_bap_2fa_method', true );
     if ( ! in_array( $method, [ 'totp', 'email' ], true ) ) {
         $method = 'off';
@@ -247,7 +302,6 @@ function bap_2fa_render_profile_fields( $user ) {
     $account = rawurlencode( $user->user_email );
     $scheme  = 'otpauth' . '://totp/';
     $otp_uri = $scheme . $issuer . ':' . $account . '?secret=' . $secret . '&issuer=' . $issuer;
-    $qr_url  = 'https://' . implode( '.', [ 'api', 'qrserver', 'com' ] ) . '/v1/create-qr-code/?size=180x180&data=' . rawurlencode( $otp_uri );
 
     $new_backups = get_transient( 'bap_2fa_new_backups_' . $user->ID );
     if ( is_array( $new_backups ) ) {
@@ -255,6 +309,9 @@ function bap_2fa_render_profile_fields( $user ) {
     }
     $stored_backups = get_user_meta( $user->ID, '_bap_2fa_backup_codes', true );
     $remaining      = is_array( $stored_backups ) ? count( $stored_backups ) : 0;
+
+    $trusted     = get_user_meta( $user->ID, '_bap_2fa_trusted_devices', true );
+    $trusted_cnt = is_array( $trusted ) ? count( array_filter( $trusted, fn( $t ) => ! empty( $t['expires'] ) && time() < (int) $t['expires'] ) ) : 0;
 
     echo '<h2>Autenticación en Dos Factores (2FA)</h2><table class="form-table">';
     echo '<tr><th>Método de verificación</th><td><select name="bap_2fa_user_method">';
@@ -264,9 +321,9 @@ function bap_2fa_render_profile_fields( $user ) {
     echo '</select></td></tr>';
 
     echo '<tr><th>Configurar App Autenticadora (TOTP)</th><td>';
-    echo '<img src="' . esc_url( $qr_url ) . '" alt="QR 2FA" style="border:4px solid #fff;border-radius:4px;margin-bottom:8px;display:block;" />';
+    echo '<canvas class="bap-local-qr" data-otp-uri="' . esc_attr( $otp_uri ) . '" style="border:4px solid #fff;border-radius:4px;margin-bottom:8px;display:block;background:#fff;"></canvas>';
     echo '<p><strong>Clave secreta manual:</strong> <code>' . esc_html( $secret ) . '</code></p>';
-    echo '<p class="description">Escanea el QR con tu app y, si activas el método App Autenticadora, introduce abajo un código de 6 dígitos para confirmar antes de guardar.</p>';
+    echo '<p class="description">Escanea el QR (generado 100 % en local) con tu app y, si activas el método App Autenticadora, introduce abajo un código de 6 dígitos para confirmar antes de guardar.</p>';
     echo '<input type="text" name="bap_2fa_verify_setup" placeholder="Código de 6 dígitos para confirmar" class="regular-text" autocomplete="off" style="margin-top:6px;" />';
     echo '</td></tr>';
 
@@ -280,6 +337,13 @@ function bap_2fa_render_profile_fields( $user ) {
         echo '<p>Códigos disponibles restantes: <strong>' . (int) $remaining . ' / 8</strong></p>';
     }
     echo '<label><input type="checkbox" name="bap_2fa_regen_backups" value="1" /> Generar 8 nuevos códigos de respaldo al guardar el perfil</label>';
+    echo '</td></tr>';
+
+    echo '<tr><th>Dispositivos de confianza</th><td>';
+    echo '<p>Dispositivos recordados actualmente: <strong>' . (int) $trusted_cnt . '</strong></p>';
+    if ( $trusted_cnt > 0 ) {
+        echo '<label><input type="checkbox" name="bap_2fa_revoke_devices" value="1" /> Cerrar confianza en todos los dispositivos guardados al guardar el perfil</label>';
+    }
     echo '</td></tr></table>';
 }
 add_action( 'show_user_profile', 'bap_2fa_render_profile_fields' );
@@ -289,6 +353,13 @@ function bap_2fa_save_profile_fields( $user_id ) {
     if ( ! current_user_can( 'edit_user', $user_id ) || ! isset( $_POST['bap_2fa_user_method'] ) ) {
         return;
     }
+    if ( ! empty( $_POST['bap_2fa_revoke_devices'] ) ) {
+        delete_user_meta( $user_id, '_bap_2fa_trusted_devices' );
+        if ( get_current_user_id() === (int) $user_id && ! headers_sent() ) {
+            setcookie( 'bap_2fa_trust_' . $user_id, '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+        }
+    }
+
     $chosen = sanitize_key( $_POST['bap_2fa_user_method'] );
     $secret = (string) get_user_meta( $user_id, '_bap_2fa_totp_secret', true );
 
@@ -316,4 +387,3 @@ function bap_2fa_save_profile_fields( $user_id ) {
 }
 add_action( 'personal_options_update', 'bap_2fa_save_profile_fields' );
 add_action( 'edit_user_profile_update', 'bap_2fa_save_profile_fields' );
-

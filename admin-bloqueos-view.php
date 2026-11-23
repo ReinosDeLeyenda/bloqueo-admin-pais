@@ -223,6 +223,10 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <input type="checkbox" name="bap_2fa_enforce_admins" value="1" <?php checked( get_option( 'bap_2fa_enforce_admins', '0' ), '1' ); ?> />
                             Obligar 2FA a todos los <strong>Administradores</strong> (si no han configurado App, usará su Email automáticamente)
                         </label>
+                        <label style="display:block;margin-top:6px;">
+                            <input type="checkbox" name="bap_2fa_remember_device" value="1" <?php checked( get_option( 'bap_2fa_remember_device', '1' ), '1' ); ?> />
+                            Permitir marcar <strong>"Recordar este dispositivo durante 30 días"</strong> en el inicio de sesión
+                        </label>
                         <p class="description">Cada usuario puede elegir su método y ver su código QR en <strong>Usuarios &rarr; Perfil</strong>.</p>
                     </td>
                 </tr>
