@@ -208,8 +208,30 @@ function bap_render_bloqueos_page() {
     $ctry   = bap_is_server_ip( $ip ) ? 'SERVIDOR LOCAL' : bap_get_country_by_ip( $ip, $src );
     $bl_raw = get_option( 'bap_blacklist_ips', '' );
     $bl_ips = bap_parse_list( $bl_raw, false );
-    $logs   = get_option( 'bap_blocked_logs', [] );
     $freq   = (string) get_option( 'bap_notify_freq', 'none' );
+
+    global $wpdb;
+    $logs_table = function_exists( 'bap_get_logs_table_name' ) ? bap_get_logs_table_name() : $wpdb->prefix . 'bap_blocked_logs';
+    $ip_stats   = [];
+    if ( ! empty( $bl_ips ) ) {
+        $placeholders = implode( ',', array_fill( 0, count( $bl_ips ), '%s' ) );
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT ip_address, COUNT(*) AS cnt, MAX(id) AS max_id FROM {$logs_table} WHERE ip_address IN ({$placeholders}) GROUP BY ip_address",
+                $bl_ips
+            ),
+            ARRAY_A
+        );
+        foreach ( $rows as $r ) {
+            $last_reason = (string) $wpdb->get_var(
+                $wpdb->prepare( "SELECT reason FROM {$logs_table} WHERE id = %d", (int) $r['max_id'] )
+            );
+            $ip_stats[ $r['ip_address'] ] = [
+                'count'  => (int) $r['cnt'],
+                'reason' => $last_reason ?: 'Bloqueada',
+            ];
+        }
+    }
 
     $ip_meta = [];
     foreach ( $bl_ips as $b_ip ) {
@@ -217,8 +239,8 @@ function bap_render_bloqueos_page() {
         $ip_meta[ $b_ip ] = [
             'asn'     => function_exists( 'bap_get_asn_by_ip' ) ? bap_get_asn_by_ip( $b_ip ) : 'N/D',
             'country' => function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $b_ip ) : 'N/D',
-            'count'   => isset( $logs[ $b_ip ]['count'] ) ? (int) $logs[ $b_ip ]['count'] : 0,
-            'reason'  => $logs[ $b_ip ]['reason'] ?? 'Añadida manualmente',
+            'count'   => $ip_stats[ $b_ip ]['count'] ?? 0,
+            'reason'  => $ip_stats[ $b_ip ]['reason'] ?? 'Añadida manualmente',
             'risk'    => ( null === $risk ) ? 'Sin datos (N/D)' : $risk . '%',
         ];
     }

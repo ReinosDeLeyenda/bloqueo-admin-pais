@@ -11,15 +11,15 @@ if ( ! defined( 'ABSPATH' ) ) {
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
         <div class="card" style="flex:1;min-width:180px;max-width:240px;margin:0;text-align:center;">
             <h3 style="margin:0 0 8px;">Intentos Bloqueados</h3>
-            <p style="font-size:28px;font-weight:bold;color:#d63638;margin:0;"><?php echo (int) $total_hits; ?></p>
+            <p style="font-size:28px;font-weight:bold;color:#d63638;margin:0;"><?php echo number_format_i18n( (int) $total_hits ); ?></p>
         </div>
         <div class="card" style="flex:1;min-width:180px;max-width:240px;margin:0;text-align:center;">
             <h3 style="margin:0 0 8px;">IPs Únicas Detectadas</h3>
-            <p style="font-size:28px;font-weight:bold;color:#1d2327;margin:0;"><?php echo count( $logs ); ?></p>
+            <p style="font-size:28px;font-weight:bold;color:#1d2327;margin:0;"><?php echo number_format_i18n( (int) ( $unique_ips ?? count( $logs ) ) ); ?></p>
         </div>
         <div class="card" style="flex:1;min-width:180px;max-width:240px;margin:0;text-align:center;">
             <h3 style="margin:0 0 8px;">IPs en Lista Negra</h3>
-            <p style="font-size:28px;font-weight:bold;color:#2271b1;margin:0;"><?php echo count( $blacklist ); ?></p>
+            <p style="font-size:28px;font-weight:bold;color:#2271b1;margin:0;"><?php echo number_format_i18n( count( $blacklist ) ); ?></p>
         </div>
     </div>
 
@@ -29,7 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <h2>Top Países Bloqueados</h2>
                 <ul style="list-style:disc;margin-left:20px;">
                     <?php foreach ( array_slice( $country_rank, 0, 8, true ) as $c_code => $c_hits ) : ?>
-                        <li><strong><?php echo esc_html( $c_code ); ?></strong>: <?php echo (int) $c_hits; ?> intentos</li>
+                        <li><strong><?php echo esc_html( $c_code ); ?></strong>: <?php echo number_format_i18n( (int) $c_hits ); ?> intentos</li>
                     <?php endforeach; ?>
                 </ul>
             </div>
@@ -37,7 +37,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <h2>Top ASNs / Proveedores</h2>
                 <ul style="list-style:disc;margin-left:20px;">
                     <?php foreach ( array_slice( $asn_rank, 0, 8, true ) as $a_name => $a_hits ) : ?>
-                        <li><strong><?php echo esc_html( $a_name ); ?></strong>: <?php echo (int) $a_hits; ?> intentos</li>
+                        <li><strong><?php echo esc_html( $a_name ); ?></strong>: <?php echo number_format_i18n( (int) $a_hits ); ?> intentos</li>
                     <?php endforeach; ?>
                 </ul>
             </div>
@@ -45,13 +45,26 @@ if ( ! defined( 'ABSPATH' ) ) {
     <?php endif; ?>
 
     <h2>Historial Detallado de IPs Bloqueadas</h2>
+    <?php if ( ! empty( $logs ) || '' !== ( $ip2loc_tbl ?? '' ) ) : ?>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+            <?php if ( '' !== ( $ip2loc_tbl ?? '' ) ) : ?>
+                <form method="post" style="margin:0;">
+                    <?php wp_nonce_field( 'bap_logs_action' ); ?>
+                    <input type="submit" name="bap_import_ip2loc" class="button button-primary" value="Importar estadísticas de IP2Location (MySQL)" onclick="return confirm('Se importarán los registros detectados en la tabla <?php echo esc_js( $ip2loc_tbl ); ?>. ¿Continuar?');" />
+                </form>
+            <?php endif; ?>
+            <?php if ( ! empty( $logs ) ) : ?>
+                <form method="post" style="margin:0;">
+                    <?php wp_nonce_field( 'bap_logs_action' ); ?>
+                    <input type="submit" name="bap_clear_logs" class="button button-secondary" value="Vaciar historial" onclick="return confirm('¿Seguro que quieres borrar todo el historial?');" />
+                </form>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
     <?php if ( empty( $logs ) ) : ?>
         <p>Aún no se ha registrado ningún intento bloqueado.</p>
     <?php else : ?>
-        <form method="post" style="margin-bottom: 12px;">
-            <?php wp_nonce_field( 'bap_logs_action' ); ?>
-            <input type="submit" name="bap_clear_logs" class="button button-secondary" value="Vaciar historial" onclick="return confirm('¿Seguro que quieres borrar todo el historial?');" />
-        </form>
         <table id="bap_logs_table" class="widefat striped" style="max-width: 1120px;">
             <thead>
                 <tr>
@@ -96,7 +109,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                             </a>
                         </td>
                         <td data-sort="<?php echo esc_attr( strtolower( $asn_text ) ); ?>"><small><?php echo esc_html( $asn_text ); ?></small></td>
-                        <td data-sort="<?php echo (int) $entry['count']; ?>"><strong><?php echo (int) $entry['count']; ?></strong></td>
+                        <td data-sort="<?php echo (int) $entry['count']; ?>"><strong><?php echo number_format_i18n( (int) $entry['count'] ); ?></strong></td>
                         <td data-sort="<?php echo esc_attr( strtolower( ( $is_banned ? 'bloqueada ' : '' ) . $entry['reason'] ) ); ?>">
                             <?php if ( $is_banned ) : ?>
                                 <span style="color:#d63638;font-weight:bold;">[Bloqueada]</span>

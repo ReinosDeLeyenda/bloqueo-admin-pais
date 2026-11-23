@@ -41,3 +41,7 @@ if ( ! empty( $recipients ) ) {
 
     wp_mail( array_unique( $recipients ), $subject, $body );
 }
+
+global $wpdb;
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}bap_blocked_logs" );
+delete_option( 'bap_logs_table_ver' );
