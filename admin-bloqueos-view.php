@@ -135,11 +135,11 @@ if ( ! defined( 'ABSPATH' ) ) {
                     </td>
                 </tr>
                 <tr>
-                    <th>Lista Blanca de IPs</th>
+                    <th>Lista Blanca de IPs / Rangos CIDR (ej. 192.168.1.0/24 o 2001:db8::/32)</th>
                     <td><textarea id="bap_whitelist_ips" name="bap_whitelist_ips" rows="5" style="width:100%;max-width:320px;" class="code"><?php echo esc_textarea( get_option( 'bap_whitelist_ips', '' ) ); ?></textarea></td>
                 </tr>
                 <tr>
-                    <th>Lista Negra de IPs (Bloqueadas)</th>
+                    <th>Lista Negra de IPs / Rangos CIDR (Bloqueadas) (ej. 185.220.101.0/24)</th>
                     <td>
                         <textarea id="bap_blacklist_textarea" name="bap_blacklist_ips" rows="7" style="width:100%;max-width:320px;line-height:20px;font-size:13px;" class="code"><?php echo esc_textarea( $bl_raw ); ?></textarea>
                         <p class="description">Pasa el cursor sobre cualquier IP del cuadro para ver su <strong>país</strong>, <strong>ASN</strong>, <strong>intentos</strong> y <strong>riesgo AbuseIPDB</strong>.</p>

@@ -122,12 +122,12 @@ add_action( 'admin_init', function() {
     ]);
 
     register_setting( 'bap_settings_group', 'bap_whitelist_ips', [
-        'sanitize_callback' => fn( $i ) => implode( "\n", array_filter( bap_parse_list( $i ), fn( $ip ) => (bool) filter_var( $ip, FILTER_VALIDATE_IP ) ) ),
+        'sanitize_callback' => fn( $i ) => implode( "\n", array_filter( bap_parse_list( $i ), 'bap_is_valid_ip_or_cidr' ) ),
         'default'           => ''
     ]);
 
     register_setting( 'bap_settings_group', 'bap_blacklist_ips', [
-        'sanitize_callback' => fn( $i ) => implode( "\n", array_filter( bap_parse_list( $i ), fn( $ip ) => (bool) filter_var( $ip, FILTER_VALIDATE_IP ) ) ),
+        'sanitize_callback' => fn( $i ) => implode( "\n", array_filter( bap_parse_list( $i ), 'bap_is_valid_ip_or_cidr' ) ),
         'default'           => ''
     ]);
 
