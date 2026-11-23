@@ -37,6 +37,19 @@ add_action( 'admin_init', function() {
         'default' => function_exists( 'bap_get_default_protected_paths' ) ? bap_get_default_protected_paths() : "/wp-admin/*\n/wp-login.php"
     ]);
 
+    register_setting( 'bap_settings_group', 'bap_hibp_enabled', [
+        'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
+        'default'           => '1',
+    ]);
+    register_setting( 'bap_settings_group', 'bap_hibp_check_login', [
+        'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
+        'default'           => '1',
+    ]);
+    register_setting( 'bap_settings_group', 'bap_hibp_login_action', [
+        'sanitize_callback' => fn( $i ) => ( 'block' === $i ) ? 'block' : 'warn',
+        'default'           => 'warn',
+    ]);
+
     register_setting( 'bap_settings_group', 'bap_enable_htaccess', [
         'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
         'default'           => '0'

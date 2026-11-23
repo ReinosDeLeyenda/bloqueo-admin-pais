@@ -194,6 +194,24 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <p class="description">Uno o varios emails separados por comas (recuerda guardar primero si cambias el destinatario).</p>
                     </td>
                 </tr>
+                <tr>
+                    <th>Contraseñas filtradas (Have I Been Pwned)</th>
+                    <td>
+                        <label style="display:block;margin-bottom:6px;">
+                            <input type="checkbox" name="bap_hibp_enabled" value="1" <?php checked( get_option( 'bap_hibp_enabled', '1' ), '1' ); ?> />
+                            Impedir guardar o restablecer contraseñas que aparezcan en brechas públicas (k-Anonymity)
+                        </label>
+                        <label style="display:block;margin-bottom:8px;">
+                            <input type="checkbox" name="bap_hibp_check_login" value="1" <?php checked( get_option( 'bap_hibp_check_login', '1' ), '1' ); ?> />
+                            Comprobar contraseña al iniciar sesión
+                        </label>
+                        <select name="bap_hibp_login_action">
+                            <option value="warn" <?php selected( get_option( 'bap_hibp_login_action', 'warn' ), 'warn' ); ?>>Permitir acceso pero mostrar alerta roja en el panel</option>
+                            <option value="block" <?php selected( get_option( 'bap_hibp_login_action', 'warn' ), 'block' ); ?>>Bloquear inicio de sesión y obligar a restablecer contraseña</option>
+                        </select>
+                        <p class="description">Consulta segura mediante hash parcial SHA-1 (nunca se envía la contraseña real por internet).</p>
+                    </td>
+                </tr>
             </table>
             <?php submit_button( 'Guardar reglas de bloqueo' ); ?>
         </form>
