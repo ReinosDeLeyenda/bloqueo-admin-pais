@@ -120,3 +120,72 @@ add_filter( 'upgrader_source_selection', function( $source, $remote_source, $upg
 add_action( 'delete_site_transient_update_plugins', function() {
     delete_transient( 'bap_gh_release_' . md5( BAP_GITHUB_REPO ) );
 });
+
+// 1. Añadir enlace "Buscar actualizaciones" en la pantalla de Plugins
+add_filter( 'plugin_action_links_' . plugin_basename( dirname( __FILE__ ) . '/bloqueo-admin-pais.php' ), function( $links ) {
+    $url = wp_nonce_url(
+        admin_url( 'plugins.php?bap_force_update_check=1' ),
+        'bap_force_update_nonce'
+    );
+    $links[] = '<a href="' . esc_url( $url ) . '">Buscar actualizaciones</a>';
+    return $links;
+} );
+
+// 2. Procesar la comprobación manual, limpiar caché y mostrar aviso con el resultado
+add_action( 'admin_init', function() {
+    if ( ! isset( $_GET['bap_force_update_check'] ) || ! current_user_can( 'update_plugins' ) ) {
+        return;
+    }
+    check_admin_referer( 'bap_force_update_nonce' );
+
+    // Borrar la caché de 6 horas de GitHub y forzar a WordPress a recomprobar
+    delete_transient( 'bap_gh_release_' . md5( BAP_GITHUB_REPO ) );
+    delete_site_transient( 'update_plugins' );
+    wp_update_plugins();
+
+    $plugin_slug = plugin_basename( dirname( __FILE__ ) . '/bloqueo-admin-pais.php' );
+    $plugin_data = get_plugin_data( dirname( __FILE__ ) . '/bloqueo-admin-pais.php' );
+    $current_ver = $plugin_data['Version'] ?? '1.0.0';
+    $release     = bap_get_github_latest_release();
+
+    if ( ! $release ) {
+        set_transient( 'bap_manual_update_notice', [
+            'type' => 'error',
+            'msg'  => 'No se pudo conectar con GitHub para comprobar actualizaciones (o aún no hay releases publicadas).',
+        ], 60 );
+    } elseif ( version_compare( $release['version'], $current_ver, '>' ) ) {
+        set_transient( 'bap_manual_update_notice', [
+            'type' => 'warning',
+            'msg'  => sprintf(
+                '¡Nueva versión disponible: <strong>%s</strong> (tienes la %s)! Puedes actualizar directamente desde el aviso de este plugin.',
+                esc_html( $release['version'] ),
+                esc_html( $current_ver )
+            ),
+        ], 60 );
+    } else {
+        set_transient( 'bap_manual_update_notice', [
+            'type' => 'success',
+            'msg'  => sprintf(
+                'El plugin está actualizado a la última versión (<strong>%s</strong>).',
+                esc_html( $current_ver )
+            ),
+        ], 60 );
+    }
+
+    wp_safe_redirect( admin_url( 'plugins.php' ) );
+    exit;
+} );
+
+// 3. Mostrar el aviso en la parte superior de la página de Plugins
+add_action( 'admin_notices', function() {
+    $notice = get_transient( 'bap_manual_update_notice' );
+    if ( ! $notice ) {
+        return;
+    }
+    delete_transient( 'bap_manual_update_notice' );
+    printf(
+        '<div class="notice notice-%s is-dismissible"><p><strong>Bloqueo Admin:</strong> %s</p></div>',
+        esc_attr( $notice['type'] ),
+        wp_kses_post( $notice['msg'] )
+    );
+} );
