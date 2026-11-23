@@ -1,0 +1,14 @@
+# Bases de datos descargadas y listas locales
+*.mmdb
+*.json
+*.gz
+*.netset
+*.lst
+*.ipv4
+*.tmp
+
+# Archivos del sistema operativo y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

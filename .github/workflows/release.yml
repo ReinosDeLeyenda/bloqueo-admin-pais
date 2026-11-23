@@ -1,0 +1,49 @@
+name: Auto Release on Version Commit
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    if: contains(github.event.head_commit.message, 'version ')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from commit message
+        id: ver
+        run: |
+          MSG="${{ github.event.head_commit.message }}"
+          VERSION=$(echo "$MSG" | grep -oE 'version [0-9]+(\.[0-9]+)+' | head -n1 | awk '{print $2}')
+          if [ -z "$VERSION" ]; then
+            echo "No valid version found in commit message."
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update Version header in plugin PHP
+        run: |
+          sed -i "s/^\(\s*\*\s*Version:\s*\).*/\1${{ steps.ver.outputs.version }}/" bloqueo-admin-pais.php
+
+      - name: Build clean plugin ZIP
+        run: |
+          mkdir -p build/bloqueo-admin-pais
+          rsync -av --exclude='build' --exclude='.git' --exclude='.github' --exclude='.gitignore' ./ build/bloqueo-admin-pais/
+          cd build && zip -r ../bloqueo-admin-pais.zip bloqueo-admin-pais
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: "Release ${{ steps.ver.outputs.tag }}"
+          body: "${{ github.event.head_commit.message }}"
+          files: bloqueo-admin-pais.zip
