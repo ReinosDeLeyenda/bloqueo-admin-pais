@@ -1,4 +1,4 @@
-name: Auto Release on Version Commit
+name: Release on Version Bump
 
 on:
   push:
@@ -11,44 +11,43 @@ permissions:
 
 jobs:
   build-and-release:
-    if: contains(github.event.head_commit.message, 'version ')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Extract version from commit message
+      - name: Check if Version header is new
         id: ver
         run: |
-          MSG="${{ github.event.head_commit.message }}"
-          VERSION=$(echo "$MSG" | grep -oE 'version [0-9]+(\.[0-9]+)+' | head -n1 | awk '{print $2}')
+          VERSION=$(grep -oE 'Version:\s*[0-9]+(\.[0-9]+)+' bloqueo-admin-pais.php | head -n1 | grep -oE '[0-9]+(\.[0-9]+)+')
           if [ -z "$VERSION" ]; then
-            echo "No valid version found in commit message."
+            echo "No valid Version header found in bloqueo-admin-pais.php"
             exit 1
           fi
+          TAG="v$VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-      - name: Update Version header in plugin PHP
-        run: |
-          sed -i "s/^\(\s*\*\s*Version:\s*\).*/\1${{ steps.ver.outputs.version }}/" bloqueo-admin-pais.php
-
-      - name: Commit updated version back to repo
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add bloqueo-admin-pais.php
-          git commit -m "chore: bump version to ${{ steps.ver.outputs.version }} [skip ci]" || echo "No changes to commit"
-          git push
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists. Skipping release."
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          else
+            echo "New version $TAG detected! Preparing release."
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Build clean plugin ZIP
+        if: steps.ver.outputs.should_release == 'true'
         run: |
           mkdir -p build/bloqueo-admin-pais
-          rsync -av --exclude='build' --exclude='.git' --exclude='.github' --exclude='.gitignore' ./ build/bloqueo-admin-pais/
+          rsync -av --exclude='build' --exclude='.git' --exclude='.github' --exclude='.gitignore' --exclude-from='.gitignore' ./ build/bloqueo-admin-pais/
           cd build && zip -r ../bloqueo-admin-pais.zip bloqueo-admin-pais
 
       - name: Create GitHub Release
+        if: steps.ver.outputs.should_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
