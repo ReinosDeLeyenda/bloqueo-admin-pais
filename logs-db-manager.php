@@ -113,3 +113,31 @@ function bap_log_blocked_attempt( $ip, $country, $reason ) {
         bap_queue_or_send_notification( $ip, $country, $reason );
     }
 }
+
+function bap_purge_old_logs( $days = null ) {
+    global $wpdb;
+    if ( null === $days ) {
+        $days = (int) get_option( 'bap_logs_retention_days', 90 );
+    }
+    $days = max( 0, (int) $days );
+    if ( 0 === $days ) {
+        return 0;
+    }
+
+    $table  = bap_get_logs_table_name();
+    $cutoff = wp_date( 'Y-m-d H:i:s', time() - ( $days * DAY_IN_SECONDS ) );
+    $deleted = $wpdb->query(
+        $wpdb->prepare( "DELETE FROM {$table} WHERE created_at < %s", $cutoff )
+    );
+
+    return false === $deleted ? 0 : (int) $deleted;
+}
+
+add_action( 'bap_auto_update_dbs_event', 'bap_purge_old_logs' );
+add_action( 'bap_daily_logs_cleanup', 'bap_purge_old_logs' );
+
+add_action( 'init', function() {
+    if ( ! wp_next_scheduled( 'bap_daily_logs_cleanup' ) ) {
+        wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'bap_daily_logs_cleanup' );
+    }
+});

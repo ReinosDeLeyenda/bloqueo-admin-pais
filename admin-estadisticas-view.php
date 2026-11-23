@@ -44,6 +44,32 @@ if ( ! defined( 'ABSPATH' ) ) {
         </div>
     <?php endif; ?>
 
+    <div class="card" style="max-width:1120px;padding:12px 18px;margin-bottom:20px;">
+        <form method="post" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0;">
+            <?php wp_nonce_field( 'bap_logs_action' ); ?>
+            <label for="bap_logs_retention_days"><strong>Retención automática de registros en MySQL:</strong></label>
+            <select id="bap_logs_retention_days" name="bap_logs_retention_days">
+                <?php
+                $ret_opts = [
+                    7   => '7 días',
+                    15  => '15 días',
+                    30  => '30 días',
+                    60  => '60 días',
+                    90  => '90 días (recomendado)',
+                    180 => '180 días (6 meses)',
+                    365 => '365 días (1 año)',
+                    0   => 'Conservar siempre (sin purga automática)',
+                ];
+                $cur_ret = (int) ( $retention_days ?? 90 );
+                foreach ( $ret_opts as $val => $text ) :
+                ?>
+                    <option value="<?php echo (int) $val; ?>" <?php selected( $cur_ret, $val ); ?>><?php echo esc_html( $text ); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <button type="submit" name="bap_save_retention" value="1" class="button button-secondary">Guardar y purgar ahora</button>
+        </form>
+    </div>
+
     <h2>Historial Detallado de IPs Bloqueadas</h2>
     <?php if ( ! empty( $logs ) || '' !== ( $ip2loc_tbl ?? '' ) ) : ?>
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
