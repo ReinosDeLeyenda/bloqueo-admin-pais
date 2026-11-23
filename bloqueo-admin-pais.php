@@ -19,6 +19,7 @@ $bap_files = [
     'seo-bots-helper.php',
     'htaccess-manager.php',
     'frontend-firewall.php',
+    'ip-simulator.php',
     'mmdb-reader.php',
     'geo-db-manager.php',
     'abuseipdb-manager.php',

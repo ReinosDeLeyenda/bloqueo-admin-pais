@@ -13,6 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
         <p><strong>Tu conexión actual:</strong> IP <code><?php echo esc_html( $ip ); ?></code> | País <code><?php echo esc_html( $ctry ); ?></code> <?php echo $src ? '(' . esc_html( $src ) . ')' : ''; ?> | ASN <code><?php echo esc_html( bap_get_asn_by_ip( $ip ) ); ?></code></p>
     </div>
 
+    <?php if ( function_exists( 'bap_render_ip_simulator_box' ) ) { bap_render_ip_simulator_box(); } ?>
+
     <div class="card" style="max-width:960px;padding:16px 24px;margin-top:12px;">
         <form id="bap_rules_form" method="post" action="options.php">
             <?php settings_fields( 'bap_settings_group' ); ?>
