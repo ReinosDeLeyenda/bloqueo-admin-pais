@@ -15,7 +15,6 @@ function bap_check_frontend_rules() {
     $matched = bap_match_web_rule_for_uri( $uri );
     $rule    = $matched['rule'];
 
-    // Si la ruta específica o global tiene estado "nada" (desactivado), dejar pasar
     if ( '1' !== (string) ( $rule['enabled'] ?? '0' ) ) {
         return;
     }
@@ -41,12 +40,22 @@ function bap_check_frontend_rules() {
         $reason    = $verdict['reason'];
         bap_log_blocked_attempt( $ip, $country, $scope_tag . ': ' . $reason );
 
-        $url = trim( (string) get_option( 'bap_web_redirect_url', '' ) );
+        // 1. Prioridad: URL de redirección propia de esta regla -> respaldo global
+        $url = trim( (string) ( $rule['redirect_url'] ?? '' ) );
+        if ( '' === $url ) {
+            $url = trim( (string) get_option( 'bap_web_redirect_url', '' ) );
+        }
         if ( '' !== $url && filter_var( $url, FILTER_VALIDATE_URL ) ) {
             wp_redirect( esc_url_raw( $url ), 302 );
             exit;
         }
-        $msg = get_option( 'bap_web_block_message', 'Este contenido no está disponible en tu ubicación o red.' );
+
+        // 2. Prioridad: Mensaje 403 propio de esta regla -> respaldo global
+        $msg = trim( (string) ( $rule['block_message'] ?? '' ) );
+        if ( '' === $msg ) {
+            $msg = (string) get_option( 'bap_web_block_message', 'Este contenido no está disponible en tu ubicación o red.' );
+        }
+
         if ( function_exists( 'bap_render_custom_403_page' ) ) {
             bap_render_custom_403_page( 'Acceso restringido', $msg, $ip, $country, $reason );
         }

@@ -79,6 +79,8 @@ function bap_handle_web_rule_actions() {
             'abuse_risk'    => max( 0, min( 100, (int) ( $_POST['bap_rule_abuse_risk'] ?? 0 ) ) ),
             'block_tor'     => ( '1' === (string) ( $_POST['bap_rule_block_tor'] ?? '0' ) ) ? '1' : '0',
             'block_firehol' => ( '1' === (string) ( $_POST['bap_rule_block_firehol'] ?? '0' ) ) ? '1' : '0',
+            'redirect_url'  => esc_url_raw( trim( (string) wp_unslash( $_POST['bap_rule_redirect_url'] ?? '' ) ) ),
+            'block_message' => sanitize_text_field( trim( (string) wp_unslash( $_POST['bap_rule_block_message'] ?? '' ) ) ),
         ] );
 
         update_option( 'bap_web_rules', $rules );

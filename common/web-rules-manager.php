@@ -15,6 +15,8 @@ function bap_get_default_web_rule( $enabled = '0' ) {
         'abuse_risk'    => 0,
         'block_tor'     => '0',
         'block_firehol' => '0',
+        'redirect_url'  => '',
+        'block_message' => '',
     ];
 }
 
@@ -74,6 +76,8 @@ function bap_get_web_rules() {
         'abuse_risk'    => (int) get_option( 'bap_web_abuse_risk', 0 ),
         'block_tor'     => (string) get_option( 'bap_web_block_tor', '0' ),
         'block_firehol' => (string) get_option( 'bap_web_block_firehol', '0' ),
+        'redirect_url'  => (string) get_option( 'bap_web_redirect_url', '' ),
+        'block_message' => (string) get_option( 'bap_web_block_message', '' ),
     ] );
 
     $rules = [ '__all__' => bap_get_default_web_rule( '0' ) ];
