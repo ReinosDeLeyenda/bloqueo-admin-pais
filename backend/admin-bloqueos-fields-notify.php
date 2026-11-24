@@ -38,7 +38,7 @@ function bap_render_bloqueos_notify_and_auth_fields() {
       <th>Avisos de conexión exitosa</th>
       <td>
           <?php $login_ch = (string) get_option( 'bap_login_notify_channel', 'none' ); ?>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
               <select name="bap_login_notify_channel">
                   <option value="none" <?php selected( $login_ch, 'none' ); ?>>Desactivado</option>
                   <option value="email" <?php selected( $login_ch, 'email' ); ?>>Email</option>
@@ -47,7 +47,11 @@ function bap_render_bloqueos_notify_and_auth_fields() {
               </select>
               <button type="submit" form="bap_test_email_form" name="bap_send_test_login_alert" value="1" class="button button-secondary">Probar aviso de conexión</button>
           </div>
-          <p class="description">Envía una alerta inmediata cuando un usuario inicia sesión y remarca si el <strong>ASN</strong> difiere de su última sesión o de sus sesiones activas.</p>
+          <div style="display:flex;flex-direction:column;gap:6px;max-width:460px;margin-bottom:6px;">
+              <input type="text" name="bap_login_notify_emails" value="<?php echo esc_attr( get_option( 'bap_login_notify_emails', '' ) ); ?>" class="regular-text" placeholder="Emails específicos (vacío = usar destinatarios de bloqueos)" />
+              <input type="text" name="bap_login_tg_chat_ids" value="<?php echo esc_attr( get_option( 'bap_login_tg_chat_ids', '' ) ); ?>" class="regular-text code" placeholder="Chat ID(s) Telegram específicos (ej. -124; vacío = usar Chat IDs de bloqueos)" />
+          </div>
+          <p class="description">Envía una alerta inmediata cuando un usuario inicia sesión y remarca si el <strong>ASN</strong> difiere de su última sesión o de sus sesiones activas. Si dejas los destinos vacíos, usará los configurados para bloqueos.</p>
       </td>
   </tr>
     <tr>

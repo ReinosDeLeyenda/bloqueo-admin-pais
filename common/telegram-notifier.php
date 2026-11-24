@@ -54,9 +54,11 @@ function bap_tg_api_request( $token, $method, array $payload ) {
     return new WP_Error( 'tg_api_err', (string) ( $body['description'] ?? 'HTTP ' . $code ) );
 }
 
-function bap_send_telegram_rich_article( $rich_html, $fallback_html ) {
+function bap_send_telegram_rich_article( $rich_html, $fallback_html, $custom_chat_ids = '' ) {
     $token   = trim( (string) get_option( 'bap_tg_bot_token', '' ) );
-    $raw_ids = trim( (string) get_option( 'bap_tg_chat_ids', '' ) );
+    $raw_ids = '' !== trim( (string) $custom_chat_ids )
+        ? trim( (string) $custom_chat_ids )
+        : trim( (string) get_option( 'bap_tg_chat_ids', '' ) );
 
     if ( '' === $token || '' === $raw_ids ) {
         return new WP_Error( 'tg_missing_cfg', 'Falta el Token del Bot o el Chat ID de Telegram.' );

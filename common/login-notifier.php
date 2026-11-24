@@ -53,6 +53,23 @@ function bap_evaluate_login_asn_change( $user_id, $current_asn ) {
     ];
 }
 
+function bap_get_login_notify_recipients() {
+    $raw = trim( (string) get_option( 'bap_login_notify_emails', '' ) );
+    if ( '' !== $raw ) {
+        $valid = [];
+        foreach ( preg_split( '/[\r\n,;]+/', $raw ) as $mail ) {
+            $m = sanitize_email( trim( $mail ) );
+            if ( is_email( $m ) ) {
+                $valid[] = $m;
+            }
+        }
+        if ( ! empty( $valid ) ) {
+            return array_unique( $valid );
+        }
+    }
+    return function_exists( 'bap_get_notify_recipients' ) ? bap_get_notify_recipients() : [ get_option( 'admin_email' ) ];
+}
+
 function bap_send_successful_login_alert( WP_User $user, $is_test = false ) {
     $channel = (string) get_option( 'bap_login_notify_channel', 'none' );
     if ( ! $is_test && ( 'none' === $channel || '' === $channel ) ) {
@@ -80,7 +97,7 @@ function bap_send_successful_login_alert( WP_User $user, $is_test = false ) {
 
     $ok = true;
 
-    if ( in_array( $channel, [ 'email', 'both' ], true ) && function_exists( 'bap_get_notify_recipients' ) ) {
+    if ( in_array( $channel, [ 'email', 'both' ], true ) ) {
         $prefix  = $asn_check['changed'] ? '⚠️ [NUEVO ASN] ' : '✅ ';
         $t_badge = $is_test ? '[PRUEBA] ' : '';
         $subject = "{$prefix}{$t_badge}[{$site_name}] Inicio de sesión exitoso: {$user->user_login}";
@@ -98,7 +115,7 @@ function bap_send_successful_login_alert( WP_User $user, $is_test = false ) {
         $body .= "• ASNs Sesiones Activas: {$asn_check['active_asns']}\n";
         $body .= "• Navegador / User-Agent: " . ( $ua ?: 'No registrado' ) . "\n";
 
-        if ( ! wp_mail( bap_get_notify_recipients(), $subject, $body ) ) {
+        if ( ! wp_mail( bap_get_login_notify_recipients(), $subject, $body ) ) {
             $ok = false;
         }
     }
@@ -137,7 +154,8 @@ function bap_send_successful_login_alert( WP_User $user, $is_test = false ) {
         $fb .= "• <b>ASN Anterior:</b> {$e( $asn_check['last_asn'] )}\n";
         $fb .= "<blockquote expandable><b>Sesiones activas:</b> {$e( $asn_check['active_asns'] )}\n<b>UA:</b> {$e( $ua ?: 'N/D' )}</blockquote>";
 
-        $tg_res = bap_send_telegram_rich_article( $rich, $fb );
+        $login_chat_ids = trim( (string) get_option( 'bap_login_tg_chat_ids', '' ) );
+        $tg_res         = bap_send_telegram_rich_article( $rich, $fb, $login_chat_ids );
         if ( is_wp_error( $tg_res ) ) {
             $ok = false;
         }

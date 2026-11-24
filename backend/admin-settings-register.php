@@ -142,6 +142,14 @@ add_action( 'admin_init', function() {
         'sanitize_callback' => fn( $i ) => implode( ', ', array_unique( array_filter( array_map( 'trim', preg_split( '/[\r\n,;]+/', (string) $i ) ) ) ) ),
         'default'           => '',
     ] );
+    register_setting( 'bap_settings_group', 'bap_login_notify_emails', [
+        'sanitize_callback' => 'bap_sanitize_notify_emails',
+        'default'           => '',
+    ] );
+    register_setting( 'bap_settings_group', 'bap_login_tg_chat_ids', [
+        'sanitize_callback' => fn( $i ) => implode( ', ', array_unique( array_filter( array_map( 'trim', preg_split( '/[\r\n,;]+/', (string) $i ) ) ) ) ),
+        'default'           => '',
+    ] );
 } );
 
 add_action( 'update_option_bap_enable_htaccess', 'bap_sync_htaccess_rules' );
