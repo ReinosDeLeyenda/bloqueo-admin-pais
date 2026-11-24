@@ -138,6 +138,21 @@ function bap_render_web_response_and_general_fields( array $current ) {
                     </label>
                 </td>
             </tr>
+            <tr>
+                <th scope="row">User-Agents bloqueados (Global)</th>
+                <td>
+                    <?php $default_uas = function_exists( 'bap_get_default_blocked_user_agents' ) ? bap_get_default_blocked_user_agents() : ''; ?>
+                    <div style="display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+                        <textarea id="bap_blocked_user_agents" name="bap_blocked_user_agents" rows="5" class="large-text code" style="max-width:460px;" placeholder="Ej. sqlmap, nikto, python-requests, GPTBot (vacío = desactivado)"><?php echo esc_textarea( get_option( 'bap_blocked_user_agents', '' ) ); ?></textarea>
+                        <button type="button" class="button button-secondary" onclick="document.getElementById('bap_blocked_user_agents').value=this.dataset.defaults;" data-defaults="<?php echo esc_attr( $default_uas ); ?>">Cargar lista recomendada</button>
+                    </div>
+                    <label style="display:block;margin-bottom:4px;">
+                        <input type="checkbox" name="bap_block_empty_ua" value="1" <?php checked( get_option( 'bap_block_empty_ua', '0' ), '1' ); ?> />
+                        Bloquear también peticiones sin cabecera <code>User-Agent</code> (vacío)
+                    </label>
+                    <p class="description">Una cadena por línea (no distingue mayúsculas/minúsculas). Nunca afecta a usuarios conectados, lista blanca ni bots SEO verificados.</p>
+                </td>
+            </tr>
         </table>
     </div>
     <?php

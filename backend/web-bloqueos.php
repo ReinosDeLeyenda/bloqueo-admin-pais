@@ -78,6 +78,15 @@ function bap_handle_web_rule_actions() {
         update_option( 'bap_rl_max_req_min', max( 0, min( 5000, (int) ( $_POST['bap_rl_max_req_min'] ?? 0 ) ) ) );
         update_option( 'bap_rl_max_404_min', max( 0, min( 1000, (int) ( $_POST['bap_rl_max_404_min'] ?? 0 ) ) ) );
         update_option( 'bap_rl_autoban', ( '1' === (string) ( $_POST['bap_rl_autoban'] ?? '0' ) ) ? '1' : '0' );
+        $ua_lines = [];
+        foreach ( preg_split( '/[\r\n,]+/', (string) wp_unslash( $_POST['bap_blocked_user_agents'] ?? '' ) ) as $ua_item ) {
+            $clean_ua = trim( sanitize_text_field( $ua_item ) );
+            if ( '' !== $clean_ua ) {
+                $ua_lines[] = $clean_ua;
+            }
+        }
+        update_option( 'bap_blocked_user_agents', implode( "\n", array_unique( $ua_lines ) ) );
+        update_option( 'bap_block_empty_ua', ( '1' === (string) ( $_POST['bap_block_empty_ua'] ?? '0' ) ) ? '1' : '0' );
 
         $selected = $scope;
         $label    = ( '__all__' === $scope ) ? 'Toda la web' : $scope;
