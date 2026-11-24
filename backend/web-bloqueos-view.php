@@ -5,8 +5,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 $base_page_url = admin_url( 'admin.php?page=bap-web-bloqueos' );
 ?>
 <div class="wrap">
-    <h1>Firewall Avanzado de la Web Pública (Frontend)</h1>
+    <h1>Bloqueo Admin por País e IP</h1>
+    <h2 class="nav-tab-wrapper">
+        <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-bloqueos' ) ); ?>" class="nav-tab">Bloqueos Admin</a>
+        <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-web-bloqueos' ) ); ?>" class="nav-tab nav-tab-active">Bloqueo Web (Frontend)</a>
+        <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-db' ) ); ?>" class="nav-tab">Bases de datos</a>
+        <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-estadisticas' ) ); ?>" class="nav-tab">Estadísticas</a>
+    </h2>
+
     <?php echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+
+    <h2>Firewall Avanzado de la Web Pública (Frontend)</h2>
 
     <!-- BLOQUE 1: SELECTOR DE ÁMBITO (TODO / URL1 / URL2) Y SUS FILTROS -->
     <div class="card" style="max-width:920px;margin-top:16px;padding:18px 22px;">
