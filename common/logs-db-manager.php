@@ -98,6 +98,10 @@ function bap_log_blocked_attempt( $ip, $country, $reason ) {
             delete_transient( $key );
         }
     }
+
+    if ( function_exists( 'bap_queue_or_send_notification' ) ) {
+        bap_queue_or_send_notification( $ip, $country, $reason );
+    }
 }
 
 add_action( 'bap_daily_logs_cleanup', function() {

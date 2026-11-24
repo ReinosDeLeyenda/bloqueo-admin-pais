@@ -3,6 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 require_once plugin_dir_path( __FILE__ ) . 'admin-estadisticas-charts.php';
+require_once plugin_dir_path( __FILE__ ) . 'admin-estadisticas-toolbar.php';
 $stats_base_url = admin_url( 'admin.php?page=bap-admin-estadisticas' );
 ?>
 <div class="wrap">

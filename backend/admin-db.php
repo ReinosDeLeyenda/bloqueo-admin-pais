@@ -91,20 +91,6 @@ function bap_handle_db_actions() {
         return '';
     }
 
-    if ( isset( $_POST['bap_test_ext_db'] ) && function_exists( 'bap_test_external_db_connection' ) ) {
-        $host     = trim( sanitize_text_field( wp_unslash( $_POST['bap_ext_db_host'] ?? get_option( 'bap_ext_db_host', '' ) ) ) );
-        $port     = (int) ( $_POST['bap_ext_db_port'] ?? get_option( 'bap_ext_db_port', 3306 ) );
-        $name     = trim( sanitize_text_field( wp_unslash( $_POST['bap_ext_db_name'] ?? get_option( 'bap_ext_db_name', '' ) ) ) );
-        $user     = trim( sanitize_text_field( wp_unslash( $_POST['bap_ext_db_user'] ?? get_option( 'bap_ext_db_user', '' ) ) ) );
-        $raw_pass = (string) wp_unslash( $_POST['bap_ext_db_pass'] ?? '' );
-        $pass     = '' !== trim( $raw_pass ) ? $raw_pass : bap_decrypt_db_pass( get_option( 'bap_ext_db_pass', '' ) );
-
-        $res = bap_test_external_db_connection( $host, $port, $name, $user, $pass );
-        return is_wp_error( $res )
-            ? '<div class="notice notice-error is-dismissible"><p><strong>Error de conexión MySQL:</strong> ' . esc_html( $res->get_error_message() ) . '</p></div>'
-            : '<div class="notice notice-success is-dismissible"><p><strong>¡Servidor centralizado accesible!</strong> ' . $res . '</p></div>';
-    }
-
     if ( isset( $_POST['bap_update_all_dbs'] ) ) {
         $errs = bap_run_all_db_updates();
         return empty( $errs )

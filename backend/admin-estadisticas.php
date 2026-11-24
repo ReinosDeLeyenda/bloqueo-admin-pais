@@ -20,6 +20,12 @@ function bap_handle_stats_actions() {
         update_option( 'bap_logs_retention_days', $days );
         return '<div class="notice notice-success is-dismissible"><p>Retención guardada (' . ( $days > 0 ? $days . ' días' : 'Ilimitada' ) . ').</p></div>';
     }
+    if ( isset( $_POST['bap_import_ip2location'] ) && check_admin_referer( 'bap_logs_action' ) ) {
+        $res = function_exists( 'bap_import_ip2location_stats' ) ? bap_import_ip2location_stats() : new WP_Error( 'missing', 'Importador no disponible.' );
+        return is_wp_error( $res )
+            ? '<div class="notice notice-error is-dismissible"><p><strong>Error al importar:</strong> ' . esc_html( $res->get_error_message() ) . '</p></div>'
+            : '<div class="notice notice-success is-dismissible"><p><strong>¡Migración completada!</strong> Se han importado <strong>' . number_format_i18n( (int) $res['hits'] ) . '</strong> registros históricos desde IP2Location.</p></div>';
+    }
     return '';
 }
 

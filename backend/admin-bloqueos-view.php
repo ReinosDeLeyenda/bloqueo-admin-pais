@@ -128,6 +128,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <td><input type="number" min="0" max="100" name="bap_auto_ban_attempts" value="<?php echo (int) get_option( 'bap_auto_ban_attempts', 5 ); ?>" class="small-text" /></td>
                 </tr>
                 <tr>
+                    <th><label for="bap_auto_ban_duration">Duración del bloqueo automático</label></th>
+                    <td>
+                        <input type="number" id="bap_auto_ban_duration" name="bap_auto_ban_duration" value="<?php echo esc_attr( get_option( 'bap_auto_ban_duration', 24 ) ); ?>" min="0" step="1" class="small-text" /> horas
+                        <p class="description">Tiempo que una IP bloqueada automáticamente permanecerá en la lista negra antes de liberarse (0 = permanente)</p>
+                    </td>
+                </tr>
+                <tr>
                     <th>Bloquear usuarios inexistentes</th>
                     <td>
                         <label>
@@ -150,7 +157,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <td>
                         <label>
                             <input type="checkbox" name="bap_block_user_enum" value="1" <?php checked( get_option( 'bap_block_user_enum', '1' ), '1' ); ?> />
-                            Bloquear consultas <code>/?author=N</code> y ocultar el endpoint <code>/wp-json/wp/v2/users</code> a visitantes no autenticados
+                            Bloquear consultas de autor y ocultar el endpoint de usuarios REST API a visitantes no autenticados
                         </label>
                     </td>
                 </tr>
@@ -227,7 +234,8 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <td>
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                             <input type="text" name="bap_notify_emails" value="<?php echo esc_attr( get_option( 'bap_notify_emails', '' ) ); ?>" class="regular-text" placeholder="<?php echo esc_attr( get_option( 'admin_email' ) ); ?>" />
-                            <button type="submit" form="bap_test_email_form" class="button button-secondary">Enviar email de prueba ahora</button>
+                            <button type="submit" form="bap_test_email_form" name="bap_send_test_email" value="1" class="button button-secondary">Enviar email de prueba</button>
+                            <button type="submit" form="bap_test_email_form" name="bap_send_test_digest" value="1" class="button button-secondary">Enviar email de prueba de resumen</button>
                         </div>
                         <p class="description">Uno o varios emails separados por comas (recuerda guardar primero si cambias el destinatario).</p>
                     </td>
@@ -275,6 +283,5 @@ if ( ! defined( 'ABSPATH' ) ) {
 
     <form id="bap_test_email_form" method="post" style="display:none;">
         <?php wp_nonce_field( 'bap_test_email_action' ); ?>
-        <input type="hidden" name="bap_send_test_email" value="1" />
     </form>
 </div>

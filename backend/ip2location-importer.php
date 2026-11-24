@@ -39,6 +39,7 @@ function bap_import_ip2location_stats() {
     $date_col    = in_array( 'created_at', $cols, true ) ? 'created_at' : ( in_array( 'date_created', $cols, true ) ? 'date_created' : ( in_array( 'date', $cols, true ) ? 'date' : null ) );
     $reason_col  = in_array( 'block_reason', $cols, true ) ? 'block_reason' : ( in_array( 'reason', $cols, true ) ? 'reason' : null );
     $uri_col     = in_array( 'url', $cols, true ) ? 'url' : ( in_array( 'request_uri', $cols, true ) ? 'request_uri' : ( in_array( 'uri', $cols, true ) ? 'uri' : null ) );
+    $ua_col      = in_array( 'user_agent', $cols, true ) ? 'user_agent' : ( in_array( 'agent', $cols, true ) ? 'agent' : null );
 
     if ( ! $ip_col ) {
         return new WP_Error( 'no_ip_col', 'La tabla encontrada no contiene una columna de dirección IP reconocible.' );
@@ -48,19 +49,30 @@ function bap_import_ip2location_stats() {
     $sel_date    = $date_col ? "`{$date_col}`" : "'" . esc_sql( current_time( 'mysql' ) ) . "'";
     $sel_reason  = $reason_col ? "`{$reason_col}`" : "''";
     $sel_uri     = $uri_col ? "`{$uri_col}`" : "''";
+    $sel_ua      = $ua_col ? "`{$ua_col}`" : "''";
 
-    $dst_db    = function_exists( 'bap_get_logs_db' ) ? bap_get_logs_db() : $wpdb;
-    $dst_table = bap_get_logs_table_name();
-    $site_host = (string) wp_parse_url( home_url(), PHP_URL_HOST );
-    $batch     = 1000;
-    $offset    = 0;
-    $imported  = 0;
-    $asn_cache = [];
+    $ext_err   = '';
+    $ext_db    = function_exists( 'bap_get_external_wpdb' ) ? bap_get_external_wpdb( $ext_err ) : null;
+    $use_ext   = ( null !== $ext_db );
+    $dst_db    = $use_ext ? $ext_db : $wpdb;
+    $dst_table = $use_ext
+        ? ( preg_replace( '/[^a-zA-Z0-9_]/', '', (string) get_option( 'bap_ext_db_table', 'bap_global_blocked_logs' ) ) ?: 'bap_global_blocked_logs' )
+        : bap_get_logs_table_name();
+
+    if ( $use_ext && function_exists( 'bap_ensure_external_logs_table' ) ) {
+        bap_ensure_external_logs_table( $ext_db, $dst_table );
+    }
+
+    $site_domain = (string) wp_parse_url( home_url(), PHP_URL_HOST );
+    $batch       = 1000;
+    $offset      = 0;
+    $imported    = 0;
+    $asn_cache   = [];
 
     while ( true ) {
         $rows = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT `{$ip_col}` AS ip, {$sel_country} AS country, {$sel_date} AS created_at, {$sel_reason} AS reason, {$sel_uri} AS uri
+                "SELECT `{$ip_col}` AS ip, {$sel_country} AS country, {$sel_date} AS created_at, {$sel_reason} AS reason, {$sel_uri} AS uri, {$sel_ua} AS ua
                  FROM `{$src_table}`
                  WHERE `{$ip_col}` IS NOT NULL AND `{$ip_col}` != ''
                  LIMIT %d OFFSET %d",
@@ -104,15 +116,25 @@ function bap_import_ip2location_stats() {
 
             $raw_reason = trim( (string) $row['reason'] );
             $reason     = '' !== $raw_reason ? 'IP2Location: ' . $raw_reason : 'Importado desde IP2Location';
-            $uri        = trim( (string) $row['uri'] );
+            $uri        = '' !== trim( (string) $row['uri'] ) ? trim( (string) $row['uri'] ) : '/';
+            $ua         = mb_substr( sanitize_text_field( (string) $row['ua'] ), 0, 500 );
 
-            $values[] = '(%s, %s, %s, %s, %s, %s, %s, %s)';
-            array_push( $params, $site_host, $ip, $country, $asn_cache[ $ip ], $reason, $uri, 'ip2location', $created );
+            if ( $use_ext ) {
+                $values[] = '(%s, %s, %s, %s, %s, %s, %s, %s, %s)';
+                array_push( $params, $site_domain, $ip, $country, $asn_cache[ $ip ], 'ip2location', $reason, $uri, $ua, $created );
+            } else {
+                $values[] = '(%s, %s, %s, %s, %s, %s, %s, %s)';
+                array_push( $params, $ip, $country, $asn_cache[ $ip ], 'ip2location', $reason, $uri, $ua, $created );
+            }
             $imported++;
         }
 
         if ( ! empty( $values ) ) {
-            $sql = "INSERT INTO `{$dst_table}` (site_host, ip_address, country_code, asn, reason, request_uri, block_type, created_at) VALUES " . implode( ', ', $values );
+            if ( $use_ext ) {
+                $sql = "INSERT INTO `{$dst_table}` (site_domain, ip_address, country_code, asn, block_type, reason, request_uri, user_agent, created_at) VALUES " . implode( ', ', $values );
+            } else {
+                $sql = "INSERT INTO `{$dst_table}` (ip_address, country_code, asn, block_type, reason, request_uri, user_agent, created_at) VALUES " . implode( ', ', $values );
+            }
             $dst_db->query( $dst_db->prepare( $sql, $params ) );
         }
 

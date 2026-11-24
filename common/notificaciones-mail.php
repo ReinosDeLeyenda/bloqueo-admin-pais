@@ -96,14 +96,89 @@ function bap_queue_or_send_notification( $ip, $country, $reason ) {
         $queue = [];
     }
     $queue[] = $item;
-    if ( count( $queue ) > 1000 ) {
-        $queue = array_slice( $queue, -1000 );
+    if ( count( $queue ) > 2000 ) {
+        $queue = array_slice( $queue, -2000 );
     }
     update_option( 'bap_email_digest_queue', $queue, false );
 
     if ( ! wp_next_scheduled( 'bap_send_digest_email_event' ) ) {
         bap_reschedule_mail_cron( $freq );
     }
+}
+
+function bap_build_grouped_digest_body( array $queue, $is_test = false ) {
+    $grouped = [];
+
+    foreach ( $queue as $row ) {
+        $ip     = (string) ( $row['ip'] ?? 'N/D' );
+        $reason = (string) ( $row['reason'] ?? 'Bloqueado' );
+        $key    = $ip . '|' . $reason;
+
+        if ( ! isset( $grouped[ $key ] ) ) {
+            $grouped[ $key ] = [
+                'count'      => 0,
+                'first_time' => (string) ( $row['time'] ?? '' ),
+                'last_time'  => (string) ( $row['time'] ?? '' ),
+                'ip'         => $ip,
+                'country'    => (string) ( $row['country'] ?? 'DESCONOCIDO' ),
+                'asn'        => (string) ( $row['asn'] ?? 'N/D' ),
+                'risk'       => (string) ( $row['risk'] ?? 'N/D' ),
+                'reason'     => $reason,
+            ];
+        }
+
+        $grouped[ $key ]['count']++;
+        $t = (string) ( $row['time'] ?? '' );
+        if ( '' !== $t ) {
+            if ( '' === $grouped[ $key ]['first_time'] || $t < $grouped[ $key ]['first_time'] ) {
+                $grouped[ $key ]['first_time'] = $t;
+            }
+            if ( '' === $grouped[ $key ]['last_time'] || $t > $grouped[ $key ]['last_time'] ) {
+                $grouped[ $key ]['last_time'] = $t;
+            }
+        }
+    }
+
+    // Ordenar de mayor a menor número de intentos agrupados
+    uasort( $grouped, fn( $a, $b ) => $b['count'] <=> $a['count'] );
+
+    $total_hits   = count( $queue );
+    $unique_items = count( $grouped );
+
+    $lines = [];
+    if ( $is_test ) {
+        $lines[] = '*** ESTE ES UN CORREO DE PRUEBA DEL RESUMEN AGRUPADO ***';
+        $lines[] = '';
+    }
+    $lines[] = sprintf(
+        'Se han registrado %d intentos bloqueados (agrupados en %d eventos únicos):',
+        $total_hits,
+        $unique_items
+    );
+    $lines[] = str_repeat( '-', 75 );
+
+    foreach ( $grouped as $g ) {
+        $prefix = ( $g['count'] > 1 ) ? "(x{$g['count']}) " : '(x1) ';
+        if ( $g['first_time'] !== $g['last_time'] && '' !== $g['last_time'] ) {
+            $last_short = substr( $g['last_time'], 11 ) ?: $g['last_time'];
+            $time_str   = "[{$g['first_time']} -> {$last_short}]";
+        } else {
+            $time_str = "[{$g['first_time']}]";
+        }
+
+        $lines[] = sprintf(
+            '%s%s IP: %s | País: %s | ASN: %s | Riesgo: %s | Motivo: %s',
+            $prefix,
+            $time_str,
+            $g['ip'],
+            $g['country'],
+            $g['asn'],
+            $g['risk'],
+            $g['reason']
+        );
+    }
+
+    return implode( "\n", $lines );
 }
 
 function bap_flush_email_digest() {
@@ -116,22 +191,45 @@ function bap_flush_email_digest() {
     $site    = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
     $total   = count( $queue );
     $subject = '[' . $site . '] Resumen de seguridad: ' . $total . ' intentos bloqueados';
+    $body    = bap_build_grouped_digest_body( $queue, false );
 
-    $lines = [
-        'Se han registrado ' . $total . ' intentos de acceso bloqueados en el último periodo:',
-        str_repeat( '-', 70 ),
-    ];
-    foreach ( $queue as $row ) {
-        $lines[] = sprintf(
-            '[%s] IP: %s | País: %s | ASN: %s | Riesgo: %s | Motivo: %s',
-            $row['time'],
-            $row['ip'],
-            $row['country'],
-            $row['asn'],
-            $row['risk'],
-            $row['reason']
-        );
+    wp_mail( bap_get_notify_recipients(), $subject, $body );
+}
+
+function bap_send_test_digest_email() {
+    $queue = get_option( 'bap_email_digest_queue', [] );
+
+    if ( empty( $queue ) || ! is_array( $queue ) ) {
+        global $wpdb;
+        $table = function_exists( 'bap_get_logs_table_name' ) ? bap_get_logs_table_name() : $wpdb->prefix . 'bap_blocked_logs';
+        $rows  = $wpdb->get_results( "SELECT created_at, ip_address, country_code, asn, reason FROM `{$table}` ORDER BY id DESC LIMIT 30", ARRAY_A );
+
+        $queue = [];
+        if ( ! empty( $rows ) ) {
+            foreach ( array_reverse( $rows ) as $r ) {
+                $risk    = function_exists( 'bap_get_abuseipdb_score' ) ? bap_get_abuseipdb_score( $r['ip_address'] ) : null;
+                $queue[] = [
+                    'time'    => $r['created_at'],
+                    'ip'      => $r['ip_address'],
+                    'country' => $r['country_code'] ?: 'DESCONOCIDO',
+                    'asn'     => $r['asn'] ?: 'N/D',
+                    'risk'    => ( null === $risk ) ? 'N/D' : $risk . '%',
+                    'reason'  => $r['reason'],
+                ];
+            }
+        } else {
+            $now   = current_time( 'mysql' );
+            $queue = [
+                [ 'time' => $now, 'ip' => '34.140.28.27', 'country' => 'BE', 'asn' => 'AS396982 — Google LLC', 'risk' => '95%', 'reason' => 'Web Global: IP/Rango en lista negra' ],
+                [ 'time' => $now, 'ip' => '34.140.28.27', 'country' => 'BE', 'asn' => 'AS396982 — Google LLC', 'risk' => '95%', 'reason' => 'Web Global: IP/Rango en lista negra' ],
+                [ 'time' => $now, 'ip' => '185.220.101.4', 'country' => 'DE', 'asn' => 'AS205100 — F3 Netze e.V.', 'risk' => '100%', 'reason' => 'Nodo de salida Tor' ],
+            ];
+        }
     }
 
-    wp_mail( bap_get_notify_recipients(), $subject, implode( "\n", $lines ) );
+    $site    = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+    $subject = '[' . $site . '] Prueba de resumen agrupado (' . count( $queue ) . ' eventos)';
+    $body    = bap_build_grouped_digest_body( $queue, true );
+
+    return wp_mail( bap_get_notify_recipients(), $subject, $body );
 }
