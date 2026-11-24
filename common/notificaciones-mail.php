@@ -4,6 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 add_filter( 'cron_schedules', function( $schedules ) {
+    $schedules['bap_3hours']  = [ 'interval' => 3 * HOUR_IN_SECONDS, 'display' => 'Cada 3 horas' ];
     $schedules['bap_6hours']  = [ 'interval' => 6 * HOUR_IN_SECONDS, 'display' => 'Cada 6 horas' ];
     $schedules['bap_12hours'] = [ 'interval' => 12 * HOUR_IN_SECONDS, 'display' => 'Cada 12 horas' ];
     $schedules['bap_2weeks']  = [ 'interval' => 14 * DAY_IN_SECONDS, 'display' => 'Cada 2 semanas' ];
@@ -15,6 +16,7 @@ function bap_reschedule_mail_cron( $freq ) {
     wp_clear_scheduled_hook( 'bap_send_digest_email_event' );
     $map = [
         'hourly'  => 'hourly',
+        '3hours'  => 'bap_3hours',
         '6hours'  => 'bap_6hours',
         '12hours' => 'bap_12hours',
         'daily'   => 'daily',
@@ -26,6 +28,7 @@ function bap_reschedule_mail_cron( $freq ) {
         $recurrence = $map[ $freq ];
         $intervals  = [
             'hourly'      => HOUR_IN_SECONDS,
+            'bap_3hours'  => 3 * HOUR_IN_SECONDS,
             'bap_6hours'  => 6 * HOUR_IN_SECONDS,
             'bap_12hours' => 12 * HOUR_IN_SECONDS,
             'daily'       => DAY_IN_SECONDS,
@@ -59,11 +62,12 @@ function bap_get_notify_recipients() {
 }
 
 function bap_queue_or_send_notification( $ip, $country, $reason ) {
-    $freq = (string) get_option( 'bap_notify_freq', 'none' );
-    if ( 'none' === $freq || '' === $freq ) {
+    $channel = (string) get_option( 'bap_notify_channel', 'none' );
+    if ( 'none' === $channel || '' === $channel ) {
         return;
     }
 
+    $freq = (string) get_option( 'bap_notify_freq', 'daily' );
     $asn  = function_exists( 'bap_get_asn_by_ip' ) ? bap_get_asn_by_ip( $ip ) : 'N/D';
     $risk = function_exists( 'bap_get_abuseipdb_score' ) ? bap_get_abuseipdb_score( $ip ) : null;
     $item = [
@@ -75,6 +79,14 @@ function bap_queue_or_send_notification( $ip, $country, $reason ) {
         'reason'  => $reason,
         'uri'     => isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '',
     ];
+
+    if ( in_array( $channel, [ 'telegram', 'both' ], true ) && function_exists( 'bap_queue_or_send_telegram' ) ) {
+        bap_queue_or_send_telegram( $item, $freq );
+    }
+
+    if ( ! in_array( $channel, [ 'email', 'both' ], true ) ) {
+        return;
+    }
 
     if ( 'instant' === $freq ) {
         $site    = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
@@ -112,6 +124,11 @@ function bap_flush_email_digest() {
         return;
     }
     delete_option( 'bap_email_digest_queue' );
+
+    $channel = (string) get_option( 'bap_notify_channel', 'none' );
+    if ( ! in_array( $channel, [ 'email', 'both' ], true ) ) {
+        return;
+    }
 
     $site    = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
     $total   = count( $queue );

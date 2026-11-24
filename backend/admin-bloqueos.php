@@ -20,6 +20,37 @@ function bap_handle_test_email_post() {
             ? '<div class="notice notice-success is-dismissible"><p><strong>¡Email de prueba de resumen agrupado enviado a:</strong> <code>' . esc_html( implode( ', ', $recipients ) ) . '</code>!</p></div>'
             : '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> WordPress (<code>wp_mail</code>) no pudo enviar el correo de resumen.</p></div>';
     }
+    if ( isset( $_POST['bap_send_test_tg'] ) && check_admin_referer( 'bap_test_email_action' ) ) {
+        $site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+        $item = [
+            'time'    => current_time( 'mysql' ),
+            'ip'      => bap_get_user_ip() ?: '185.220.101.4',
+            'country' => 'DE',
+            'asn'     => 'AS205100 — F3 Netze e.V.',
+            'risk'    => '100%',
+            'reason'  => 'Nodo de salida Tor (Prueba)',
+            'uri'     => '/wp-login.php',
+        ];
+        $msg = bap_build_telegram_single_article( $item, $site, true );
+        $res = bap_send_telegram_rich_article( $msg['rich'], $msg['fallback'] );
+        return is_wp_error( $res )
+            ? '<div class="notice notice-error is-dismissible"><p><strong>Error Telegram:</strong> ' . esc_html( $res->get_error_message() ) . '</p></div>'
+            : '<div class="notice notice-success is-dismissible"><p><strong>¡Alerta de prueba enviada a Telegram!</strong></p></div>';
+    }
+    if ( isset( $_POST['bap_send_test_tg_digest'] ) && check_admin_referer( 'bap_test_email_action' ) ) {
+        $site  = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+        $now   = current_time( 'mysql' );
+        $queue = [
+            [ 'time' => $now, 'ip' => '34.140.28.27', 'country' => 'BE', 'asn' => 'AS396982 — Google LLC', 'risk' => '95%', 'reason' => 'Web Global: IP en lista negra', 'uri' => '/wp-login.php' ],
+            [ 'time' => $now, 'ip' => '34.140.28.27', 'country' => 'BE', 'asn' => 'AS396982 — Google LLC', 'risk' => '95%', 'reason' => 'Web Global: IP en lista negra', 'uri' => '/wp-login.php' ],
+            [ 'time' => $now, 'ip' => '185.220.101.4', 'country' => 'DE', 'asn' => 'AS205100 — F3 Netze e.V.', 'risk' => '100%', 'reason' => 'Nodo de salida Tor', 'uri' => '/xmlrpc.php' ],
+        ];
+        $msg = bap_build_telegram_digest_article( $queue, $site, 'Resumen de prueba', true );
+        $res = bap_send_telegram_rich_article( $msg['rich'], $msg['fallback'] );
+        return is_wp_error( $res )
+            ? '<div class="notice notice-error is-dismissible"><p><strong>Error Telegram:</strong> ' . esc_html( $res->get_error_message() ) . '</p></div>'
+            : '<div class="notice notice-success is-dismissible"><p><strong>¡Resumen Rich Article de prueba enviado a Telegram!</strong></p></div>';
+    }
     return '';
 }
 

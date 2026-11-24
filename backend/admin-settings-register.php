@@ -73,12 +73,12 @@ add_action( 'admin_init', function() {
     register_setting( 'bap_db_settings_group', 'bap_abuseipdb_key', [
         'sanitize_callback' => fn( $i ) => trim( sanitize_text_field( (string) $i ) ),
         'default'           => '',
-    ]);
+    ] );
 
     register_setting( 'bap_settings_group', 'bap_protected_paths', [
         'sanitize_callback' => 'bap_sanitize_protected_paths',
         'default'           => function_exists( 'bap_get_default_protected_paths' ) ? bap_get_default_protected_paths() : "/wp-admin/*\n/wp-login.php",
-    ]);
+    ] );
 
     $booleans = [
         'bap_2fa_enabled'             => '0',
@@ -97,7 +97,7 @@ add_action( 'admin_init', function() {
         register_setting( 'bap_settings_group', $opt, [
             'sanitize_callback' => $bool_cb,
             'default'           => $def,
-        ]);
+        ] );
     }
 
     register_setting( 'bap_settings_group', 'bap_hibp_login_action', [ 'sanitize_callback' => fn( $i ) => ( 'block' === $i ) ? 'block' : 'warn', 'default' => 'warn' ] );
@@ -115,13 +115,33 @@ add_action( 'admin_init', function() {
     register_setting( 'bap_settings_group', 'bap_redirect_url', [ 'sanitize_callback' => fn( $i ) => '' === trim( (string) $i ) ? '' : esc_url_raw( trim( (string) $i ) ), 'default' => '' ] );
     register_setting( 'bap_settings_group', 'bap_ip_source', [ 'sanitize_callback' => fn( $i ) => in_array( $i, [ 'remote_addr', 'cloudflare', 'x_forwarded_for', 'x_real_ip' ], true ) ? $i : 'remote_addr', 'default' => 'remote_addr' ] );
     register_setting( 'bap_settings_group', 'bap_secret_key', [ 'sanitize_callback' => 'bap_sanitize_secret_key', 'default' => '' ] );
-    register_setting( 'bap_settings_group', 'bap_notify_freq', [ 'sanitize_callback' => fn( $i ) => in_array( $i, [ 'none', 'instant', 'hourly', '6hours', '12hours', 'daily', 'weekly', '2weeks', 'monthly' ], true ) ? $i : 'none', 'default' => 'none' ] );
+
+    // Notificaciones unificadas (Canal + Frecuencia + Email + Telegram)
+    register_setting( 'bap_settings_group', 'bap_notify_channel', [
+        'sanitize_callback' => fn( $i ) => in_array( $i, [ 'none', 'email', 'telegram', 'both' ], true ) ? $i : 'none',
+        'default'           => 'none',
+    ] );
+    register_setting( 'bap_settings_group', 'bap_notify_freq', [
+        'sanitize_callback' => fn( $i ) => in_array( $i, [ 'instant', 'hourly', '3hours', '6hours', '12hours', 'daily', 'weekly', '2weeks', 'monthly' ], true ) ? $i : 'daily',
+        'default'           => 'daily',
+    ] );
+    register_setting( 'bap_settings_group', 'bap_notify_emails', [
+        'sanitize_callback' => 'bap_sanitize_notify_emails',
+        'default'           => '',
+    ] );
     register_setting( 'bap_settings_group', 'bap_email_template', [
         'sanitize_callback' => fn( $i ) => ( in_array( $i, [ 'full', 'top10', 'top5', 'text' ], true ) || 0 === strpos( (string) $i, 'custom_' ) ) ? (string) $i : 'full',
         'default'           => 'full',
-    ]);
-    register_setting( 'bap_settings_group', 'bap_notify_emails', [ 'sanitize_callback' => 'bap_sanitize_notify_emails', 'default' => '' ] );
-});
+    ] );
+    register_setting( 'bap_settings_group', 'bap_tg_bot_token', [
+        'sanitize_callback' => fn( $i ) => trim( sanitize_text_field( (string) $i ) ),
+        'default'           => '',
+    ] );
+    register_setting( 'bap_settings_group', 'bap_tg_chat_ids', [
+        'sanitize_callback' => fn( $i ) => implode( ', ', array_unique( array_filter( array_map( 'trim', preg_split( '/[\r\n,;]+/', (string) $i ) ) ) ) ),
+        'default'           => '',
+    ] );
+} );
 
 add_action( 'update_option_bap_enable_htaccess', 'bap_sync_htaccess_rules' );
 add_action( 'update_option_bap_protected_paths', 'bap_sync_htaccess_rules' );
