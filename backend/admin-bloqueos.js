@@ -205,6 +205,38 @@
                     delBtn.closest('.bap-login-route-row').remove();
                     syncRouteButtons();
                 }
+                return;
+            }
+
+            const testBtn = e.target.closest('.bap-test-login-route');
+            if (testBtn) {
+                const row = testBtn.closest('.bap-login-route-row');
+                const testForm = document.getElementById('bap_test_email_form');
+                if (!row || !testForm) return;
+
+                const uid = row.querySelector('.bap-login-route-user')?.value || '0';
+                const target = row.querySelector('.bap-login-route-target')?.value || '';
+                const type = row.querySelector('.bap-login-route-type')?.value || 'telegram';
+
+                const fields = {
+                    bap_send_test_login_alert: '1',
+                    bap_test_route_user: uid,
+                    bap_test_route_target: target,
+                    bap_test_route_type: type
+                };
+
+                Object.entries(fields).forEach(([name, val]) => {
+                    let hidden = testForm.querySelector('input[name="' + name + '"]');
+                    if (!hidden) {
+                        hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = name;
+                        testForm.appendChild(hidden);
+                    }
+                    hidden.value = val;
+                });
+
+                testForm.submit();
             }
         });
 

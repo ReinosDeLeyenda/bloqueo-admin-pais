@@ -72,13 +72,17 @@ function bap_get_login_routes_for_user( $user_id, $type ) {
     return array_values( array_unique( $targets ) );
 }
 
-function bap_send_successful_login_alert( WP_User $user, $is_test = false ) {
-    $channel = (string) get_option( 'bap_login_notify_channel', 'none' );
-    if ( ! $is_test && ( 'none' === $channel || '' === $channel ) ) {
-        return false;
-    }
-    if ( $is_test && ( 'none' === $channel || '' === $channel ) ) {
-        $channel = 'both';
+function bap_send_successful_login_alert( WP_User $user, $is_test = false, $single_route = null ) {
+    if ( is_array( $single_route ) ) {
+        $channel = ( 'email' === ( $single_route['type'] ?? '' ) ) ? 'email' : 'telegram';
+    } else {
+        $channel = (string) get_option( 'bap_login_notify_channel', 'none' );
+        if ( ! $is_test && ( 'none' === $channel || '' === $channel ) ) {
+            return false;
+        }
+        if ( $is_test && ( 'none' === $channel || '' === $channel ) ) {
+            $channel = 'both';
+        }
     }
 
     $ip        = function_exists( 'bap_get_user_ip' ) ? bap_get_user_ip() : '127.0.0.1';
@@ -100,8 +104,13 @@ function bap_send_successful_login_alert( WP_User $user, $is_test = false ) {
     $ok = true;
 
     if ( in_array( $channel, [ 'email', 'both' ], true ) ) {
-        $custom_emails = bap_get_login_routes_for_user( $user->ID, 'email' );
-        $recipients    = ! empty( $custom_emails )
+        if ( is_array( $single_route ) && 'email' === ( $single_route['type'] ?? '' ) ) {
+            $clean_mail    = sanitize_email( (string) ( $single_route['target'] ?? '' ) );
+            $custom_emails = is_email( $clean_mail ) ? [ $clean_mail ] : [];
+        } else {
+            $custom_emails = bap_get_login_routes_for_user( $user->ID, 'email' );
+        }
+        $recipients = ! empty( $custom_emails )
             ? $custom_emails
             : ( function_exists( 'bap_get_notify_recipients' ) ? bap_get_notify_recipients() : [ get_option( 'admin_email' ) ] );
 
@@ -161,8 +170,13 @@ function bap_send_successful_login_alert( WP_User $user, $is_test = false ) {
         $fb .= "• <b>ASN Anterior:</b> {$e( $asn_check['last_asn'] )}\n";
         $fb .= "<blockquote expandable><b>Sesiones activas:</b> {$e( $asn_check['active_asns'] )}\n<b>UA:</b> {$e( $ua ?: 'N/D' )}</blockquote>";
 
-        $custom_chats = bap_get_login_routes_for_user( $user->ID, 'telegram' );
-        $tg_res       = bap_send_telegram_rich_article( $rich, $fb, implode( ', ', $custom_chats ) );
+        if ( is_array( $single_route ) && 'telegram' === ( $single_route['type'] ?? '' ) ) {
+            $clean_chat   = preg_replace( '/[^0-9\-]/', '', (string) ( $single_route['target'] ?? '' ) );
+            $custom_chats = '' !== $clean_chat ? [ $clean_chat ] : [];
+        } else {
+            $custom_chats = bap_get_login_routes_for_user( $user->ID, 'telegram' );
+        }
+        $tg_res = bap_send_telegram_rich_article( $rich, $fb, implode( ', ', $custom_chats ) );
         if ( is_wp_error( $tg_res ) ) {
             $ok = false;
         }

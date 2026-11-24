@@ -52,7 +52,6 @@ function bap_render_bloqueos_notify_and_auth_fields() {
                   <option value="telegram" <?php selected( $login_ch, 'telegram' ); ?>>Telegram</option>
                   <option value="both" <?php selected( $login_ch, 'both' ); ?>>Telegram y Email</option>
               </select>
-              <button type="submit" form="bap_test_email_form" name="bap_send_test_login_alert" value="1" class="button button-secondary">Probar aviso de conexión</button>
           </div>
 
           <div id="bap-login-routes-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
@@ -61,8 +60,8 @@ function bap_render_bloqueos_notify_and_auth_fields() {
                   $r_tgt  = (string) ( $r['target'] ?? '' );
                   $r_type = ( 'email' === ( $r['type'] ?? 'telegram' ) ) ? 'email' : 'telegram';
               ?>
-                  <div class="bap-login-route-row" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                      <select name="bap_login_route_user[]" style="min-width:165px;">
+                  <div class="bap-login-route-row" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;">
+                      <select name="bap_login_route_user[]" class="bap-login-route-user" style="width:155px;">
                           <option value="0" <?php selected( $r_uid, 0 ); ?>>Todos los usuarios</option>
                           <?php foreach ( $wp_users as $wu ) : ?>
                               <option value="<?php echo (int) $wu->ID; ?>" <?php selected( $r_uid, (int) $wu->ID ); ?>>
@@ -71,15 +70,16 @@ function bap_render_bloqueos_notify_and_auth_fields() {
                           <?php endforeach; ?>
                       </select>
 
-                      <input type="text" name="bap_login_route_target[]" value="<?php echo esc_attr( $r_tgt ); ?>" class="regular-text bap-login-route-target" style="width:250px;" placeholder="<?php echo 'email' === $r_type ? 'correo@dominio.com' : 'Chat ID (ej. -124)'; ?>" />
+                      <input type="text" name="bap_login_route_target[]" value="<?php echo esc_attr( $r_tgt ); ?>" class="bap-login-route-target" style="width:185px;" placeholder="<?php echo 'email' === $r_type ? 'correo@dominio.com' : 'Chat ID (ej. -124)'; ?>" />
 
-                      <select name="bap_login_route_type[]" class="bap-login-route-type">
+                      <select name="bap_login_route_type[]" class="bap-login-route-type" style="width:95px;">
                           <option value="telegram" <?php selected( $r_type, 'telegram' ); ?>>Telegram</option>
                           <option value="email" <?php selected( $r_type, 'email' ); ?>>Email</option>
                       </select>
 
-                      <button type="button" class="button button-secondary bap-add-login-route" title="Añadir otra línea" style="font-weight:700;padding:0 9px;">+</button>
-                      <button type="button" class="button button-secondary bap-del-login-route" title="Borrar esta línea" style="color:#d63638;font-weight:700;padding:0 9px;">&times;</button>
+                      <button type="button" class="button button-secondary bap-add-login-route" title="Añadir otra línea" style="font-weight:700;padding:0 8px;">+</button>
+                      <button type="button" class="button button-secondary bap-del-login-route" title="Borrar esta línea" style="color:#d63638;font-weight:700;padding:0 8px;">&times;</button>
+                      <button type="button" class="button button-secondary bap-test-login-route">Probar aviso de conexión</button>
                   </div>
               <?php endforeach; ?>
           </div>

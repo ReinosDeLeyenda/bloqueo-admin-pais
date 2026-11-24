@@ -51,13 +51,24 @@ function bap_handle_test_email_post() {
             ? '<div class="notice notice-error is-dismissible"><p><strong>Error Telegram:</strong> ' . esc_html( $res->get_error_message() ) . '</p></div>'
             : '<div class="notice notice-success is-dismissible"><p><strong>¡Resumen Rich Article de prueba enviado a Telegram!</strong></p></div>';
     }
-  if ( isset( $_POST['bap_send_test_login_alert'] ) && check_admin_referer( 'bap_test_email_action' ) ) {
-      $u  = wp_get_current_user();
-      $ok = function_exists( 'bap_send_successful_login_alert' ) ? bap_send_successful_login_alert( $u, true ) : false;
-      return $ok
-          ? '<div class="notice notice-success is-dismissible"><p><strong>¡Aviso de prueba de conexión exitosa enviado!</strong></p></div>'
-          : '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> No se pudo enviar el aviso de prueba (revisa tu configuración de Email o Telegram).</p></div>';
-  }
+    if ( isset( $_POST['bap_send_test_login_alert'] ) && check_admin_referer( 'bap_test_email_action' ) ) {
+        $uid = (int) ( $_POST['bap_test_route_user'] ?? 0 );
+        $u   = ( $uid > 0 ) ? get_user_by( 'id', $uid ) : wp_get_current_user();
+        if ( ! ( $u instanceof WP_User ) ) {
+            $u = wp_get_current_user();
+        }
+
+        $test_route = [
+            'user_id' => $uid,
+            'target'  => trim( sanitize_text_field( wp_unslash( $_POST['bap_test_route_target'] ?? '' ) ) ),
+            'type'    => ( 'email' === ( $_POST['bap_test_route_type'] ?? 'telegram' ) ) ? 'email' : 'telegram',
+        ];
+
+        $ok = function_exists( 'bap_send_successful_login_alert' ) ? bap_send_successful_login_alert( $u, true, $test_route ) : false;
+        return $ok
+            ? '<div class="notice notice-success is-dismissible"><p><strong>¡Aviso de prueba de conexión exitosa enviado (' . esc_html( strtoupper( $test_route['type'] ) ) . ')!</strong></p></div>'
+            : '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> No se pudo enviar el aviso de prueba de esa línea (revisa el destino o el Bot Token).</p></div>';
+    }
     return '';
 }
 
