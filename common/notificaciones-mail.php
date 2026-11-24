@@ -106,81 +106,6 @@ function bap_queue_or_send_notification( $ip, $country, $reason ) {
     }
 }
 
-function bap_build_grouped_digest_body( array $queue, $is_test = false ) {
-    $grouped = [];
-
-    foreach ( $queue as $row ) {
-        $ip     = (string) ( $row['ip'] ?? 'N/D' );
-        $reason = (string) ( $row['reason'] ?? 'Bloqueado' );
-        $key    = $ip . '|' . $reason;
-
-        if ( ! isset( $grouped[ $key ] ) ) {
-            $grouped[ $key ] = [
-                'count'      => 0,
-                'first_time' => (string) ( $row['time'] ?? '' ),
-                'last_time'  => (string) ( $row['time'] ?? '' ),
-                'ip'         => $ip,
-                'country'    => (string) ( $row['country'] ?? 'DESCONOCIDO' ),
-                'asn'        => (string) ( $row['asn'] ?? 'N/D' ),
-                'risk'       => (string) ( $row['risk'] ?? 'N/D' ),
-                'reason'     => $reason,
-            ];
-        }
-
-        $grouped[ $key ]['count']++;
-        $t = (string) ( $row['time'] ?? '' );
-        if ( '' !== $t ) {
-            if ( '' === $grouped[ $key ]['first_time'] || $t < $grouped[ $key ]['first_time'] ) {
-                $grouped[ $key ]['first_time'] = $t;
-            }
-            if ( '' === $grouped[ $key ]['last_time'] || $t > $grouped[ $key ]['last_time'] ) {
-                $grouped[ $key ]['last_time'] = $t;
-            }
-        }
-    }
-
-    // Ordenar de mayor a menor número de intentos agrupados
-    uasort( $grouped, fn( $a, $b ) => $b['count'] <=> $a['count'] );
-
-    $total_hits   = count( $queue );
-    $unique_items = count( $grouped );
-
-    $lines = [];
-    if ( $is_test ) {
-        $lines[] = '*** ESTE ES UN CORREO DE PRUEBA DEL RESUMEN AGRUPADO ***';
-        $lines[] = '';
-    }
-    $lines[] = sprintf(
-        'Se han registrado %d intentos bloqueados (agrupados en %d eventos únicos):',
-        $total_hits,
-        $unique_items
-    );
-    $lines[] = str_repeat( '-', 75 );
-
-    foreach ( $grouped as $g ) {
-        $prefix = ( $g['count'] > 1 ) ? "(x{$g['count']}) " : '(x1) ';
-        if ( $g['first_time'] !== $g['last_time'] && '' !== $g['last_time'] ) {
-            $last_short = substr( $g['last_time'], 11 ) ?: $g['last_time'];
-            $time_str   = "[{$g['first_time']} -> {$last_short}]";
-        } else {
-            $time_str = "[{$g['first_time']}]";
-        }
-
-        $lines[] = sprintf(
-            '%s%s IP: %s | País: %s | ASN: %s | Riesgo: %s | Motivo: %s',
-            $prefix,
-            $time_str,
-            $g['ip'],
-            $g['country'],
-            $g['asn'],
-            $g['risk'],
-            $g['reason']
-        );
-    }
-
-    return implode( "\n", $lines );
-}
-
 function bap_flush_email_digest() {
     $queue = get_option( 'bap_email_digest_queue', [] );
     if ( empty( $queue ) || ! is_array( $queue ) ) {
@@ -191,9 +116,10 @@ function bap_flush_email_digest() {
     $site    = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
     $total   = count( $queue );
     $subject = '[' . $site . '] Resumen de seguridad: ' . $total . ' intentos bloqueados';
-    $body    = bap_build_grouped_digest_body( $queue, false );
+    $body    = bap_render_html_digest_email( $queue, false );
+    $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
 
-    wp_mail( bap_get_notify_recipients(), $subject, $body );
+    wp_mail( bap_get_notify_recipients(), $subject, $body, $headers );
 }
 
 function bap_send_test_digest_email() {
@@ -202,7 +128,7 @@ function bap_send_test_digest_email() {
     if ( empty( $queue ) || ! is_array( $queue ) ) {
         global $wpdb;
         $table = function_exists( 'bap_get_logs_table_name' ) ? bap_get_logs_table_name() : $wpdb->prefix . 'bap_blocked_logs';
-        $rows  = $wpdb->get_results( "SELECT created_at, ip_address, country_code, asn, reason FROM `{$table}` ORDER BY id DESC LIMIT 30", ARRAY_A );
+        $rows  = $wpdb->get_results( "SELECT created_at, ip_address, country_code, asn, reason FROM `{$table}` ORDER BY id DESC LIMIT 50", ARRAY_A );
 
         $queue = [];
         if ( ! empty( $rows ) ) {
@@ -229,7 +155,8 @@ function bap_send_test_digest_email() {
 
     $site    = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
     $subject = '[' . $site . '] Prueba de resumen agrupado (' . count( $queue ) . ' eventos)';
-    $body    = bap_build_grouped_digest_body( $queue, true );
+    $body    = bap_render_html_digest_email( $queue, true );
+    $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
 
-    return wp_mail( bap_get_notify_recipients(), $subject, $body );
+    return wp_mail( bap_get_notify_recipients(), $subject, $body, $headers );
 }
