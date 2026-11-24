@@ -10,10 +10,10 @@ function bap_get_custom_dbs() {
 
 function bap_get_custom_db_file_path( $id ) {
     $safe = sanitize_key( $id );
-    return bap_get_geo_storage_path( 'custom-db-' . $safe . '.json' );
+    return bap_get_geo_storage_path( 'custom-db-' . $safe . '.dat' );
 }
 
-function bap_parse_custom_db_from_file( $file_path ) {
+function bap_parse_custom_db_to_stream( $file_path, $out_path ) {
     if ( ! is_readable( $file_path ) ) {
         return new WP_Error( 'unreadable_file', 'No se pudo leer el archivo temporal de la base de datos.' );
     }
@@ -23,7 +23,13 @@ function bap_parse_custom_db_from_file( $file_path ) {
         return new WP_Error( 'open_fail', 'No se pudo abrir el archivo temporal.' );
     }
 
-    // Detectar si es JSON mirando el primer carácter no vacío
+    $tmp_raw = wp_tempnam( 'bap_cdb_lines' );
+    $out_fh  = @fopen( $tmp_raw, 'wb' );
+    if ( ! $out_fh ) {
+        fclose( $fh );
+        return new WP_Error( 'write_fail', 'No se pudo crear el archivo temporal de salida.' );
+    }
+
     $first_char = '';
     while ( ! feof( $fh ) ) {
         $chunk = fread( $fh, 256 );
@@ -35,8 +41,7 @@ function bap_parse_custom_db_from_file( $file_path ) {
     }
     rewind( $fh );
 
-    $exact     = [];
-    $cidrs_map = [];
+    $count = 0;
 
     if ( '{' === $first_char || '[' === $first_char ) {
         $raw  = stream_get_contents( $fh );
@@ -57,14 +62,12 @@ function bap_parse_custom_db_from_file( $file_path ) {
                 }
                 $cand = trim( (string) $cand );
                 if ( '' !== $cand && bap_is_valid_ip_or_cidr( $cand ) ) {
-                    if ( false !== strpos( $cand, '/' ) ) {
-                        $cidrs_map[ $cand ] = 1;
-                    } else {
-                        $exact[ $cand ] = 1;
-                    }
+                    fwrite( $out_fh, $cand . "\n" );
+                    $count++;
                 }
             }
         }
+        unset( $json );
     } else {
         while ( ( $line = fgets( $fh ) ) !== false ) {
             $line = trim( $line );
@@ -73,54 +76,49 @@ function bap_parse_custom_db_from_file( $file_path ) {
             }
             $token = trim( strtok( $line, " \t,;" ) );
             if ( '' !== $token && bap_is_valid_ip_or_cidr( $token ) ) {
-                if ( false !== strpos( $token, '/' ) ) {
-                    $cidrs_map[ $token ] = 1;
-                } else {
-                    $exact[ $token ] = 1;
-                }
+                fwrite( $out_fh, $token . "\n" );
+                $count++;
             }
         }
         fclose( $fh );
     }
 
-    $cidrs = array_keys( $cidrs_map );
-    unset( $cidrs_map );
+    fclose( $out_fh );
 
-    $total = count( $exact ) + count( $cidrs );
-    if ( 0 === $total ) {
+    if ( 0 === $count ) {
+        @unlink( $tmp_raw );
         return new WP_Error( 'empty_custom_db', 'No se encontraron direcciones IP ni rangos CIDR válidos en la fuente.' );
     }
 
-    return [
-        'exact' => $exact,
-        'cidrs' => $cidrs,
-        'count' => $total,
-    ];
+    if ( ! @rename( $tmp_raw, $out_path ) ) {
+        @copy( $tmp_raw, $out_path );
+        @unlink( $tmp_raw );
+    }
+
+    return $count;
 }
 
 function bap_install_custom_db_from_file( $id, $file_path ) {
-    $parsed = bap_parse_custom_db_from_file( $file_path );
-    if ( is_wp_error( $parsed ) ) {
-        return $parsed;
+    $path  = bap_get_custom_db_file_path( $id );
+    $count = bap_parse_custom_db_to_stream( $file_path, $path );
+    if ( is_wp_error( $count ) ) {
+        return $count;
     }
 
-    $path    = bap_get_custom_db_file_path( $id );
-    $encoded = wp_json_encode( [ 'exact' => $parsed['exact'], 'cidrs' => $parsed['cidrs'] ] );
-    unset( $parsed['exact'], $parsed['cidrs'] );
-
-    if ( false === $encoded || false === file_put_contents( $path, $encoded ) ) {
-        return new WP_Error( 'write_fail', 'No se pudo guardar el archivo de la base de datos personalizada.' );
+    // Eliminar formato .json antiguo si existía
+    $old_json = preg_replace( '/\.dat$/', '.json', $path );
+    if ( $old_json !== $path && file_exists( $old_json ) ) {
+        @unlink( $old_json );
     }
-    unset( $encoded );
 
     $dbs = bap_get_custom_dbs();
     if ( isset( $dbs[ $id ] ) ) {
-        $dbs[ $id ]['count']        = $parsed['count'];
+        $dbs[ $id ]['count']        = $count;
         $dbs[ $id ]['last_updated'] = current_time( 'mysql' );
         update_option( 'bap_custom_dbs', $dbs );
     }
 
-    return $parsed['count'];
+    return $count;
 }
 
 function bap_install_custom_db_from_content( $id, $content ) {
@@ -184,6 +182,66 @@ function bap_update_all_custom_dbs() {
     return $errs;
 }
 
+function bap_stream_file_matches_ip( $file_path, $ip ) {
+    $fh = @fopen( $file_path, 'rb' );
+    if ( ! $fh ) {
+        return false;
+    }
+
+    $ip_bin = @inet_pton( $ip );
+    if ( false === $ip_bin ) {
+        fclose( $fh );
+        return false;
+    }
+    $ip_len  = strlen( $ip_bin );
+    $matched = false;
+
+    while ( ( $line = fgets( $fh ) ) !== false ) {
+        $entry = trim( $line );
+        if ( '' === $entry ) {
+            continue;
+        }
+        if ( false === strpos( $entry, '/' ) ) {
+            if ( $entry === $ip ) {
+                $matched = true;
+                break;
+            }
+            continue;
+        }
+
+        list( $subnet, $mask ) = explode( '/', $entry, 2 );
+        $sub_bin = @inet_pton( $subnet );
+        if ( false === $sub_bin || strlen( $sub_bin ) !== $ip_len ) {
+            continue;
+        }
+
+        $bits = (int) $mask;
+        if ( 0 === $bits ) {
+            $matched = true;
+            break;
+        }
+
+        $bytes = intdiv( $bits, 8 );
+        $rem   = $bits % 8;
+
+        if ( $bytes > 0 && substr( $ip_bin, 0, $bytes ) !== substr( $sub_bin, 0, $bytes ) ) {
+            continue;
+        }
+        if ( 0 === $rem ) {
+            $matched = true;
+            break;
+        }
+        $byte_mask = ( 0xFF << ( 8 - $rem ) ) & 0xFF;
+        if ( ( ord( $ip_bin[ $bytes ] ) & $byte_mask ) === ( ord( $sub_bin[ $bytes ] ) & $byte_mask ) ) {
+            $matched = true;
+            break;
+        }
+    }
+
+    fclose( $fh );
+    return $matched;
+}
+
 function bap_match_ip_in_custom_dbs( $ip, $context = 'admin' ) {
     if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
         return null;
@@ -194,8 +252,6 @@ function bap_match_ip_in_custom_dbs( $ip, $context = 'admin' ) {
         return null;
     }
 
-    static $loaded = [];
-
     foreach ( $dbs as $id => $meta ) {
         if ( '1' !== (string) ( $meta['enabled'] ?? '1' ) ) {
             continue;
@@ -205,17 +261,12 @@ function bap_match_ip_in_custom_dbs( $ip, $context = 'admin' ) {
             continue;
         }
 
-        if ( ! isset( $loaded[ $id ] ) ) {
-            $file          = bap_get_custom_db_file_path( $id );
-            $raw           = file_exists( $file ) ? json_decode( (string) file_get_contents( $file ), true ) : [];
-            $loaded[ $id ] = is_array( $raw ) ? $raw : [];
+        $file = bap_get_custom_db_file_path( $id );
+        if ( ! file_exists( $file ) ) {
+            continue;
         }
 
-        $data  = $loaded[ $id ];
-        $exact = $data['exact'] ?? [];
-        $cidrs = $data['cidrs'] ?? [];
-
-        if ( isset( $exact[ $ip ] ) || ( ! empty( $cidrs ) && bap_ip_in_list( $ip, $cidrs ) ) ) {
+        if ( bap_stream_file_matches_ip( $file, $ip ) ) {
             return [
                 'id'     => $id,
                 'name'   => (string) ( $meta['name'] ?? $id ),
