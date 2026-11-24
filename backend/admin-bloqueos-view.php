@@ -121,7 +121,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                 </tr>
                 <tr>
                     <th>Auto-bloquear riesgo AbuseIPDB &ge;</th>
-                    <td><input type="number" min="0" max="100" name="bap_abuseipdb_min_risk" value="<?php echo (int) get_option( 'bap_abuseipdb_min_risk', 90 ); ?>" class="small-text" /> % <span class="description">(<code>0</code> para desactivar)</span></td>
+                    <td><input type="number" min="0" max="100" name="bap_abuseipdb_min_risk" value="<?php echo (int) get_option( 'bap_abuseipdb_min_risk', 90 ); ?>" class="small-text" /> % <span class="description">(0 para desactivar)</span></td>
                 </tr>
                 <tr>
                     <th>Bloqueo automático tras intentos</th>
@@ -230,35 +230,39 @@ if ( ! defined( 'ABSPATH' ) ) {
                     </td>
                 </tr>
                 <tr>
-                    <th><label for="bap_email_template">Plantilla del email de resumen</label></th>
+                    <th>Destinatarios de emails</th>
                     <td>
-                        <?php $email_tpl = get_option( 'bap_email_template', 'full' ); ?>
-                        <select id="bap_email_template" name="bap_email_template">
-                            <option value="full" <?php selected( $email_tpl, 'full' ); ?>>Completa (Tarjetas + Barras Países + Todos los eventos)</option>
-                            <option value="top10" <?php selected( $email_tpl, 'top10' ); ?>>Top 10 (Tarjetas + Barras Países + Top 10 bloqueos)</option>
-                            <option value="top5" <?php selected( $email_tpl, 'top5' ); ?>>Top 5 (Tarjetas + Barras Países + Top 5 bloqueos)</option>
-                            <option value="text" <?php selected( $email_tpl, 'text' ); ?>>Solo texto plano (Agrupado)</option>
-                            <?php $custom_tpls = function_exists( 'bap_get_custom_email_templates' ) ? bap_get_custom_email_templates() : []; ?>
-                            <?php if ( ! empty( $custom_tpls ) ) : ?>
-                                <optgroup label="Mis plantillas personalizadas">
-                                    <?php foreach ( $custom_tpls as $cid => $ctpl ) : ?>
-                                        <option value="<?php echo esc_attr( 'custom_' . $cid ); ?>" <?php selected( $email_tpl, 'custom_' . $cid ); ?>><?php echo esc_html( $ctpl['name'] ); ?></option>
-                                    <?php endforeach; ?>
-                                </optgroup>
-                            <?php endif; ?>
-                        </select>
-                        <p class="description">Elige el formato y nivel de detalle de los correos de resumen programados (recuerda guardar antes de enviar prueba).</p>
+                        <input type="text" name="bap_notify_emails" value="<?php echo esc_attr( get_option( 'bap_notify_emails', '' ) ); ?>" class="regular-text" placeholder="<?php echo esc_attr( get_option( 'admin_email' ) ); ?>" />
+                        <p class="description">Uno o varios emails separados por comas (recuerda guardar primero si cambias el destinatario).</p>
                     </td>
                 </tr>
                 <tr>
-                    <th>Destinatarios de emails</th>
+                    <th><label for="bap_email_template">Plantilla del email de resumen</label></th>
                     <td>
-                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                            <input type="text" name="bap_notify_emails" value="<?php echo esc_attr( get_option( 'bap_notify_emails', '' ) ); ?>" class="regular-text" placeholder="<?php echo esc_attr( get_option( 'admin_email' ) ); ?>" />
-                            <button type="submit" form="bap_test_email_form" name="bap_send_test_email" value="1" class="button button-secondary">Enviar email de prueba</button>
-                            <button type="submit" form="bap_test_email_form" name="bap_send_test_digest" value="1" class="button button-secondary">Enviar email de prueba de resumen</button>
+                        <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+                            <?php $email_tpl = get_option( 'bap_email_template', 'full' ); ?>
+                            <select id="bap_email_template" name="bap_email_template" style="min-width:290px;">
+                                <optgroup label="Plantillas predefinidas">
+                                    <option value="full" <?php selected( $email_tpl, 'full' ); ?>>Completa (Tarjetas + Barras Países + Todos los eventos)</option>
+                                    <option value="top10" <?php selected( $email_tpl, 'top10' ); ?>>Top 10 (Tarjetas + Barras Países + Top 10 bloqueos)</option>
+                                    <option value="top5" <?php selected( $email_tpl, 'top5' ); ?>>Top 5 (Tarjetas + Barras Países + Top 5 bloqueos)</option>
+                                    <option value="text" <?php selected( $email_tpl, 'text' ); ?>>Solo texto plano (Agrupado)</option>
+                                </optgroup>
+                                <?php $custom_tpls = function_exists( 'bap_get_custom_email_templates' ) ? bap_get_custom_email_templates() : []; ?>
+                                <?php if ( ! empty( $custom_tpls ) ) : ?>
+                                    <optgroup label="Mis plantillas personalizadas">
+                                        <?php foreach ( $custom_tpls as $cid => $ctpl ) : ?>
+                                            <option value="<?php echo esc_attr( 'custom_' . $cid ); ?>" <?php selected( $email_tpl, 'custom_' . $cid ); ?>><?php echo esc_html( $ctpl['name'] ); ?></option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
+                                <?php endif; ?>
+                            </select>
+                            <div style="display:flex;flex-direction:column;gap:6px;">
+                                <button type="submit" form="bap_test_email_form" name="bap_send_test_email" value="1" class="button button-secondary">Enviar email de prueba</button>
+                                <button type="submit" form="bap_test_email_form" name="bap_send_test_digest" value="1" class="button button-secondary">Enviar email de prueba de resumen</button>
+                            </div>
                         </div>
-                        <p class="description">Uno o varios emails separados por comas (recuerda guardar primero si cambias el destinatario).</p>
+                        <p class="description">Elige la plantilla para los resúmenes programados o crea la tuya en la pestaña <strong>5. Plantillas Email</strong> (recuerda guardar antes de enviar prueba).</p>
                     </td>
                 </tr>
                 <tr>

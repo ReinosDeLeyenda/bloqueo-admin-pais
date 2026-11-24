@@ -10,8 +10,8 @@ $base_url = admin_url( 'admin.php?page=bap-email-templates' );
     <?php echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
     <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
-        <div class="card" style="flex:2;min-width:420px;max-width:680px;padding:18px 24px;margin:0;">
-            <h2 style="margin-top:0;"><?php echo '' !== $editing_id ? 'Editar plantilla personalizada' : 'Crear nueva plantilla de email'; ?></h2>
+        <div class="card" style="flex:2;min-width:420px;max-width:660px;padding:18px 24px;margin:0;">
+            <h2 style="margin-top:0;"><?php echo '' !== $editing_id ? 'Editar plantilla personalizada' : 'Crear plantilla modular personalizada'; ?></h2>
             <p class="description">Activa los módulos que quieras incluir en el resumen y ordénalos con los botones <strong>Subir / Bajar</strong>.</p>
 
             <form method="post" action="<?php echo esc_url( '' !== $editing_id ? add_query_arg( 'edit_tpl', $editing_id, $base_url ) : $base_url ); ?>">
@@ -38,7 +38,7 @@ $base_url = admin_url( 'admin.php?page=bap-email-templates' );
                         <th><label for="bap_tpl_limit">Límite de filas en Tabla</label></th>
                         <td>
                             <input type="number" id="bap_tpl_limit" name="bap_tpl_limit" value="<?php echo (int) $current['table_limit']; ?>" min="0" max="200" class="small-text" />
-                            <span class="description">(<code>0</code> = mostrar todos los eventos agrupados)</span>
+                            <span class="description">(0 = mostrar todos los eventos agrupados)</span>
                         </td>
                     </tr>
                 </table>
@@ -72,18 +72,39 @@ $base_url = admin_url( 'admin.php?page=bap-email-templates' );
             </form>
         </div>
 
-        <div style="flex:1;min-width:290px;max-width:400px;display:flex;flex-direction:column;gap:16px;">
+        <div style="flex:1;min-width:300px;max-width:420px;display:flex;flex-direction:column;gap:16px;">
             <div class="card" style="padding:16px 20px;margin:0;">
-                <h3 style="margin-top:0;">Mis plantillas guardadas</h3>
+                <h3 style="margin-top:0;">Plantillas predefinidas (Base)</h3>
+                <ul style="margin:0;padding:0;list-style:none;">
+                    <?php foreach ( $presets as $pkey => $pdata ) : ?>
+                        <li style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #dcdcde;">
+                            <div>
+                                <strong><?php echo esc_html( $pdata['name'] ); ?></strong>
+                                <?php if ( $active_tpl === $pkey ) : ?>
+                                    <span style="background:#00a32a;color:#fff;font-size:10px;padding:1px 6px;border-radius:3px;margin-left:4px;">ACTIVA</span>
+                                <?php endif; ?>
+                                <br><small style="color:#646970;"><?php echo esc_html( $pdata['desc'] ); ?></small>
+                            </div>
+                            <a href="<?php echo esc_url( add_query_arg( 'clone_preset', $pkey, $base_url ) ); ?>" class="button button-small">Clonar</a>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+
+            <div class="card" style="padding:16px 20px;margin:0;">
+                <h3 style="margin-top:0;">Mis plantillas personalizadas</h3>
                 <?php if ( empty( $customs ) ) : ?>
-                    <p class="description">Aún no has creado ninguna plantilla personalizada.</p>
+                    <p class="description">Aún no has creado ninguna. Usa el editor de la izquierda o pulsa <strong>Clonar</strong> sobre una predefinida.</p>
                 <?php else : ?>
                     <ul style="margin:0;padding:0;list-style:none;">
                         <?php foreach ( $customs as $cid => $ctpl ) : ?>
-                            <li style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #dcdcde;">
+                            <li style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #dcdcde;">
                                 <div>
-                                    <strong><?php echo esc_html( $ctpl['name'] ); ?></strong><br>
-                                    <small style="color:#646970;"><?php echo esc_html( strtoupper( $ctpl['format'] ) . ' · ' . count( $ctpl['modules'] ) . ' módulos' ); ?></small>
+                                    <strong><?php echo esc_html( $ctpl['name'] ); ?></strong>
+                                    <?php if ( $active_tpl === 'custom_' . $cid ) : ?>
+                                        <span style="background:#00a32a;color:#fff;font-size:10px;padding:1px 6px;border-radius:3px;margin-left:4px;">ACTIVA</span>
+                                    <?php endif; ?>
+                                    <br><small style="color:#646970;"><?php echo esc_html( strtoupper( $ctpl['format'] ) . ' · ' . count( $ctpl['modules'] ) . ' módulos' ); ?></small>
                                 </div>
                                 <a href="<?php echo esc_url( add_query_arg( 'edit_tpl', $cid, $base_url ) ); ?>" class="button button-small">Editar</a>
                             </li>
@@ -102,15 +123,56 @@ $base_url = admin_url( 'admin.php?page=bap-email-templates' );
             </div>
         </div>
     </div>
+    <div class="card" style="max-width:1100px;margin-top:22px;padding:18px 24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h2 style="margin:0;">Vista previa en tiempo real</h2>
+            <span id="bap-preview-status" style="font-size:12px;color:#646970;">Actualizada automáticamente</span>
+        </div>
+        <iframe id="bap-email-preview-frame" style="width:100%;height:620px;border:1px solid #c3c4c7;border-radius:6px;background:#0a0a0a;"></iframe>
+    </div>
 </div>
 <script>
 (function(){
     const list = document.getElementById('bap-tpl-modules-list');
     const orderInp = document.getElementById('bap_module_order');
+    const frame = document.getElementById('bap-email-preview-frame');
+    const statusEl = document.getElementById('bap-preview-status');
+    const nonce = '<?php echo esc_js( wp_create_nonce( 'bap_tpl_preview_nonce' ) ); ?>';
     if (!list || !orderInp) return;
+
+    let timer = null;
+    function refreshPreview() {
+        if (!frame) return;
+        if (statusEl) statusEl.textContent = 'Actualizando vista previa...';
+        const fd = new FormData();
+        fd.append('action', 'bap_preview_email_template');
+        fd.append('nonce', nonce);
+        fd.append('name', document.getElementById('bap_tpl_name')?.value || 'Vista previa');
+        fd.append('format', document.getElementById('bap_tpl_format')?.value || 'html_dark');
+        fd.append('limit', document.getElementById('bap_tpl_limit')?.value || '10');
+        fd.append('order', orderInp.value);
+        list.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => fd.append('modules[]', cb.value));
+
+        fetch(ajaxurl, { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(res => {
+                if (res && res.success && res.data) {
+                    frame.srcdoc = res.data.html;
+                    if (statusEl) statusEl.textContent = 'Vista previa actualizada';
+                }
+            });
+    }
+
+    function schedulePreview() {
+        clearTimeout(timer);
+        timer = setTimeout(refreshPreview, 250);
+    }
+
     function sync() {
         orderInp.value = Array.from(list.querySelectorAll('.bap-mod-item')).map(el => el.dataset.key).join(',');
+        schedulePreview();
     }
+
     list.addEventListener('click', function(e) {
         const up = e.target.closest('.bap-mod-up');
         const down = e.target.closest('.bap-mod-down');
@@ -124,5 +186,13 @@ $base_url = admin_url( 'admin.php?page=bap-email-templates' );
             sync();
         }
     });
+
+    list.addEventListener('change', schedulePreview);
+    ['bap_tpl_name', 'bap_tpl_format', 'bap_tpl_limit'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', schedulePreview);
+    });
+
+    refreshPreview();
 })();
 </script>

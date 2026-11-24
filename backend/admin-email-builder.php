@@ -13,6 +13,39 @@ function bap_get_available_email_modules() {
     ];
 }
 
+function bap_get_builtin_email_presets() {
+    return [
+        'full'  => [
+            'name'        => 'Completa (Por defecto)',
+            'desc'        => 'Tarjetas + Barras de Países + Todos los eventos agrupados',
+            'format'      => 'html_dark',
+            'table_limit' => 0,
+            'modules'     => [ 'cards', 'countries_bars', 'events_table' ],
+        ],
+        'top10' => [
+            'name'        => 'Top 10',
+            'desc'        => 'Tarjetas + Barras de Países + Top 10 bloqueos',
+            'format'      => 'html_dark',
+            'table_limit' => 10,
+            'modules'     => [ 'cards', 'countries_bars', 'events_table' ],
+        ],
+        'top5'  => [
+            'name'        => 'Top 5',
+            'desc'        => 'Tarjetas + Barras de Países + Top 5 bloqueos',
+            'format'      => 'html_dark',
+            'table_limit' => 5,
+            'modules'     => [ 'cards', 'countries_bars', 'events_table' ],
+        ],
+        'text'  => [
+            'name'        => 'Solo texto plano',
+            'desc'        => 'Resumen agrupado ligero sin HTML',
+            'format'      => 'text',
+            'table_limit' => 0,
+            'modules'     => [ 'cards', 'events_table' ],
+        ],
+    ];
+}
+
 function bap_sanitize_custom_template_data( array $raw ) {
     $all_mods = array_keys( bap_get_available_email_modules() );
     $modules  = [];
@@ -96,8 +129,9 @@ function bap_handle_email_builder_actions( &$editing_id ) {
             'modules'     => $ordered,
         ] );
         update_option( 'bap_custom_email_templates', $customs );
+        update_option( 'bap_email_template', 'custom_' . $id );
         $editing_id = $id;
-        return '<div class="notice notice-success is-dismissible"><p><strong>¡Plantilla guardada!</strong> Ya puedes seleccionarla en la pestaña <strong>2. Bloqueos Admin</strong>.</p></div>';
+        return '<div class="notice notice-success is-dismissible"><p><strong>¡Plantilla guardada y establecida como activa!</strong></p></div>';
     }
 
     if ( isset( $_POST['bap_delete_custom_tpl'] ) && check_admin_referer( 'bap_tpl_builder_action' ) ) {
@@ -130,19 +164,91 @@ function bap_handle_email_builder_actions( &$editing_id ) {
 
 function bap_render_email_templates_page() {
     $editing_id = isset( $_GET['edit_tpl'] ) ? sanitize_key( $_GET['edit_tpl'] ) : '';
+    $clone_key  = isset( $_GET['clone_preset'] ) ? sanitize_key( $_GET['clone_preset'] ) : '';
     $notice     = bap_handle_email_builder_actions( $editing_id );
     $customs    = bap_get_custom_email_templates();
+    $presets    = bap_get_builtin_email_presets();
     $all_mods   = bap_get_available_email_modules();
+    $active_tpl = (string) get_option( 'bap_email_template', 'full' );
 
-    $current = ( '' !== $editing_id && isset( $customs[ $editing_id ] ) )
-        ? $customs[ $editing_id ]
-        : [
+    if ( '' !== $editing_id && isset( $customs[ $editing_id ] ) ) {
+        $current = $customs[ $editing_id ];
+    } elseif ( '' !== $clone_key && isset( $presets[ $clone_key ] ) ) {
+        $current         = $presets[ $clone_key ];
+        $current['name'] = 'Copia de ' . $presets[ $clone_key ]['name'];
+    } else {
+        $current = [
             'name'        => '',
             'format'      => 'html_dark',
             'table_limit' => 10,
             'modules'     => [ 'cards', 'countries_bars', 'events_table' ],
         ];
+    }
 
     $ordered_keys = array_values( array_unique( array_merge( $current['modules'], array_keys( $all_mods ) ) ) );
     require plugin_dir_path( __FILE__ ) . 'admin-email-builder-view.php';
 }
+
+add_action( 'wp_ajax_bap_preview_email_template', function() {
+    if ( ! current_user_can( 'manage_options' ) || ! check_ajax_referer( 'bap_tpl_preview_nonce', 'nonce', false ) ) {
+        wp_send_json_error( 'No autorizado' );
+    }
+
+    $order_raw = explode( ',', sanitize_text_field( wp_unslash( $_POST['order'] ?? '' ) ) );
+    $enabled   = (array) ( $_POST['modules'] ?? [] );
+    $ordered   = [];
+    foreach ( $order_raw as $k ) {
+        $k = trim( $k );
+        if ( in_array( $k, $enabled, true ) ) {
+            $ordered[] = $k;
+        }
+    }
+
+    $tpl_cfg = bap_sanitize_custom_template_data( [
+        'name'        => wp_unslash( $_POST['name'] ?? 'Vista previa' ),
+        'format'      => wp_unslash( $_POST['format'] ?? 'html_dark' ),
+        'table_limit' => (int) ( $_POST['limit'] ?? 10 ),
+        'modules'     => $ordered,
+    ] );
+
+    global $wpdb;
+    $table = function_exists( 'bap_get_logs_table_name' ) ? bap_get_logs_table_name() : $wpdb->prefix . 'bap_blocked_logs';
+    $rows  = $wpdb->get_results( "SELECT created_at, ip_address, country_code, asn, reason, request_uri FROM `{$table}` ORDER BY id DESC LIMIT 40", ARRAY_A );
+
+    $queue = [];
+    if ( ! empty( $rows ) ) {
+        foreach ( array_reverse( $rows ) as $r ) {
+            $risk    = function_exists( 'bap_get_abuseipdb_score' ) ? bap_get_abuseipdb_score( $r['ip_address'] ) : null;
+            $queue[] = [
+                'time'    => $r['created_at'],
+                'ip'      => $r['ip_address'],
+                'country' => $r['country_code'] ?: 'DESCONOCIDO',
+                'asn'     => $r['asn'] ?: 'N/D',
+                'risk'    => ( null === $risk ) ? 'N/D' : $risk . '%',
+                'reason'  => $r['reason'],
+                'uri'     => $r['request_uri'] ?: '/',
+            ];
+        }
+    } else {
+        $now   = current_time( 'mysql' );
+        $queue = [
+            [ 'time' => $now, 'ip' => '34.140.28.27', 'country' => 'BE', 'asn' => 'AS396982 — Google LLC', 'risk' => '95%', 'reason' => 'Web Global: IP/Rango en lista negra', 'uri' => '/wp-login.php' ],
+            [ 'time' => $now, 'ip' => '34.140.28.27', 'country' => 'BE', 'asn' => 'AS396982 — Google LLC', 'risk' => '95%', 'reason' => 'Web Global: IP/Rango en lista negra', 'uri' => '/wp-login.php' ],
+            [ 'time' => $now, 'ip' => '185.220.101.4', 'country' => 'DE', 'asn' => 'AS205100 — F3 Netze e.V.', 'risk' => '100%', 'reason' => 'Nodo de salida Tor', 'uri' => '/xmlrpc.php' ],
+        ];
+    }
+
+    require_once dirname( __DIR__ ) . '/common/email-templates/template-custom.php';
+    $data      = bap_prepare_digest_stats( $queue );
+    $site_name = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+    $stats_url = admin_url( 'admin.php?page=bap-admin-estadisticas' );
+
+    if ( 'text' === $tpl_cfg['format'] ) {
+        $text = bap_render_custom_template_text( $tpl_cfg, $data, $site_name, true );
+        $html = '<pre style="margin:0;padding:18px;background:#111;color:#e5e7eb;font-family:monospace;font-size:12px;white-space:pre-wrap;">' . esc_html( $text ) . '</pre>';
+    } else {
+        $html = bap_render_custom_template_html( $tpl_cfg, $data, $site_name, $stats_url, true );
+    }
+
+    wp_send_json_success( [ 'html' => $html ] );
+} );
