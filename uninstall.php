@@ -7,7 +7,7 @@ $raw_emails = (string) get_option( 'bap_notify_emails', '' );
 $recipients = [];
 
 if ( '' !== trim( $raw_emails ) ) {
-    foreach ( preg_split( '/[\r\n,]+/', $raw_emails ) as $email ) {
+    foreach ( preg_split( '/[\r\n,;]+/', $raw_emails ) as $email ) {
         $clean = sanitize_email( trim( $email ) );
         if ( is_email( $clean ) ) {
             $recipients[] = $clean;
@@ -23,11 +23,33 @@ if ( empty( $recipients ) ) {
 }
 
 if ( ! empty( $recipients ) ) {
+    $ip_candidates = [];
+    if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
+        $ip_candidates[] = trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) );
+    }
+    if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+        $forwarded       = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
+        $ip_candidates[] = trim( reset( $forwarded ) );
+    }
+    if ( ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
+        $ip_candidates[] = trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) ) );
+    }
+    if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
+        $ip_candidates[] = trim( sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) );
+    }
+
+    $ip = 'Desconocida';
+    foreach ( $ip_candidates as $cand ) {
+        if ( filter_var( $cand, FILTER_VALIDATE_IP ) ) {
+            $ip = $cand;
+            break;
+        }
+    }
+
     $site_name = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
     $site_url  = home_url();
     $user      = wp_get_current_user();
     $user_info = ( $user && $user->exists() ) ? $user->user_login . ' (' . $user->user_email . ')' : 'Desconocido / WP-CLI';
-    $ip        = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'Desconocida';
 
     $subject = sprintf( '[%s] Alerta de seguridad: Plugin Bloqueo Admin desinstalado', $site_name );
     $body    = "Hola,\n\n"
@@ -43,5 +65,27 @@ if ( ! empty( $recipients ) ) {
 }
 
 global $wpdb;
-$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}bap_blocked_logs" );
-delete_option( 'bap_logs_table_ver' );
+
+// 1. Eliminar tabla local de registros
+$wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}bap_blocked_logs`" );
+
+// 2. Eliminar todas las opciones y transients del plugin
+$wpdb->query( "DELETE FROM `{$wpdb->options}` WHERE option_name LIKE 'bap\_%' OR option_name LIKE '\_transient\_bap\_%' OR option_name LIKE '\_transient\_timeout\_bap\_%'" );
+
+// 3. Eliminar metadatos de usuario (2FA, dispositivos de confianza, avisos HIBP)
+$wpdb->query( "DELETE FROM `{$wpdb->usermeta}` WHERE meta_key LIKE '\_bap\_%'" );
+
+// 4. Eliminar carpeta de bases de datos locales en uploads/bap-geo
+$upload  = wp_upload_dir();
+$geo_dir = trailingslashit( $upload['basedir'] ) . 'bap-geo';
+if ( is_dir( $geo_dir ) ) {
+    $files = glob( $geo_dir . '/{,.}*', GLOB_BRACE );
+    if ( is_array( $files ) ) {
+        foreach ( $files as $f ) {
+            if ( is_file( $f ) ) {
+                @unlink( $f );
+            }
+        }
+    }
+    @rmdir( $geo_dir );
+}

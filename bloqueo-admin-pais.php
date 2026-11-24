@@ -3,7 +3,7 @@
  * Plugin Name: Bloqueo Admin por País e IP
  * Plugin URI: https://github.com
  * Description: Bloquea wp-admin, wp-login.php y el frontend por país, ASN, AbuseIPDB, Tor, FireHOL e IP usando bases de datos locales.
- * Version: 1.0.9
+ * Version: 1.1.0
  * Author: ReinosDeLeyenda
  * License: GPLv2 or later
  */
@@ -16,6 +16,7 @@ $bap_dir   = plugin_dir_path( __FILE__ );
 $bap_files = [
     // Common
     'common/cidr-helper.php',
+    'common/external-db-manager.php',
     'common/logs-db-manager.php',
     'common/htaccess-manager.php',
     'common/mmdb-reader.php',
@@ -24,6 +25,7 @@ $bap_files = [
     'common/threat-lists-manager.php',
     'common/notificaciones-mail.php',
     'common/github-updater.php',
+    'common/security-evaluator.php',
     // Frontend
     'frontend/seo-bots-helper.php',
     'frontend/block-page-403.php',
@@ -36,9 +38,14 @@ $bap_files = [
     'backend/web-bloqueos.php',
     'backend/admin-estadisticas.php',
     'backend/ip-simulator.php',
+    'backend/ip2location-importer.php',
     'backend/logs-exporter.php',
+    'backend/config-exporter.php',
+    'backend/db-settings.php',
     'backend/hibp-checker.php',
+    'backend/two-factor-crypto.php',
     'backend/two-factor-auth.php',
+    'backend/two-factor-profile.php',
 ];
 
 foreach ( $bap_files as $bap_file ) {
@@ -50,17 +57,29 @@ foreach ( $bap_files as $bap_file ) {
 register_activation_hook( __FILE__, 'bap_maybe_create_logs_table' );
 
 function bap_get_user_ip() {
+    $candidates = [];
+
     if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
-        return trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) );
+        $candidates[] = trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) );
     }
     if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-        $ips = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
-        return trim( reset( $ips ) );
+        $ips          = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
+        $candidates[] = trim( reset( $ips ) );
     }
     if ( ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
-        return trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) ) );
+        $candidates[] = trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) ) );
     }
-    return isset( $_SERVER['REMOTE_ADDR'] ) ? trim( sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) ) : '';
+    if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
+        $candidates[] = trim( sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) );
+    }
+
+    foreach ( $candidates as $ip ) {
+        if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+            return $ip;
+        }
+    }
+
+    return '';
 }
 
 function bap_is_server_ip( $ip ) {
@@ -120,6 +139,7 @@ register_deactivation_hook( __FILE__, function() {
 
     wp_clear_scheduled_hook( 'bap_auto_update_dbs_event' );
     wp_clear_scheduled_hook( 'bap_daily_logs_cleanup' );
+    wp_clear_scheduled_hook( 'bap_send_digest_email_event' );
 
     $recipients = function_exists( 'bap_get_notify_recipients' ) ? bap_get_notify_recipients() : [ get_option( 'admin_email' ) ];
     if ( ! empty( $recipients ) ) {

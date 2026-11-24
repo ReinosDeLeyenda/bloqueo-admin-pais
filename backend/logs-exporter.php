@@ -16,18 +16,11 @@ add_action( 'admin_init', function() {
     check_admin_referer( 'bap_logs_action' );
 
     global $wpdb;
-    $table = bap_get_logs_table_name();
-
-    while ( ob_get_level() > 0 ) {
-        ob_end_clean();
-    }
-
+    $table    = bap_get_logs_table_name();
     $prefix   = $is_asn ? 'resumen-asn-' : 'ataques-bloqueados-';
     $filename = $prefix . wp_date( 'Y-m-d-His' ) . '.csv';
 
-    nocache_headers();
-    header( 'Content-Type: text/csv; charset=utf-8' );
-    header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+    bap_send_download_headers( $filename, 'text/csv' );
 
     $out = fopen( 'php://output', 'w' );
     fwrite( $out, "\xEF\xBB\xBF" );
@@ -42,7 +35,7 @@ add_action( 'admin_init', function() {
                 COUNT(DISTINCT ip_address) AS unique_ips,
                 GROUP_CONCAT(DISTINCT country_code ORDER BY country_code SEPARATOR ', ') AS countries,
                 MAX(created_at) AS last_hit
-             FROM {$table}
+             FROM `{$table}`
              GROUP BY asn_label
              ORDER BY total_hits DESC",
             ARRAY_A
@@ -75,7 +68,7 @@ add_action( 'admin_init', function() {
         $rows = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT id, created_at, ip_address, country_code, asn, block_type, reason, request_uri
-                 FROM {$table}
+                 FROM `{$table}`
                  ORDER BY id DESC
                  LIMIT %d OFFSET %d",
                 $batch,

@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-function bap_get_mmdb_path() {
+function bap_get_geo_storage_path( $filename ) {
     $upload = wp_upload_dir();
     $dir    = trailingslashit( $upload['basedir'] ) . 'bap-geo';
     if ( ! file_exists( $dir ) ) {
@@ -11,13 +11,56 @@ function bap_get_mmdb_path() {
         @file_put_contents( $dir . '/.htaccess', "Deny from all\n" );
         @file_put_contents( $dir . '/index.php', "<?php // Silence\n" );
     }
-    return $dir . '/dbip-lite.mmdb';
+    return $dir . '/' . ltrim( (string) $filename, '/' );
+}
+
+function bap_save_json_list( $filename, $data, $date_opt, $count_opt = '' ) {
+    $path = bap_get_geo_storage_path( $filename );
+    if ( false === file_put_contents( $path, wp_json_encode( $data ) ) ) {
+        return new WP_Error( 'write_fail', 'No se pudo escribir en ' . esc_html( $filename ) . '. Revisa los permisos de wp-content/uploads/bap-geo/.' );
+    }
+    update_option( $date_opt, current_time( 'mysql' ) );
+    if ( '' !== $count_opt && is_array( $data ) ) {
+        update_option( $count_opt, count( $data ) );
+    }
+    return true;
+}
+
+function bap_decompress_gz_to_file( $src_gz, $dest_file ) {
+    if ( ! function_exists( 'gzopen' ) ) {
+        return new WP_Error( 'no_zlib', 'PHP no tiene activa la extensión zlib (gzopen).' );
+    }
+    $gz  = @gzopen( $src_gz, 'rb' );
+    $out = @fopen( $dest_file, 'wb' );
+    if ( ! $gz || ! $out ) {
+        if ( $gz ) {
+            gzclose( $gz );
+        }
+        return new WP_Error( 'gz_fail', 'Error al descomprimir el archivo .gz.' );
+    }
+    while ( ! gzeof( $gz ) ) {
+        fwrite( $out, gzread( $gz, 65536 ) );
+    }
+    gzclose( $gz );
+    fclose( $out );
+    return true;
+}
+
+function bap_send_download_headers( $filename, $content_type ) {
+    while ( ob_get_level() > 0 ) {
+        ob_end_clean();
+    }
+    nocache_headers();
+    header( 'Content-Type: ' . $content_type . '; charset=utf-8' );
+    header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $filename ) . '"' );
+}
+
+function bap_get_mmdb_path() {
+    return bap_get_geo_storage_path( 'dbip-lite.mmdb' );
 }
 
 function bap_get_asn_mmdb_path() {
-    bap_get_mmdb_path();
-    $upload = wp_upload_dir();
-    return trailingslashit( $upload['basedir'] ) . 'bap-geo/dbip-asn.mmdb';
+    return bap_get_geo_storage_path( 'dbip-asn.mmdb' );
 }
 
 function bap_verify_and_save_mmdb( $tmp_file, $is_gz, $type = 'country' ) {
@@ -25,19 +68,10 @@ function bap_verify_and_save_mmdb( $tmp_file, $is_gz, $type = 'country' ) {
     $tmp  = $dest . '.tmp';
 
     if ( $is_gz ) {
-        if ( ! function_exists( 'gzopen' ) ) {
-            return new WP_Error( 'no_zlib', 'PHP no tiene activa la extensión zlib (gzopen).' );
+        $dec = bap_decompress_gz_to_file( $tmp_file, $tmp );
+        if ( is_wp_error( $dec ) ) {
+            return $dec;
         }
-        $gz  = @gzopen( $tmp_file, 'rb' );
-        $out = @fopen( $tmp, 'wb' );
-        if ( ! $gz || ! $out ) {
-            return new WP_Error( 'gz_fail', 'Error al descomprimir el archivo .gz.' );
-        }
-        while ( ! gzeof( $gz ) ) {
-            fwrite( $out, gzread( $gz, 65536 ) );
-        }
-        gzclose( $gz );
-        fclose( $out );
     } elseif ( ! @copy( $tmp_file, $tmp ) ) {
         return new WP_Error( 'copy_fail', 'No se pudo copiar el archivo.' );
     }
@@ -64,7 +98,10 @@ function bap_verify_and_save_mmdb( $tmp_file, $is_gz, $type = 'country' ) {
         return new WP_Error( 'parse_fail', $e->getMessage() );
     }
 
-    @rename( $tmp, $dest );
+    if ( ! @rename( $tmp, $dest ) ) {
+        @unlink( $tmp );
+        return new WP_Error( 'write_fail', 'No se pudo guardar la base de datos .mmdb en disco.' );
+    }
     $opt_key = ( 'asn' === $type ) ? 'bap_asn_mmdb_last_updated' : 'bap_mmdb_last_updated';
     update_option( $opt_key, current_time( 'mysql' ) );
     return true;
@@ -93,7 +130,7 @@ function bap_download_mmdb_database( $type = 'country' ) {
     $errors = [];
 
     foreach ( $urls as $url ) {
-        $res = wp_remote_get( $url, [ 'timeout' => 30, 'stream' => true, 'filename' => $tmp_gz, 'sslverify' => false ] );
+        $res = wp_remote_get( $url, [ 'timeout' => 30, 'stream' => true, 'filename' => $tmp_gz ] );
         if ( ! is_wp_error( $res ) && 200 === wp_remote_retrieve_response_code( $res ) && file_exists( $tmp_gz ) && filesize( $tmp_gz ) > 100000 ) {
             $ok = bap_verify_and_save_mmdb( $tmp_gz, true, $type );
             @unlink( $tmp_gz );

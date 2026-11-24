@@ -62,12 +62,17 @@ add_filter( 'pre_set_site_transient_update_plugins', function( $transient ) {
     }
 
     $plugin_slug = plugin_basename( dirname( __DIR__ ) . '/bloqueo-admin-pais.php' );
+    $slug        = dirname( $plugin_slug );
+    if ( '.' === $slug ) {
+        $slug = basename( $plugin_slug, '.php' );
+    }
+
     $current_ver = $transient->checked[ $plugin_slug ] ?? '1.0';
     $release     = bap_get_github_latest_release();
 
     if ( $release && ! empty( $release['zip_url'] ) && version_compare( $release['version'], $current_ver, '>' ) ) {
         $transient->response[ $plugin_slug ] = (object) [
-            'slug'        => dirname( $plugin_slug ),
+            'slug'        => $slug,
             'plugin'      => $plugin_slug,
             'new_version' => $release['version'],
             'url'         => $release['html_url'],

@@ -95,7 +95,7 @@ function bap_render_custom_403_page( $title, $message, $ip = '', $country = '', 
         <div class="bap-card">
             <!-- SVG Izquierda: Candado de seguridad -->
             <div class="bap-svg-box" aria-hidden="true">
-                <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://w3.org">
+                <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="50" cy="50" r="46" fill="#1E293B" stroke="#38BDF8" stroke-width="2" stroke-opacity="0.35"/>
                     <path d="M35 44V34C35 25.7157 41.7157 19 50 19C58.2843 19 65 25.7157 65 34V44" stroke="#38BDF8" stroke-width="5" stroke-linecap="round"/>
                     <rect x="27" y="44" width="46" height="36" rx="8" fill="#0F172A" stroke="#38BDF8" stroke-width="3.5"/>
@@ -126,7 +126,7 @@ function bap_render_custom_403_page( $title, $message, $ip = '', $country = '', 
 
             <!-- SVG Derecha: Objetivo / Mira de rastreo -->
             <div class="bap-svg-box" aria-hidden="true">
-                <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://w3.org">
+                <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="50" cy="50" r="46" fill="#1E293B" stroke="#EF4444" stroke-width="2" stroke-opacity="0.35"/>
                     <circle cx="50" cy="50" r="30" stroke="#F87171" stroke-width="3"/>
                     <circle cx="50" cy="50" r="17" stroke="#F87171" stroke-width="2" stroke-dasharray="4 4"/>

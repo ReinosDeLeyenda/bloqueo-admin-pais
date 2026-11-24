@@ -36,7 +36,9 @@ add_filter( 'authenticate', function( $user, $username, $password ) {
 
 add_action( 'init', function() {
     if ( ! bap_is_protected_request() ) {
-        bap_check_frontend_rules();
+        if ( function_exists( 'bap_check_frontend_rules' ) ) {
+            bap_check_frontend_rules();
+        }
         return;
     }
 
@@ -63,73 +65,9 @@ add_action( 'init', function() {
     }
 
     $country = function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'DESCONOCIDO';
+    $verdict = bap_evaluate_ip_access( $ip, $country, 'admin', true );
 
-    if ( bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_blacklist_ips', '' ) ) ) ) {
-        bap_deny_access( $ip, $country, 'IP/Rango en lista negra' );
-    }
-
-    $min_risk = (int) get_option( 'bap_abuseipdb_min_risk', 90 );
-    if ( $min_risk > 0 && function_exists( 'bap_get_abuseipdb_score' ) ) {
-        $risk_score = bap_get_abuseipdb_score( $ip );
-        if ( null !== $risk_score && $risk_score >= $min_risk ) {
-            $blacklist = bap_parse_list( get_option( 'bap_blacklist_ips', '' ), false );
-            if ( ! in_array( $ip, $blacklist, true ) ) {
-                $blacklist[] = $ip;
-                update_option( 'bap_blacklist_ips', implode( "\n", $blacklist ) );
-            }
-            bap_deny_access( $ip, $country, 'Riesgo AbuseIPDB: ' . $risk_score . '%' );
-        }
-    }
-
-    if ( '1' === (string) get_option( 'bap_block_tor', '1' ) && function_exists( 'bap_is_tor_exit_node' ) && bap_is_tor_exit_node( $ip ) ) {
-        bap_deny_access( $ip, $country, 'Nodo de salida Tor' );
-    }
-    if ( '1' === (string) get_option( 'bap_block_firehol', '1' ) && function_exists( 'bap_is_in_firehol' ) ) {
-        $cidr_hit = bap_is_in_firehol( $ip );
-        if ( false !== $cidr_hit ) {
-            bap_deny_access( $ip, $country, 'Red maliciosa FireHOL (' . $cidr_hit . ')' );
-        }
-    }
-
-    $asn_mode = (string) get_option( 'bap_asn_mode', '' );
-    if ( '' === $asn_mode ) {
-        $asn_mode = ( '' !== trim( (string) get_option( 'bap_blocked_asns', '' ) ) && '' === trim( (string) get_option( 'bap_allowed_asns', '' ) ) ) ? 'block' : 'allow';
-    }
-    $asn_list          = bap_parse_list( get_option( ( 'block' === $asn_mode ) ? 'bap_blocked_asns' : 'bap_allowed_asns', '' ), true );
-    $asn_allowed_match = false;
-
-    if ( ! empty( $asn_list ) && function_exists( 'bap_get_asn_by_ip' ) ) {
-        $asn_code  = '';
-        $asn_label = bap_get_asn_by_ip( $ip, $asn_code );
-        if ( 'block' === $asn_mode ) {
-            if ( '' !== $asn_code && in_array( $asn_code, $asn_list, true ) ) {
-                bap_deny_access( $ip, $country, 'ASN bloqueado: ' . $asn_label );
-            }
-        } else {
-            if ( '' !== $asn_code && in_array( $asn_code, $asn_list, true ) ) {
-                $asn_allowed_match = true;
-            }
-        }
-    }
-
-    if ( $asn_allowed_match ) {
-        return;
-    }
-
-    $country_mode = (string) get_option( 'bap_country_mode', '' );
-    if ( '' === $country_mode ) {
-        $country_mode = ( '' !== trim( (string) get_option( 'bap_blocked_countries', '' ) ) && '' === trim( (string) get_option( 'bap_allowed_countries', 'ES' ) ) ) ? 'block' : 'allow';
-    }
-    $country_list = bap_parse_list( get_option( ( 'block' === $country_mode ) ? 'bap_blocked_countries' : 'bap_allowed_countries', ( 'allow' === $country_mode ? 'ES' : '' ) ), true );
-
-    if ( ! empty( $country_list ) ) {
-        if ( 'block' === $country_mode && in_array( $country, $country_list, true ) ) {
-            bap_deny_access( $ip, $country, 'País bloqueado: ' . $country );
-        }
-        if ( 'allow' === $country_mode && ! in_array( $country, $country_list, true ) ) {
-            bap_deny_access( $ip, $country, 'País no permitido: ' . $country );
-        }
-    } elseif ( 'allow' === $asn_mode && ! empty( $asn_list ) ) {
-        bap_deny_access( $ip, $country, 'ASN no autorizado' );
+    if ( 'block' === $verdict['status'] ) {
+        bap_deny_access( $ip, $country, $verdict['reason'] );
     }
 }, 1 );

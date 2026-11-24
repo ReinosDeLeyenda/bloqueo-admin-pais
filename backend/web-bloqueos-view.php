@@ -99,7 +99,7 @@ $w_amode   = get_option( 'bap_web_asn_mode', 'block' );
                 <tr>
                     <th>Redirección personalizada por país</th>
                     <td>
-                        <textarea name="bap_web_country_redirects" rows="4" style="width:100%;max-width:460px;" class="code" placeholder="FR => https://www.example.com => https://www.example.com"><?php echo esc_textarea( get_option( 'bap_web_country_redirects', '' ) ); ?></textarea>
+                        <textarea name="bap_web_country_redirects" rows="4" style="width:100%;max-width:460px;" class="code" placeholder="FR => https://www.example.com"><?php echo esc_textarea( get_option( 'bap_web_country_redirects', '' ) ); ?></textarea>
                         <p class="description">Una regla por línea con el formato <code>PAÍS =&gt; https://url-destino</code>. Tiene prioridad sobre el bloqueo general y evita bucles automáticamente.</p>
                     </td>
                 </tr>

@@ -4,15 +4,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 function bap_get_tor_list_path() {
-    bap_get_mmdb_path();
-    $upload = wp_upload_dir();
-    return trailingslashit( $upload['basedir'] ) . 'bap-geo/tor-exits.json';
+    return bap_get_geo_storage_path( 'tor-exits.json' );
 }
 
 function bap_get_firehol_list_path() {
-    bap_get_mmdb_path();
-    $upload = wp_upload_dir();
-    return trailingslashit( $upload['basedir'] ) . 'bap-geo/firehol-l1.json';
+    return bap_get_geo_storage_path( 'firehol-l1.json' );
 }
 
 function bap_install_tor_from_content( $content ) {
@@ -26,10 +22,7 @@ function bap_install_tor_from_content( $content ) {
     if ( empty( $ips ) ) {
         return new WP_Error( 'tor_empty', 'No se encontraron IPs válidas de nodos Tor.' );
     }
-    file_put_contents( bap_get_tor_list_path(), wp_json_encode( $ips ) );
-    update_option( 'bap_tor_last_updated', current_time( 'mysql' ) );
-    update_option( 'bap_tor_count', count( $ips ) );
-    return true;
+    return bap_save_json_list( 'tor-exits.json', $ips, 'bap_tor_last_updated', 'bap_tor_count' );
 }
 
 function bap_download_tor_database() {
@@ -38,7 +31,7 @@ function bap_download_tor_database() {
         'https://' . implode( '.', [ 'raw', 'githubusercontent', 'com' ] ) . '/' . implode( '/', [ 'SecOps-Institute', 'Tor-IP-Addresses', 'master', 'tor-exit-nodes.lst' ] ),
     ];
     foreach ( $urls as $url ) {
-        $res = wp_remote_get( $url, [ 'timeout' => 25, 'sslverify' => false ] );
+        $res = wp_remote_get( $url, [ 'timeout' => 25 ] );
         if ( ! is_wp_error( $res ) && 200 === wp_remote_retrieve_response_code( $res ) ) {
             $ok = bap_install_tor_from_content( wp_remote_retrieve_body( $res ) );
             if ( true === $ok ) {
@@ -70,10 +63,7 @@ function bap_install_firehol_from_content( $content ) {
     if ( empty( $cidrs ) ) {
         return new WP_Error( 'fh_empty', 'No se encontraron rangos CIDR válidos en el archivo.' );
     }
-    file_put_contents( bap_get_firehol_list_path(), wp_json_encode( $cidrs ) );
-    update_option( 'bap_firehol_last_updated', current_time( 'mysql' ) );
-    update_option( 'bap_firehol_count', count( $cidrs ) );
-    return true;
+    return bap_save_json_list( 'firehol-l1.json', $cidrs, 'bap_firehol_last_updated', 'bap_firehol_count' );
 }
 
 function bap_download_firehol_database() {
@@ -82,7 +72,7 @@ function bap_download_firehol_database() {
         'https://' . implode( '.', [ 'iplists', 'firehol', 'org' ] ) . '/files/firehol_level1.netset',
     ];
     foreach ( $urls as $url ) {
-        $res = wp_remote_get( $url, [ 'timeout' => 30, 'sslverify' => false ] );
+        $res = wp_remote_get( $url, [ 'timeout' => 30 ] );
         if ( ! is_wp_error( $res ) && 200 === wp_remote_retrieve_response_code( $res ) ) {
             $ok = bap_install_firehol_from_content( wp_remote_retrieve_body( $res ) );
             if ( true === $ok ) {

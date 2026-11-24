@@ -70,9 +70,9 @@ function bap_sync_htaccess_rules() {
     $exts = [];
     foreach ( bap_parse_list( $raw_paths, false ) as $pat ) {
         if ( preg_match( '/^\*\.([a-zA-Z0-9._-]+)$/', $pat, $m ) ) {
-            $clean_ext = str_replace( '*', '', $m );
+            $clean_ext = str_replace( '*', '', $m[1] );
             if ( '' !== $clean_ext ) {
-                $exts[] = preg_quote( $clean_ext, '"' );
+                $exts[] = preg_quote( $clean_ext, '/' );
             }
         }
     }
