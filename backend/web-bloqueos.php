@@ -87,6 +87,8 @@ function bap_handle_web_rule_actions() {
         }
         update_option( 'bap_blocked_user_agents', implode( "\n", array_unique( $ua_lines ) ) );
         update_option( 'bap_block_empty_ua', ( '1' === (string) ( $_POST['bap_block_empty_ua'] ?? '0' ) ) ? '1' : '0' );
+        update_option( 'bap_honeypot_enabled', ( '1' === (string) ( $_POST['bap_honeypot_enabled'] ?? '0' ) ) ? '1' : '0' );
+        update_option( 'bap_hp_autoban', ( '1' === (string) ( $_POST['bap_hp_autoban'] ?? '0' ) ) ? '1' : '0' );
 
         $selected = $scope;
         $label    = ( '__all__' === $scope ) ? 'Toda la web' : $scope;

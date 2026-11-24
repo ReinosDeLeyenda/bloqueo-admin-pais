@@ -153,6 +153,19 @@ function bap_render_web_response_and_general_fields( array $current ) {
                     <p class="description">Una cadena por línea (no distingue mayúsculas/minúsculas). Nunca afecta a usuarios conectados, lista blanca ni bots SEO verificados.</p>
                 </td>
             </tr>
+            <tr>
+                <th scope="row">Protección Honeypot (Anti-Spam)</th>
+                <td>
+                    <label style="display:block;margin-bottom:6px;">
+                        <input type="checkbox" name="bap_honeypot_enabled" value="1" <?php checked( get_option( 'bap_honeypot_enabled', '0' ), '1' ); ?> />
+                        Activar trampa invisible + control de tiempo en <strong>Comentarios, Registro, Recuperar clave, Contact Form 7 y WPForms</strong>
+                    </label>
+                    <label style="display:block;">
+                        <input type="checkbox" name="bap_hp_autoban" value="1" <?php checked( get_option( 'bap_hp_autoban', '0' ), '1' ); ?> />
+                        Auto-banear en la Lista Negra temporal a los bots que caigan en el Honeypot
+                    </label>
+                </td>
+            </tr>
         </table>
     </div>
     <?php
