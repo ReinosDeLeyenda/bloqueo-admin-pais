@@ -9,7 +9,7 @@ add_action( 'admin_init', function() {
         'default'           => '1',
     ] );
     register_setting( 'bap_web_settings_group', 'bap_web_country_redirects', [
-        'sanitize_callback' => function_exists( 'bap_sanitize_country_redirects' ) ? 'bap_sanitize_country_redirects' : 'sanitize_textarea_field',
+        'sanitize_callback' => 'bap_sanitize_country_redirects',
         'default'           => '',
     ] );
     register_setting( 'bap_web_settings_group', 'bap_web_redirect_url', [
@@ -24,14 +24,13 @@ add_action( 'admin_init', function() {
 
 function bap_handle_web_rule_actions() {
     if ( ! current_user_can( 'manage_options' ) ) {
-        return [ 'notice' => '', 'selected' => '__all__', 'rules' => [] ];
+        return [ 'notice' => '', 'selected' => '__all__', 'rules' => bap_get_web_rules() ];
     }
 
     $rules    = bap_get_web_rules();
     $selected = isset( $_GET['rule_scope'] ) ? sanitize_text_field( wp_unslash( $_GET['rule_scope'] ) ) : '__all__';
     $notice   = '';
 
-    // Añadir nueva URL al desplegable
     if ( isset( $_POST['bap_add_web_url'] ) && check_admin_referer( 'bap_web_rules_nonce' ) ) {
         $new_url = trim( (string) wp_unslash( $_POST['bap_new_web_url'] ?? '' ) );
         if ( '' !== $new_url ) {
@@ -46,7 +45,6 @@ function bap_handle_web_rule_actions() {
         }
     }
 
-    // Eliminar una URL del desplegable
     if ( isset( $_POST['bap_delete_web_url'] ) && check_admin_referer( 'bap_web_rules_nonce' ) ) {
         $del_scope = sanitize_text_field( wp_unslash( $_POST['bap_active_scope'] ?? '' ) );
         if ( '' !== $del_scope && '__all__' !== $del_scope && isset( $rules[ $del_scope ] ) ) {
@@ -57,7 +55,6 @@ function bap_handle_web_rule_actions() {
         }
     }
 
-    // Guardar filtros de la regla seleccionada
     if ( isset( $_POST['bap_save_web_rule'] ) && check_admin_referer( 'bap_web_rules_nonce' ) ) {
         $scope = sanitize_text_field( wp_unslash( $_POST['bap_active_scope'] ?? '__all__' ) );
         if ( '__all__' !== $scope && ! isset( $rules[ $scope ] ) ) {
@@ -66,17 +63,22 @@ function bap_handle_web_rule_actions() {
 
         $cmode = ( 'block' === ( $_POST['bap_rule_country_mode'] ?? 'allow' ) ) ? 'block' : 'allow';
         $amode = ( 'allow' === ( $_POST['bap_rule_asn_mode'] ?? 'block' ) ) ? 'allow' : 'block';
+        $clean_op = fn( $k ) => ( 'OR' === strtoupper( (string) ( $_POST[ $k ] ?? 'AND' ) ) ) ? 'OR' : 'AND';
 
         $rules[ $scope ] = [
             'enabled'       => ( '1' === (string) ( $_POST['bap_rule_enabled'] ?? '0' ) ) ? '1' : '0',
             'country_mode'  => $cmode,
             'countries'     => implode( ', ', bap_parse_list( wp_unslash( $_POST['bap_rule_countries'] ?? '' ), true ) ),
+            'op_1'          => $clean_op( 'bap_rule_op_1' ),
             'asn_mode'      => $amode,
             'asns'          => function_exists( 'bap_sanitize_asn_list' )
                 ? bap_sanitize_asn_list( wp_unslash( $_POST['bap_rule_asns'] ?? '' ) )
                 : implode( "\n", bap_parse_list( wp_unslash( $_POST['bap_rule_asns'] ?? '' ), true ) ),
+            'op_2'          => $clean_op( 'bap_rule_op_2' ),
             'abuse_risk'    => max( 0, min( 100, (int) ( $_POST['bap_rule_abuse_risk'] ?? 0 ) ) ),
+            'op_3'          => $clean_op( 'bap_rule_op_3' ),
             'block_tor'     => ( '1' === (string) ( $_POST['bap_rule_block_tor'] ?? '0' ) ) ? '1' : '0',
+            'op_4'          => $clean_op( 'bap_rule_op_4' ),
             'block_firehol' => ( '1' === (string) ( $_POST['bap_rule_block_firehol'] ?? '0' ) ) ? '1' : '0',
         ];
 
@@ -98,6 +100,8 @@ function bap_handle_web_rule_actions() {
 }
 
 function bap_render_web_bloqueos_page() {
+    require_once plugin_dir_path( __FILE__ ) . 'web-bloqueos-helpers.php';
+
     $state    = bap_handle_web_rule_actions();
     $notice   = $state['notice'];
     $selected = $state['selected'];
@@ -105,7 +109,8 @@ function bap_render_web_bloqueos_page() {
     $current  = wp_parse_args( $rules[ $selected ] ?? [], bap_get_default_web_rule( '0' ) );
 
     wp_enqueue_script( 'bap-countries-data', plugin_dir_url( __FILE__ ) . 'countries-data.js', [], '1.0', true );
-    wp_enqueue_script( 'bap-countries-picker', plugin_dir_url( __FILE__ ) . 'countries-picker.js', [ 'bap-countries-data' ], '13.3', true );
+    wp_enqueue_script( 'bap-countries-picker', plugin_dir_url( __FILE__ ) . 'countries-picker.js', [ 'bap-countries-data' ], '13.4', true );
+    wp_enqueue_script( 'bap-web-logic-switch', plugin_dir_url( __FILE__ ) . 'web-logic-switch.js', [], '1.0', true );
 
     require plugin_dir_path( __FILE__ ) . 'web-bloqueos-view.php';
 }
