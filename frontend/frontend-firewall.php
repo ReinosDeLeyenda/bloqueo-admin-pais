@@ -4,9 +4,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 function bap_check_frontend_rules() {
-    if ( '1' !== (string) get_option( 'bap_web_enabled', '0' ) ) {
-        return;
-    }
     if ( is_user_logged_in() || wp_doing_ajax() || wp_doing_cron() ) {
         return;
     }
@@ -14,25 +11,13 @@ function bap_check_frontend_rules() {
         return;
     }
 
-    $scope = get_option( 'bap_web_scope', 'all' );
-    if ( 'paths' === $scope ) {
-        $patterns = bap_parse_list( get_option( 'bap_web_paths', '' ), false );
-        if ( empty( $patterns ) ) {
-            return;
-        }
-        $uri   = isset( $_SERVER['REQUEST_URI'] ) ? strtolower( rawurldecode( wp_unslash( $_SERVER['REQUEST_URI'] ) ) ) : '';
-        $path  = (string) wp_parse_url( $uri, PHP_URL_PATH );
-        $match = false;
-        foreach ( $patterns as $pat ) {
-            $regex = '#^' . str_replace( '\*', '.*', preg_quote( strtolower( trim( $pat ) ), '#' ) ) . '$#i';
-            if ( preg_match( $regex, $path ) || preg_match( $regex, $uri ) ) {
-                $match = true;
-                break;
-            }
-        }
-        if ( ! $match ) {
-            return;
-        }
+    $uri     = isset( $_SERVER['REQUEST_URI'] ) ? rawurldecode( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
+    $matched = bap_match_web_rule_for_uri( $uri );
+    $rule    = $matched['rule'];
+
+    // Si la ruta específica o global tiene estado "nada" (desactivado), dejar pasar
+    if ( '1' !== (string) ( $rule['enabled'] ?? '0' ) ) {
+        return;
     }
 
     $ip = bap_get_user_ip();
@@ -50,10 +35,12 @@ function bap_check_frontend_rules() {
         }
     }
 
-    $verdict = bap_evaluate_ip_access( $ip, $country, 'web', false );
+    $verdict = bap_evaluate_rule_profile( $ip, $country, $rule, false );
     if ( 'block' === $verdict['status'] ) {
-        $reason = $verdict['reason'];
-        bap_log_blocked_attempt( $ip, $country, 'Web: ' . $reason );
+        $scope_tag = ( '__all__' === $matched['scope'] ) ? 'Web Global' : 'Web (' . $matched['scope'] . ')';
+        $reason    = $verdict['reason'];
+        bap_log_blocked_attempt( $ip, $country, $scope_tag . ': ' . $reason );
+
         $url = trim( (string) get_option( 'bap_web_redirect_url', '' ) );
         if ( '' !== $url && filter_var( $url, FILTER_VALIDATE_URL ) ) {
             wp_redirect( esc_url_raw( $url ), 302 );

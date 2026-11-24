@@ -3,88 +3,126 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+function bap_sanitize_country_redirects( $raw ) {
+    $lines = [];
+    foreach ( preg_split( '/\r\n|\r|\n/', (string) $raw ) as $line ) {
+        $line = trim( $line );
+        if ( '' === $line || false === strpos( $line, '=>' ) ) {
+            continue;
+        }
+        list( $code, $url ) = array_map( 'trim', explode( '=>', $line, 2 ) );
+        $code = strtoupper( $code );
+        $url  = esc_url_raw( $url );
+        if ( preg_match( '/^[A-Z]{2}$/', $code ) && '' !== $url && filter_var( $url, FILTER_VALIDATE_URL ) ) {
+            $lines[] = $code . ' => ' . $url;
+        }
+    }
+    return implode( "\n", array_unique( $lines ) );
+}
+
 add_action( 'admin_init', function() {
-    register_setting( 'bap_web_settings_group', 'bap_web_enabled', [
-        'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
-        'default'           => '0'
-    ]);
-    register_setting( 'bap_web_settings_group', 'bap_web_scope', [
-        'sanitize_callback' => fn( $i ) => ( 'paths' === $i ) ? 'paths' : 'all',
-        'default'           => 'all'
-    ]);
-    register_setting( 'bap_web_settings_group', 'bap_web_paths', [
-        'sanitize_callback' => function( $input ) {
-            $lines = [];
-            foreach ( preg_split( '/[\r\n,]+/', (string) $input ) as $line ) {
-                $clean = trim( sanitize_text_field( $line ) );
-                if ( '' !== $clean ) {
-                    if ( '/' !== $clean[0] && '*' !== $clean[0] ) {
-                        $clean = '/' . $clean;
-                    }
-                    $lines[] = $clean;
-                }
-            }
-            return implode( "\n", array_unique( $lines ) );
-        },
-        'default' => ''
-    ]);
-    register_setting( 'bap_web_settings_group', 'bap_web_country_mode', [
-        'sanitize_callback' => fn( $i ) => ( 'block' === $i ) ? 'block' : 'allow',
-        'default'           => 'allow'
-    ]);
-    register_setting( 'bap_web_settings_group', 'bap_web_allowed_countries', [
-        'sanitize_callback' => fn( $i ) => implode( ', ', bap_parse_list( $i, true ) ),
-        'default'           => ''
-    ]);
-    register_setting( 'bap_web_settings_group', 'bap_web_blocked_countries', [
-        'sanitize_callback' => fn( $i ) => implode( ', ', bap_parse_list( $i, true ) ),
-        'default'           => ''
-    ]);
-    register_setting( 'bap_web_settings_group', 'bap_web_asn_mode', [
-        'sanitize_callback' => fn( $i ) => ( 'block' === $i ) ? 'block' : 'allow',
-        'default'           => 'block'
-    ]);
-    register_setting( 'bap_web_settings_group', 'bap_web_allowed_asns', [
-        'sanitize_callback' => 'bap_sanitize_asn_list',
-        'default'           => ''
-    ]);
-    register_setting( 'bap_web_settings_group', 'bap_web_blocked_asns', [
-        'sanitize_callback' => 'bap_sanitize_asn_list',
-        'default'           => ''
-    ]);
-    register_setting( 'bap_web_settings_group', 'bap_web_abuse_risk', [
-        'sanitize_callback' => fn( $i ) => max( 0, min( 100, (int) $i ) ),
-        'default'           => 0
-    ]);
-    register_setting( 'bap_web_settings_group', 'bap_web_block_tor', [
-        'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
-        'default'           => '0'
-    ]);
-    register_setting( 'bap_web_settings_group', 'bap_web_block_firehol', [
-        'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
-        'default'           => '0'
-    ]);
     register_setting( 'bap_web_settings_group', 'bap_web_allow_seo_bots', [
         'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
-        'default'           => '1'
-    ]);
+        'default'           => '1',
+    ] );
     register_setting( 'bap_web_settings_group', 'bap_web_country_redirects', [
-        'sanitize_callback' => function_exists( 'bap_sanitize_country_redirects' ) ? 'bap_sanitize_country_redirects' : 'sanitize_textarea_field',
-        'default'           => ''
-    ]);
+        'sanitize_callback' => 'bap_sanitize_country_redirects',
+        'default'           => '',
+    ] );
     register_setting( 'bap_web_settings_group', 'bap_web_redirect_url', [
-        'sanitize_callback' => fn( $i ) => '' === trim( (string) $i ) ? '' : esc_url_raw( trim( (string) $i ) ),
-        'default'           => ''
-    ]);
+        'sanitize_callback' => fn( $i ) => esc_url_raw( trim( (string) $i ) ),
+        'default'           => '',
+    ] );
     register_setting( 'bap_web_settings_group', 'bap_web_block_message', [
         'sanitize_callback' => fn( $i ) => sanitize_text_field( trim( (string) $i ) ),
-        'default'           => 'Este contenido no está disponible en tu ubicación o red.'
-    ]);
-});
+        'default'           => 'Este contenido no está disponible en tu ubicación o red.',
+    ] );
+} );
+
+function bap_handle_web_rule_actions() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        return [ 'notice' => '', 'selected' => '__all__' ];
+    }
+
+    $rules    = bap_get_web_rules();
+    $selected = isset( $_GET['rule_scope'] ) ? sanitize_text_field( wp_unslash( $_GET['rule_scope'] ) ) : '__all__';
+    $notice   = '';
+
+    // Añadir nueva URL al desplegable
+    if ( isset( $_POST['bap_add_web_url'] ) && check_admin_referer( 'bap_web_rules_nonce' ) ) {
+        $new_url = trim( (string) wp_unslash( $_POST['bap_new_web_url'] ?? '' ) );
+        if ( '' !== $new_url ) {
+            $parsed_path = wp_parse_url( $new_url, PHP_URL_PATH );
+            $clean_path  = '/' . ltrim( (string) ( $parsed_path ?: $new_url ), '/' );
+            if ( ! isset( $rules[ $clean_path ] ) ) {
+                $rules[ $clean_path ] = bap_get_default_web_rule( '1' );
+                update_option( 'bap_web_rules', $rules );
+            }
+            $selected = $clean_path;
+            $notice   = '<div class="notice notice-success is-dismissible"><p>Ámbito <strong>' . esc_html( $clean_path ) . '</strong> añadido. Configura sus filtros abajo y pulsa Guardar.</p></div>';
+        }
+    }
+
+    // Eliminar una URL del desplegable
+    if ( isset( $_POST['bap_delete_web_url'] ) && check_admin_referer( 'bap_web_rules_nonce' ) ) {
+        $del_scope = sanitize_text_field( wp_unslash( $_POST['bap_active_scope'] ?? '' ) );
+        if ( '' !== $del_scope && '__all__' !== $del_scope && isset( $rules[ $del_scope ] ) ) {
+            unset( $rules[ $del_scope ] );
+            update_option( 'bap_web_rules', $rules );
+            $selected = '__all__';
+            $notice   = '<div class="notice notice-warning is-dismissible"><p>Regla para <strong>' . esc_html( $del_scope ) . '</strong> eliminada.</p></div>';
+        }
+    }
+
+    // Guardar filtros de la regla seleccionada
+    if ( isset( $_POST['bap_save_web_rule'] ) && check_admin_referer( 'bap_web_rules_nonce' ) ) {
+        $scope = sanitize_text_field( wp_unslash( $_POST['bap_active_scope'] ?? '__all__' ) );
+        if ( '__all__' !== $scope && ! isset( $rules[ $scope ] ) ) {
+            $scope = '__all__';
+        }
+
+        $cmode = ( 'block' === ( $_POST['bap_rule_country_mode'] ?? 'allow' ) ) ? 'block' : 'allow';
+        $amode = ( 'allow' === ( $_POST['bap_rule_asn_mode'] ?? 'block' ) ) ? 'allow' : 'block';
+
+        $rules[ $scope ] = [
+            'enabled'       => ( '1' === (string) ( $_POST['bap_rule_enabled'] ?? '0' ) ) ? '1' : '0',
+            'country_mode'  => $cmode,
+            'countries'     => implode( ', ', bap_parse_list( wp_unslash( $_POST['bap_rule_countries'] ?? '' ), true ) ),
+            'asn_mode'      => $amode,
+            'asns'          => function_exists( 'bap_sanitize_asn_list' )
+                ? bap_sanitize_asn_list( wp_unslash( $_POST['bap_rule_asns'] ?? '' ) )
+                : implode( "\n", bap_parse_list( wp_unslash( $_POST['bap_rule_asns'] ?? '' ), true ) ),
+            'abuse_risk'    => max( 0, min( 100, (int) ( $_POST['bap_rule_abuse_risk'] ?? 0 ) ) ),
+            'block_tor'     => ( '1' === (string) ( $_POST['bap_rule_block_tor'] ?? '0' ) ) ? '1' : '0',
+            'block_firehol' => ( '1' === (string) ( $_POST['bap_rule_block_firehol'] ?? '0' ) ) ? '1' : '0',
+        ];
+
+        update_option( 'bap_web_rules', $rules );
+        $selected = $scope;
+        $label    = ( '__all__' === $scope ) ? 'Toda la web' : $scope;
+        $notice   = '<div class="notice notice-success is-dismissible"><p><strong>Regla guardada correctamente</strong> para: <code>' . esc_html( $label ) . '</code></p></div>';
+    }
+
+    if ( ! isset( $rules[ $selected ] ) ) {
+        $selected = '__all__';
+    }
+
+    return [
+        'notice'   => $notice,
+        'selected' => $selected,
+        'rules'    => $rules,
+    ];
+}
 
 function bap_render_web_bloqueos_page() {
-    wp_enqueue_script( 'bap-admin-bloqueos', plugin_dir_url( __FILE__ ) . 'admin-bloqueos.js', [], '12.2', true );
+    $state    = bap_handle_web_rule_actions();
+    $notice   = $state['notice'];
+    $selected = $state['selected'];
+    $rules    = $state['rules'];
+    $current  = wp_parse_args( $rules[ $selected ] ?? [], bap_get_default_web_rule( '0' ) );
+
     wp_enqueue_script( 'bap-countries-data', plugin_dir_url( __FILE__ ) . 'countries-data.js', [], '1.0', true );
-    wp_enqueue_script( 'bap-countries-picker', plugin_dir_url( __FILE__ ) . 'countries-picker.js', [ 'bap-countries-data' ], '13.2', true );
+    wp_enqueue_script( 'bap-countries-picker', plugin_dir_url( __FILE__ ) . 'countries-picker.js', [ 'bap-countries-data' ], '13.3', true );
+
     require plugin_dir_path( __FILE__ ) . 'web-bloqueos-view.php';
 }
