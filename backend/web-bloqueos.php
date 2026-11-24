@@ -3,30 +3,13 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-function bap_sanitize_country_redirects( $raw ) {
-    $lines = [];
-    foreach ( preg_split( '/\r\n|\r|\n/', (string) $raw ) as $line ) {
-        $line = trim( $line );
-        if ( '' === $line || false === strpos( $line, '=>' ) ) {
-            continue;
-        }
-        list( $code, $url ) = array_map( 'trim', explode( '=>', $line, 2 ) );
-        $code = strtoupper( $code );
-        $url  = esc_url_raw( $url );
-        if ( preg_match( '/^[A-Z]{2}$/', $code ) && '' !== $url && filter_var( $url, FILTER_VALIDATE_URL ) ) {
-            $lines[] = $code . ' => ' . $url;
-        }
-    }
-    return implode( "\n", array_unique( $lines ) );
-}
-
 add_action( 'admin_init', function() {
     register_setting( 'bap_web_settings_group', 'bap_web_allow_seo_bots', [
         'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
         'default'           => '1',
     ] );
     register_setting( 'bap_web_settings_group', 'bap_web_country_redirects', [
-        'sanitize_callback' => 'bap_sanitize_country_redirects',
+        'sanitize_callback' => function_exists( 'bap_sanitize_country_redirects' ) ? 'bap_sanitize_country_redirects' : 'sanitize_textarea_field',
         'default'           => '',
     ] );
     register_setting( 'bap_web_settings_group', 'bap_web_redirect_url', [
@@ -41,7 +24,7 @@ add_action( 'admin_init', function() {
 
 function bap_handle_web_rule_actions() {
     if ( ! current_user_can( 'manage_options' ) ) {
-        return [ 'notice' => '', 'selected' => '__all__' ];
+        return [ 'notice' => '', 'selected' => '__all__', 'rules' => [] ];
     }
 
     $rules    = bap_get_web_rules();
