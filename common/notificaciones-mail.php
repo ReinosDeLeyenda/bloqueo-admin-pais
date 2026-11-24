@@ -116,10 +116,10 @@ function bap_flush_email_digest() {
     $site    = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
     $total   = count( $queue );
     $subject = '[' . $site . '] Resumen de seguridad: ' . $total . ' intentos bloqueados';
-    $body    = bap_render_html_digest_email( $queue, false );
-    $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
+    $tpl     = (string) get_option( 'bap_email_template', 'full' );
+    $mail    = bap_render_digest_by_template( $queue, false, $tpl );
 
-    wp_mail( bap_get_notify_recipients(), $subject, $body, $headers );
+    wp_mail( bap_get_notify_recipients(), $subject, $mail['body'], $mail['headers'] );
 }
 
 function bap_send_test_digest_email() {
@@ -155,8 +155,8 @@ function bap_send_test_digest_email() {
 
     $site    = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
     $subject = '[' . $site . '] Prueba de resumen agrupado (' . count( $queue ) . ' eventos)';
-    $body    = bap_render_html_digest_email( $queue, true );
-    $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
+    $tpl     = (string) get_option( 'bap_email_template', 'full' );
+    $mail    = bap_render_digest_by_template( $queue, true, $tpl );
 
-    return wp_mail( bap_get_notify_recipients(), $subject, $body, $headers );
+    return wp_mail( bap_get_notify_recipients(), $subject, $mail['body'], $mail['headers'] );
 }

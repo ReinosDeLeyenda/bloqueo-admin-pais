@@ -230,6 +230,19 @@ if ( ! defined( 'ABSPATH' ) ) {
                     </td>
                 </tr>
                 <tr>
+                    <th><label for="bap_email_template">Plantilla del email de resumen</label></th>
+                    <td>
+                        <?php $email_tpl = get_option( 'bap_email_template', 'full' ); ?>
+                        <select id="bap_email_template" name="bap_email_template">
+                            <option value="full" <?php selected( $email_tpl, 'full' ); ?>>Completa (Tarjetas + Barras Países + Todos los eventos)</option>
+                            <option value="top10" <?php selected( $email_tpl, 'top10' ); ?>>Top 10 (Tarjetas + Barras Países + Top 10 bloqueos)</option>
+                            <option value="top5" <?php selected( $email_tpl, 'top5' ); ?>>Top 5 (Tarjetas + Barras Países + Top 5 bloqueos)</option>
+                            <option value="text" <?php selected( $email_tpl, 'text' ); ?>>Solo texto plano (Agrupado)</option>
+                        </select>
+                        <p class="description">Elige el formato y nivel de detalle de los correos de resumen programados (recuerda guardar antes de enviar prueba).</p>
+                    </td>
+                </tr>
+                <tr>
                     <th>Destinatarios de emails</th>
                     <td>
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">

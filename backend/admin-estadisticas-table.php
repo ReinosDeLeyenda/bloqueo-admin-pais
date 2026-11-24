@@ -10,17 +10,18 @@ $stats_page_url = admin_url( 'admin.php?page=bap-admin-estadisticas' );
     <thead>
         <tr>
             <th data-col="0" data-type="text" style="width:145px;cursor:pointer;">Fecha y Hora &#8597;</th>
-            <th data-col="1" data-type="ip" style="width:175px;cursor:pointer;">Dirección IP &#8597;</th>
-            <th data-col="2" data-type="num" style="width:95px;cursor:pointer;">AbuseIPDB &#8597;</th>
-            <th data-col="3" data-type="text" style="width:70px;cursor:pointer;">País &#8597;</th>
-            <th data-col="4" data-type="text" style="width:185px;cursor:pointer;">ASN / Proveedor &#8597;</th>
-            <th data-col="5" data-type="text" style="width:200px;cursor:pointer;">Ruta Atacada &#8597;</th>
-            <th data-col="6" data-type="text" style="cursor:pointer;">Motivo &#8597;</th>
+            <th data-col="1" data-type="num" style="width:85px;cursor:pointer;">Intentos &#8597;</th>
+            <th data-col="2" data-type="ip" style="width:140px;cursor:pointer;">Dirección IP &#8597;</th>
+            <th data-col="3" data-type="num" style="width:95px;cursor:pointer;">AbuseIPDB &#8597;</th>
+            <th data-col="4" data-type="text" style="width:70px;cursor:pointer;">País &#8597;</th>
+            <th data-col="5" data-type="text" style="width:185px;cursor:pointer;">ASN / Proveedor &#8597;</th>
+            <th data-col="6" data-type="text" style="width:200px;cursor:pointer;">Ruta Atacada &#8597;</th>
+            <th data-col="7" data-type="text" style="cursor:pointer;">Motivo &#8597;</th>
         </tr>
     </thead>
     <tbody>
         <?php if ( empty( $logs ) ) : ?>
-            <tr><td colspan="7">No hay registros de bloqueos todavía.</td></tr>
+            <tr><td colspan="8">No hay registros de bloqueos todavía.</td></tr>
         <?php else : ?>
             <?php foreach ( $logs as $log ) :
                 $ip_val     = trim( (string) $log->ip_address );
@@ -53,11 +54,17 @@ $stats_page_url = admin_url( 'admin.php?page=bap-admin-estadisticas' );
             ?>
                 <tr class="bap-log-row" data-tip="<?php echo esc_attr( wp_json_encode( $tooltip_payload ) ); ?>">
                     <td data-sort="<?php echo esc_attr( $log->created_at ); ?>"><?php echo esc_html( $log->created_at ); ?></td>
-                    <td data-sort="<?php echo esc_attr( $ip_hex ); ?>">
+                    <td data-sort="<?php echo (int) $total_hits; ?>">
                         <?php if ( '' !== $ip_val ) : ?>
-                            <a href="<?php echo esc_url( add_query_arg( 'filter_q', rawurlencode( $ip_val ), $stats_page_url ) ); ?>" title="Filtrar todos los intentos de esta IP" style="display:inline-block;min-width:22px;text-align:center;background:#d63638;color:#ffffff;font-weight:700;font-size:11px;line-height:18px;padding:0 5px;border-radius:4px;margin-right:5px;text-decoration:none;vertical-align:middle;">
+                            <a href="<?php echo esc_url( add_query_arg( 'filter_q', rawurlencode( $ip_val ), $stats_page_url ) ); ?>" title="Filtrar todos los intentos de esta IP" style="display:inline-block;min-width:24px;text-align:center;background:#d63638;color:#ffffff;font-weight:700;font-size:11px;line-height:18px;padding:0 6px;border-radius:4px;text-decoration:none;">
                                 <?php echo (int) $total_hits; ?>
                             </a>
+                        <?php else : ?>
+                            <span style="color:#8c8f94;">0</span>
+                        <?php endif; ?>
+                    </td>
+                    <td data-sort="<?php echo esc_attr( $ip_hex ); ?>">
+                        <?php if ( '' !== $ip_val ) : ?>
                             <a href="<?php echo esc_url( $ip2loc_base . rawurlencode( $ip_val ) ); ?>" class="bap-ip2loc-link" data-ip="<?php echo esc_attr( $ip_val ); ?>" target="_blank" rel="noopener noreferrer" title="Consultar IP en IP2Location">
                                 <code><?php echo esc_html( $ip_val ); ?></code>
                             </a>

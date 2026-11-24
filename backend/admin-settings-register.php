@@ -116,6 +116,8 @@ add_action( 'admin_init', function() {
     register_setting( 'bap_settings_group', 'bap_ip_source', [ 'sanitize_callback' => fn( $i ) => in_array( $i, [ 'remote_addr', 'cloudflare', 'x_forwarded_for', 'x_real_ip' ], true ) ? $i : 'remote_addr', 'default' => 'remote_addr' ] );
     register_setting( 'bap_settings_group', 'bap_secret_key', [ 'sanitize_callback' => 'bap_sanitize_secret_key', 'default' => '' ] );
     register_setting( 'bap_settings_group', 'bap_notify_freq', [ 'sanitize_callback' => fn( $i ) => in_array( $i, [ 'none', 'instant', 'hourly', '6hours', '12hours', 'daily', 'weekly', '2weeks', 'monthly' ], true ) ? $i : 'none', 'default' => 'none' ] );
+    register_setting( 'bap_settings_group', 'bap_notify_freq', [ 'sanitize_callback' => fn( $i ) => in_array( $i, [ 'none', 'instant', 'hourly', '6hours', '12hours', 'daily', 'weekly', '2weeks', 'monthly' ], true ) ? $i : 'none', 'default' => 'none' ] );
+    register_setting( 'bap_settings_group', 'bap_email_template', [ 'sanitize_callback' => fn( $i ) => in_array( $i, [ 'full', 'top10', 'top5', 'text' ], true ) ? $i : 'full', 'default' => 'full' ] );
     register_setting( 'bap_settings_group', 'bap_notify_emails', [ 'sanitize_callback' => 'bap_sanitize_notify_emails', 'default' => '' ] );
 });
 
