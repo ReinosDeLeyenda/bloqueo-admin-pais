@@ -37,8 +37,15 @@ function bap_render_bloqueos_notify_and_auth_fields() {
   <tr>
       <th>Avisos de conexión exitosa</th>
       <td>
-          <?php $login_ch = (string) get_option( 'bap_login_notify_channel', 'none' ); ?>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+          <?php
+          $login_ch = (string) get_option( 'bap_login_notify_channel', 'none' );
+          $routes   = get_option( 'bap_login_notify_routes', [] );
+          if ( ! is_array( $routes ) || empty( $routes ) ) {
+              $routes = [ [ 'user_id' => 0, 'target' => '', 'type' => 'telegram' ] ];
+          }
+          $wp_users = get_users( [ 'fields' => [ 'ID', 'user_login', 'display_name' ], 'orderby' => 'login', 'order' => 'ASC' ] );
+          ?>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
               <select name="bap_login_notify_channel">
                   <option value="none" <?php selected( $login_ch, 'none' ); ?>>Desactivado</option>
                   <option value="email" <?php selected( $login_ch, 'email' ); ?>>Email</option>
@@ -47,11 +54,37 @@ function bap_render_bloqueos_notify_and_auth_fields() {
               </select>
               <button type="submit" form="bap_test_email_form" name="bap_send_test_login_alert" value="1" class="button button-secondary">Probar aviso de conexión</button>
           </div>
-          <div style="display:flex;flex-direction:column;gap:6px;max-width:460px;margin-bottom:6px;">
-              <input type="text" name="bap_login_notify_emails" value="<?php echo esc_attr( get_option( 'bap_login_notify_emails', '' ) ); ?>" class="regular-text" placeholder="Emails específicos (vacío = usar destinatarios de bloqueos)" />
-              <input type="text" name="bap_login_tg_chat_ids" value="<?php echo esc_attr( get_option( 'bap_login_tg_chat_ids', '' ) ); ?>" class="regular-text code" placeholder="Chat ID(s) Telegram específicos (ej. -124; vacío = usar Chat IDs de bloqueos)" />
+
+          <div id="bap-login-routes-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
+              <?php foreach ( $routes as $r ) :
+                  $r_uid  = (int) ( $r['user_id'] ?? 0 );
+                  $r_tgt  = (string) ( $r['target'] ?? '' );
+                  $r_type = ( 'email' === ( $r['type'] ?? 'telegram' ) ) ? 'email' : 'telegram';
+              ?>
+                  <div class="bap-login-route-row" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                      <select name="bap_login_route_user[]" style="min-width:165px;">
+                          <option value="0" <?php selected( $r_uid, 0 ); ?>>Todos los usuarios</option>
+                          <?php foreach ( $wp_users as $wu ) : ?>
+                              <option value="<?php echo (int) $wu->ID; ?>" <?php selected( $r_uid, (int) $wu->ID ); ?>>
+                                  <?php echo esc_html( $wu->user_login . ( $wu->display_name && $wu->display_name !== $wu->user_login ? ' (' . $wu->display_name . ')' : '' ) ); ?>
+                              </option>
+                          <?php endforeach; ?>
+                      </select>
+
+                      <input type="text" name="bap_login_route_target[]" value="<?php echo esc_attr( $r_tgt ); ?>" class="regular-text bap-login-route-target" style="width:250px;" placeholder="<?php echo 'email' === $r_type ? 'correo@dominio.com' : 'Chat ID (ej. -124)'; ?>" />
+
+                      <select name="bap_login_route_type[]" class="bap-login-route-type">
+                          <option value="telegram" <?php selected( $r_type, 'telegram' ); ?>>Telegram</option>
+                          <option value="email" <?php selected( $r_type, 'email' ); ?>>Email</option>
+                      </select>
+
+                      <button type="button" class="button button-secondary bap-add-login-route" title="Añadir otra línea" style="font-weight:700;padding:0 9px;">+</button>
+                      <button type="button" class="button button-secondary bap-del-login-route" title="Borrar esta línea" style="color:#d63638;font-weight:700;padding:0 9px;">&times;</button>
+                  </div>
+              <?php endforeach; ?>
           </div>
-          <p class="description">Envía una alerta inmediata cuando un usuario inicia sesión y remarca si el <strong>ASN</strong> difiere de su última sesión o de sus sesiones activas. Si dejas los destinos vacíos, usará los configurados para bloqueos.</p>
+
+          <p class="description">Configura destinos específicos por usuario (o para todos). Si dejas el destino vacío, usará los destinatarios generales de bloqueos. Remarca si el <strong>ASN</strong> difiere de su última sesión o sesiones activas.</p>
       </td>
   </tr>
     <tr>

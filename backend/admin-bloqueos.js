@@ -172,4 +172,53 @@
             pathsTextarea.value = def;
         });
     }
+    const routesList = document.getElementById('bap-login-routes-list');
+    if (routesList) {
+        function syncRouteButtons() {
+            const rows = routesList.querySelectorAll('.bap-login-route-row');
+            rows.forEach(row => {
+                const delBtn = row.querySelector('.bap-del-login-route');
+                if (delBtn) delBtn.disabled = (rows.length <= 1);
+            });
+        }
+
+        routesList.addEventListener('click', function (e) {
+            const addBtn = e.target.closest('.bap-add-login-route');
+            if (addBtn) {
+                const row = addBtn.closest('.bap-login-route-row');
+                const clone = row.cloneNode(true);
+                const inp = clone.querySelector('.bap-login-route-target');
+                const selType = clone.querySelector('.bap-login-route-type');
+                if (inp) {
+                    inp.value = '';
+                    inp.placeholder = (selType && selType.value === 'email') ? 'correo@dominio.com' : 'Chat ID (ej. -124)';
+                }
+                row.after(clone);
+                syncRouteButtons();
+                return;
+            }
+
+            const delBtn = e.target.closest('.bap-del-login-route');
+            if (delBtn) {
+                const rows = routesList.querySelectorAll('.bap-login-route-row');
+                if (rows.length > 1) {
+                    delBtn.closest('.bap-login-route-row').remove();
+                    syncRouteButtons();
+                }
+            }
+        });
+
+        routesList.addEventListener('change', function (e) {
+            const typeSel = e.target.closest('.bap-login-route-type');
+            if (typeSel) {
+                const row = typeSel.closest('.bap-login-route-row');
+                const inp = row?.querySelector('.bap-login-route-target');
+                if (inp) {
+                    inp.placeholder = (typeSel.value === 'email') ? 'correo@dominio.com' : 'Chat ID (ej. -124)';
+                }
+            }
+        });
+
+        syncRouteButtons();
+    }
 })();

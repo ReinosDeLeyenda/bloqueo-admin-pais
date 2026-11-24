@@ -15,7 +15,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
         'bap_allowed_countries', 'bap_blocked_countries', 'bap_allowed_asns', 'bap_blocked_asns',
         'bap_auto_ban_attempts', 'bap_auto_ban_duration',
         'bap_abuseipdb_min_risk', 'bap_whitelist_ips', 'bap_blacklist_ips',
-        'bap_redirect_url', 'bap_notify_channel', 'bap_login_notify_channel', 'bap_login_notify_emails', 'bap_login_tg_chat_ids', 'bap_notify_freq', 'bap_notify_emails',
+        'bap_redirect_url', 'bap_notify_channel', 'bap_login_notify_channel', 'bap_login_notify_routes', 'bap_notify_freq', 'bap_notify_emails',
         'bap_email_template', 'bap_custom_email_templates', 'bap_tg_chat_ids',
         'bap_web_rules', 'bap_web_allow_seo_bots',
         'bap_web_country_redirects', 'bap_web_redirect_url', 'bap_web_block_message',

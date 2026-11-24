@@ -142,13 +142,44 @@ add_action( 'admin_init', function() {
         'sanitize_callback' => fn( $i ) => implode( ', ', array_unique( array_filter( array_map( 'trim', preg_split( '/[\r\n,;]+/', (string) $i ) ) ) ) ),
         'default'           => '',
     ] );
-    register_setting( 'bap_settings_group', 'bap_login_notify_emails', [
-        'sanitize_callback' => 'bap_sanitize_notify_emails',
-        'default'           => '',
-    ] );
-    register_setting( 'bap_settings_group', 'bap_login_tg_chat_ids', [
-        'sanitize_callback' => fn( $i ) => implode( ', ', array_unique( array_filter( array_map( 'trim', preg_split( '/[\r\n,;]+/', (string) $i ) ) ) ) ),
-        'default'           => '',
+    register_setting( 'bap_settings_group', 'bap_login_notify_routes', [
+        'sanitize_callback' => function( $ignored ) {
+            $users   = (array) ( $_POST['bap_login_route_user'] ?? [] );
+            $targets = (array) ( $_POST['bap_login_route_target'] ?? [] );
+            $types   = (array) ( $_POST['bap_login_route_type'] ?? [] );
+            $clean   = [];
+
+            foreach ( $targets as $idx => $raw_target ) {
+                $uid  = max( 0, (int) ( $users[ $idx ] ?? 0 ) );
+                $type = ( 'email' === ( $types[ $idx ] ?? 'telegram' ) ) ? 'email' : 'telegram';
+                $val  = trim( sanitize_text_field( wp_unslash( (string) $raw_target ) ) );
+
+                if ( '' === $val ) {
+                    continue;
+                }
+                if ( 'email' === $type ) {
+                    $mail = sanitize_email( $val );
+                    if ( ! is_email( $mail ) ) {
+                        continue;
+                    }
+                    $val = $mail;
+                } else {
+                    $val = preg_replace( '/[^0-9\-]/', '', $val );
+                    if ( '' === $val ) {
+                        continue;
+                    }
+                }
+
+                $clean[] = [
+                    'user_id' => $uid,
+                    'target'  => $val,
+                    'type'    => $type,
+                ];
+            }
+
+            return ! empty( $clean ) ? $clean : [ [ 'user_id' => 0, 'target' => '', 'type' => 'telegram' ] ];
+        },
+        'default' => [ [ 'user_id' => 0, 'target' => '', 'type' => 'telegram' ] ],
     ] );
 } );
 

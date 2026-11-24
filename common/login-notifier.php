@@ -53,21 +53,23 @@ function bap_evaluate_login_asn_change( $user_id, $current_asn ) {
     ];
 }
 
-function bap_get_login_notify_recipients() {
-    $raw = trim( (string) get_option( 'bap_login_notify_emails', '' ) );
-    if ( '' !== $raw ) {
-        $valid = [];
-        foreach ( preg_split( '/[\r\n,;]+/', $raw ) as $mail ) {
-            $m = sanitize_email( trim( $mail ) );
-            if ( is_email( $m ) ) {
-                $valid[] = $m;
+function bap_get_login_routes_for_user( $user_id, $type ) {
+    $routes  = get_option( 'bap_login_notify_routes', [] );
+    $targets = [];
+
+    if ( is_array( $routes ) ) {
+        foreach ( $routes as $r ) {
+            $r_uid  = (int) ( $r['user_id'] ?? 0 );
+            $r_type = (string) ( $r['type'] ?? '' );
+            $r_tgt  = trim( (string) ( $r['target'] ?? '' ) );
+
+            if ( '' !== $r_tgt && $r_type === $type && ( 0 === $r_uid || $r_uid === (int) $user_id ) ) {
+                $targets[] = $r_tgt;
             }
         }
-        if ( ! empty( $valid ) ) {
-            return array_unique( $valid );
-        }
     }
-    return function_exists( 'bap_get_notify_recipients' ) ? bap_get_notify_recipients() : [ get_option( 'admin_email' ) ];
+
+    return array_values( array_unique( $targets ) );
 }
 
 function bap_send_successful_login_alert( WP_User $user, $is_test = false ) {
@@ -98,6 +100,11 @@ function bap_send_successful_login_alert( WP_User $user, $is_test = false ) {
     $ok = true;
 
     if ( in_array( $channel, [ 'email', 'both' ], true ) ) {
+        $custom_emails = bap_get_login_routes_for_user( $user->ID, 'email' );
+        $recipients    = ! empty( $custom_emails )
+            ? $custom_emails
+            : ( function_exists( 'bap_get_notify_recipients' ) ? bap_get_notify_recipients() : [ get_option( 'admin_email' ) ] );
+
         $prefix  = $asn_check['changed'] ? '⚠️ [NUEVO ASN] ' : '✅ ';
         $t_badge = $is_test ? '[PRUEBA] ' : '';
         $subject = "{$prefix}{$t_badge}[{$site_name}] Inicio de sesión exitoso: {$user->user_login}";
@@ -115,7 +122,7 @@ function bap_send_successful_login_alert( WP_User $user, $is_test = false ) {
         $body .= "• ASNs Sesiones Activas: {$asn_check['active_asns']}\n";
         $body .= "• Navegador / User-Agent: " . ( $ua ?: 'No registrado' ) . "\n";
 
-        if ( ! wp_mail( bap_get_login_notify_recipients(), $subject, $body ) ) {
+        if ( ! wp_mail( $recipients, $subject, $body ) ) {
             $ok = false;
         }
     }
@@ -154,8 +161,8 @@ function bap_send_successful_login_alert( WP_User $user, $is_test = false ) {
         $fb .= "• <b>ASN Anterior:</b> {$e( $asn_check['last_asn'] )}\n";
         $fb .= "<blockquote expandable><b>Sesiones activas:</b> {$e( $asn_check['active_asns'] )}\n<b>UA:</b> {$e( $ua ?: 'N/D' )}</blockquote>";
 
-        $login_chat_ids = trim( (string) get_option( 'bap_login_tg_chat_ids', '' ) );
-        $tg_res         = bap_send_telegram_rich_article( $rich, $fb, $login_chat_ids );
+        $custom_chats = bap_get_login_routes_for_user( $user->ID, 'telegram' );
+        $tg_res       = bap_send_telegram_rich_article( $rich, $fb, implode( ', ', $custom_chats ) );
         if ( is_wp_error( $tg_res ) ) {
             $ok = false;
         }
