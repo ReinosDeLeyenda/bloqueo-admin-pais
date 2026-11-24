@@ -49,6 +49,9 @@ function bap_check_frontend_rules() {
             exit;
         }
         $msg = get_option( 'bap_web_block_message', 'Este contenido no está disponible en tu ubicación o red.' );
+        if ( function_exists( 'bap_render_custom_403_page' ) ) {
+            bap_render_custom_403_page( 'Acceso restringido', $msg, $ip, $country, $reason );
+        }
         wp_die( '<h1>Acceso restringido</h1><p>' . esc_html( $msg ) . '</p>', 'Acceso Restringido', [ 'response' => 403 ] );
     };
 
