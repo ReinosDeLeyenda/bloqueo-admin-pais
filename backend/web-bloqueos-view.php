@@ -7,14 +7,8 @@ $order         = $current['order'];
 $ops           = $current['ops'];
 ?>
 <div class="wrap">
-    <h1>Bloqueo Admin por País e IP</h1>
-    <h2 class="nav-tab-wrapper">
-        <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-db' ) ); ?>" class="nav-tab">Administración Base de Datos</a>
-        <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-bloqueos' ) ); ?>" class="nav-tab">Bloqueos Admin</a>
-        <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-web-bloqueos' ) ); ?>" class="nav-tab nav-tab-active">Bloqueos Web</a>
-        <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-estadisticas' ) ); ?>" class="nav-tab">Estadísticas</a>
-    </h2>
-
+    <h1>Control de Acceso al Panel</h1>
+    <?php bap_render_tabs( 'bap-web-bloqueos' ); ?>
     <?php echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
     <div class="card" style="max-width:920px;margin-top:16px;padding:18px 22px;">
