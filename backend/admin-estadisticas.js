@@ -110,25 +110,4 @@
             rows.forEach(r => tbody.appendChild(r));
         });
     });
-
-    table.addEventListener('click', e => {
-        const ipLink = e.target.closest('a.bap-ip2loc-link');
-        if (ipLink) {
-            e.preventDefault();
-            const ip = (ipLink.dataset.ip || ipLink.textContent || '').trim();
-            if (ip && ip !== 'N/D') {
-                window.open('https:' + '//://ip2location.com' + encodeURIComponent(ip), '_blank', 'noopener,noreferrer');
-            }
-            return;
-        }
-
-        const abuseLink = e.target.closest('a.bap-abuse-link');
-        if (abuseLink) {
-            e.preventDefault();
-            const ip = (abuseLink.dataset.ip || '').trim();
-            if (ip && ip !== 'N/D') {
-                window.open('https:' + '//://abuseipdb.com' + encodeURIComponent(ip), '_blank', 'noopener,noreferrer');
-            }
-        }
-    });
 })();

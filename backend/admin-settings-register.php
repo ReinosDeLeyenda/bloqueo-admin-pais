@@ -70,15 +70,15 @@ function bap_sanitize_notify_emails( $input ) {
 add_action( 'admin_init', function() {
     $bool_cb = fn( $i ) => ( '1' === (string) $i ) ? '1' : '0';
 
-    register_setting( 'bap_db_settings_group', 'bap_abuseipdb_key', [
-        'sanitize_callback' => fn( $i ) => trim( sanitize_text_field( (string) $i ) ),
-        'default'           => '',
-    ] );
-
     register_setting( 'bap_settings_group', 'bap_protected_paths', [
         'sanitize_callback' => 'bap_sanitize_protected_paths',
         'default'           => function_exists( 'bap_get_default_protected_paths' ) ? bap_get_default_protected_paths() : "/wp-admin/*\n/wp-login.php",
     ] );
+
+  register_setting( 'bap_settings_group', 'bap_login_notify_channel', [
+      'sanitize_callback' => fn( $i ) => in_array( $i, [ 'none', 'email', 'telegram', 'both' ], true ) ? $i : 'none',
+      'default'           => 'none',
+  ] );
 
     $booleans = [
         'bap_2fa_enabled'             => '0',
@@ -93,6 +93,7 @@ add_action( 'admin_init', function() {
         'bap_block_tor'               => '1',
         'bap_block_firehol'           => '1',
     ];
+
     foreach ( $booleans as $opt => $def ) {
         register_setting( 'bap_settings_group', $opt, [
             'sanitize_callback' => $bool_cb,

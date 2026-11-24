@@ -147,8 +147,6 @@
         'input[name="bap_allowed_countries"]',
         'input[name="bap_blocked_countries"]',
         'input[name="bap_rule_countries"]',
-        'input[name="bap_web_allowed_countries"]',
-        'input[name="bap_web_blocked_countries"]'
     ];
     document.querySelectorAll(selectors.join(',')).forEach(attachCountryPicker);
 })();

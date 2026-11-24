@@ -34,6 +34,22 @@ function bap_render_bloqueos_notify_and_auth_fields() {
             </div>
         </td>
     </tr>
+  <tr>
+      <th>Avisos de conexión exitosa</th>
+      <td>
+          <?php $login_ch = (string) get_option( 'bap_login_notify_channel', 'none' ); ?>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+              <select name="bap_login_notify_channel">
+                  <option value="none" <?php selected( $login_ch, 'none' ); ?>>Desactivado</option>
+                  <option value="email" <?php selected( $login_ch, 'email' ); ?>>Email</option>
+                  <option value="telegram" <?php selected( $login_ch, 'telegram' ); ?>>Telegram</option>
+                  <option value="both" <?php selected( $login_ch, 'both' ); ?>>Telegram y Email</option>
+              </select>
+              <button type="submit" form="bap_test_email_form" name="bap_send_test_login_alert" value="1" class="button button-secondary">Probar aviso de conexión</button>
+          </div>
+          <p class="description">Envía una alerta inmediata cuando un usuario inicia sesión y remarca si el <strong>ASN</strong> difiere de su última sesión o de sus sesiones activas.</p>
+      </td>
+  </tr>
     <tr>
         <th>Destinatarios de emails</th>
         <td>

@@ -141,14 +141,7 @@
     document.querySelectorAll('input[name="bap_asn_mode"]').forEach(r => {
         r.addEventListener('change', () => syncRadioInputs('bap_asn_mode', 'bap_allowed_asns', 'bap_blocked_asns'));
     });
-    document.querySelectorAll('input[name="bap_web_country_mode"]').forEach(r => {
-        r.addEventListener('change', () => syncRadioInputs('bap_web_country_mode', 'bap_web_allowed_countries', 'bap_web_blocked_countries'));
-    });
-    document.querySelectorAll('input[name="bap_web_asn_mode"]').forEach(r => {
-        r.addEventListener('change', () => syncRadioInputs('bap_web_asn_mode', 'bap_web_allowed_asns', 'bap_web_blocked_asns'));
-    });
-    syncRadioInputs('bap_web_country_mode', 'bap_web_allowed_countries', 'bap_web_blocked_countries');
-    syncRadioInputs('bap_web_asn_mode', 'bap_web_allowed_asns', 'bap_web_blocked_asns');
+
     syncRadioInputs('bap_country_mode', 'bap_allowed_countries', 'bap_blocked_countries');
     syncRadioInputs('bap_asn_mode', 'bap_allowed_asns', 'bap_blocked_asns');
 

@@ -91,6 +91,9 @@ add_action( 'login_form_bap_2fa', function() {
                 bap_2fa_trust_current_device( $user->ID );
             }
             wp_set_auth_cookie( $user->ID, ! empty( $state['remember'] ) );
+            if ( function_exists( 'bap_send_successful_login_alert' ) ) {
+                bap_send_successful_login_alert( $user, false );
+            }
             wp_safe_redirect( $state['redirect_to'] );
             exit;
         }

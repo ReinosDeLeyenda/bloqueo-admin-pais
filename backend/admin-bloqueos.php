@@ -51,6 +51,13 @@ function bap_handle_test_email_post() {
             ? '<div class="notice notice-error is-dismissible"><p><strong>Error Telegram:</strong> ' . esc_html( $res->get_error_message() ) . '</p></div>'
             : '<div class="notice notice-success is-dismissible"><p><strong>¡Resumen Rich Article de prueba enviado a Telegram!</strong></p></div>';
     }
+  if ( isset( $_POST['bap_send_test_login_alert'] ) && check_admin_referer( 'bap_test_email_action' ) ) {
+      $u  = wp_get_current_user();
+      $ok = function_exists( 'bap_send_successful_login_alert' ) ? bap_send_successful_login_alert( $u, true ) : false;
+      return $ok
+          ? '<div class="notice notice-success is-dismissible"><p><strong>¡Aviso de prueba de conexión exitosa enviado!</strong></p></div>'
+          : '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> No se pudo enviar el aviso de prueba (revisa tu configuración de Email o Telegram).</p></div>';
+  }
     return '';
 }
 
