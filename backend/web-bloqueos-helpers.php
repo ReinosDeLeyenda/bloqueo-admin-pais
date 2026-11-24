@@ -166,6 +166,20 @@ function bap_render_web_response_and_general_fields( array $current ) {
                     </label>
                 </td>
             </tr>
+            <tr>
+                <th scope="row">Cortafuegos WAF (Payload)</th>
+                <td>
+                    <label style="display:block;margin-bottom:6px;">
+                        <input type="checkbox" name="bap_waf_enabled" value="1" <?php checked( get_option( 'bap_waf_enabled', '0' ), '1' ); ?> />
+                        Inspeccionar URLs, formularios (<code>GET</code>/<code>POST</code>) y subidas (<code>FILES</code>) contra <strong>SQLi, XSS, LFI y ejecutables (.php)</strong>
+                    </label>
+                    <label style="display:block;">
+                        <input type="checkbox" name="bap_waf_autoban" value="1" <?php checked( get_option( 'bap_waf_autoban', '0' ), '1' ); ?> />
+                        Auto-banear en la Lista Negra temporal a las IPs detectadas por el WAF
+                    </label>
+                    <p class="description">Nunca afecta a usuarios conectados ni a la Lista Blanca.</p>
+                </td>
+            </tr>
         </table>
     </div>
     <?php
