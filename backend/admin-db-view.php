@@ -18,6 +18,33 @@ if ( isset( $_POST['bap_test_ext_db'] ) && current_user_can( 'manage_options' ) 
         $ext_test_notice = '<div class="notice notice-error is-dismissible"><p><strong>Error de conexión:</strong> ' . esc_html( $err ?: 'Activa primero MySQL externo y guarda los datos.' ) . '</p></div>';
     }
 }
+
+$db_freq  = (string) get_option( 'bap_db_auto_update_freq', 'none' );
+$db_items = [
+    [ 'title' => '1. Base de Datos Países (.mmdb)', 'active' => file_exists( $mmdb ), 'info' => file_exists( $mmdb ) ? size_format( filesize( $mmdb ), 2 ) : '', 'updated' => $country_updated, 'up_btn' => 'bap_update_country_db', 'up_lbl' => 'Descargar / Actualizar Países', 'form_id' => 'bap_up_country', 'f_input' => 'bap_mmdb_file', 'accept' => '.mmdb,.gz', 'ul_btn' => 'bap_upload_country_db', 'del_t' => 'country', 'del_c' => '¿Borrar DB de Países?' ],
+    [ 'title' => '2. Base de Datos ASN (.mmdb)', 'active' => file_exists( $asn_mmdb ), 'info' => file_exists( $asn_mmdb ) ? size_format( filesize( $asn_mmdb ), 2 ) : '', 'updated' => $asn_updated, 'up_btn' => 'bap_update_asn_db', 'up_lbl' => 'Descargar / Actualizar ASN', 'form_id' => 'bap_up_asn', 'f_input' => 'bap_asn_file', 'accept' => '.mmdb,.gz', 'ul_btn' => 'bap_upload_asn_db', 'del_t' => 'asn', 'del_c' => '¿Borrar DB de ASN?' ],
+    [ 'title' => '3. Base de Datos AbuseIPDB', 'active' => file_exists( $abuse_file ), 'info' => (int) get_option( 'bap_abuseipdb_count', 0 ) . ' IPs', 'updated' => (string) get_option( 'bap_abuseipdb_last_updated', '' ), 'up_btn' => 'bap_update_abuse_db', 'up_lbl' => 'Descargar / Actualizar AbuseIPDB', 'form_id' => 'bap_up_abuse', 'f_input' => 'bap_abuse_file', 'accept' => '.json,.txt,.csv,.ipv4,.gz', 'ul_btn' => 'bap_upload_abuse_db', 'del_t' => 'abuse', 'del_c' => '¿Borrar DB de AbuseIPDB?' ],
+    [ 'title' => '4. Nodos de Salida Tor', 'active' => file_exists( $tor_file ), 'info' => (int) get_option( 'bap_tor_count', 0 ) . ' nodos', 'updated' => (string) get_option( 'bap_tor_last_updated', '' ), 'up_btn' => 'bap_update_tor_db', 'up_lbl' => 'Descargar / Actualizar Tor', 'form_id' => 'bap_up_tor', 'f_input' => 'bap_tor_file', 'accept' => '.txt,.lst,.json', 'ul_btn' => 'bap_upload_tor_db', 'del_t' => 'tor', 'del_c' => '¿Borrar lista Tor?' ],
+    [ 'title' => '5. FireHOL Level 1 (Spamhaus/CIDR)', 'active' => file_exists( $firehol_file ), 'info' => (int) get_option( 'bap_firehol_count', 0 ) . ' redes', 'updated' => (string) get_option( 'bap_firehol_last_updated', '' ), 'up_btn' => 'bap_update_firehol_db', 'up_lbl' => 'Descargar / Actualizar FireHOL', 'form_id' => 'bap_up_firehol', 'f_input' => 'bap_firehol_file', 'accept' => '.netset,.txt,.json', 'ul_btn' => 'bap_upload_firehol_db', 'del_t' => 'firehol', 'del_c' => '¿Borrar lista FireHOL?' ],
+];
+
+$missing_count  = 0;
+$outdated_count = 0;
+foreach ( $db_items as &$item ) {
+    $item['state'] = bap_get_db_status_state( $item['active'], $item['updated'], $db_freq );
+    if ( 'missing' === $item['state'] ) {
+        $missing_count++;
+    } elseif ( 'outdated' === $item['state'] ) {
+        $outdated_count++;
+    }
+}
+unset( $item );
+
+$all_missing     = ( count( $db_items ) === $missing_count );
+$container_style = 'display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;max-width:1200px;';
+if ( $all_missing ) {
+    $container_style .= 'background-color:rgba(214,54,56,0.22);border:2px solid #d63638;border-radius:6px;padding:16px;';
+}
 ?>
 <div class="wrap">
     <h1>Control de Acceso al Panel</h1>
@@ -25,80 +52,34 @@ if ( isset( $_POST['bap_test_ext_db'] ) && current_user_can( 'manage_options' ) 
     <?php echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
     <?php echo $ext_test_notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
+    <?php if ( $missing_count > 0 || $outdated_count > 0 ) : ?>
+        <div class="notice <?php echo $missing_count > 0 ? 'notice-error' : 'notice-warning'; ?>" style="max-width:1180px;margin:14px 0;">
+            <p>
+                <strong>Atención — Seguridad degradada:</strong>
+                <?php if ( $all_missing ) : ?>
+                    No hay <strong>ninguna base de datos cargada</strong>. Los filtros por País, ASN, AbuseIPDB, Tor y FireHOL no podrán bloquear amenazas hasta que las descargues.
+                <?php else : ?>
+                    <?php if ( $missing_count > 0 ) : ?>Hay <strong><?php echo (int) $missing_count; ?></strong> base(s) de datos sin cargar. <?php endif; ?>
+                    <?php if ( $outdated_count > 0 ) : ?>Hay <strong><?php echo (int) $outdated_count; ?></strong> base(s) de datos obsoletas respecto a la frecuencia de actualización. <?php endif; ?>
+                    La protección del sitio se verá degradada hasta que las descargues o actualices.
+                <?php endif; ?>
+            </p>
+        </div>
+    <?php endif; ?>
+
     <div class="card" style="max-width:1180px;padding:14px 20px;margin-bottom:20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
         <strong>Acciones masivas:</strong>
-        <form method="post" style="display:inline;">
-            <?php wp_nonce_field( 'bap_db_action' ); ?>
-            <input type="submit" name="bap_update_all_dbs" class="button button-primary" value="Descargar / Actualizar TODAS las bases de datos" />
-        </form>
-        <form method="post" style="display:inline;" onsubmit="return confirm('¿Seguro que quieres borrar TODAS las bases de datos locales?');">
-            <?php wp_nonce_field( 'bap_db_action' ); ?>
-            <input type="submit" name="bap_delete_all_dbs" class="button button-secondary" style="color:#d63638;border-color:#d63638;" value="Borrar TODAS las bases de datos" />
-        </form>
+        <form method="post" style="display:inline;"><?php wp_nonce_field( 'bap_db_action' ); ?><input type="submit" name="bap_update_all_dbs" class="button button-primary" value="Descargar / Actualizar TODAS las bases de datos" /></form>
+        <form method="post" style="display:inline;" onsubmit="return confirm('¿Seguro que quieres borrar TODAS las bases de datos locales?');"><?php wp_nonce_field( 'bap_db_action' ); ?><input type="submit" name="bap_delete_all_dbs" class="button button-secondary" style="color:#d63638;border-color:#d63638;" value="Borrar TODAS las bases de datos" /></form>
     </div>
 
-    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;max-width:1200px;">
-        <?php
-        bap_render_single_db_card( '1. Base de Datos Países (.mmdb)', file_exists( $mmdb ), file_exists( $mmdb ) ? size_format( filesize( $mmdb ), 2 ) : '', $country_updated, 'bap_update_country_db', 'Descargar / Actualizar Países', 'bap_up_country', 'bap_mmdb_file', '.mmdb,.gz', 'bap_upload_country_db', 'country', '¿Borrar DB de Países?' );
-        bap_render_single_db_card( '2. Base de Datos ASN (.mmdb)', file_exists( $asn_mmdb ), file_exists( $asn_mmdb ) ? size_format( filesize( $asn_mmdb ), 2 ) : '', $asn_updated, 'bap_update_asn_db', 'Descargar / Actualizar ASN', 'bap_up_asn', 'bap_asn_file', '.mmdb,.gz', 'bap_upload_asn_db', 'asn', '¿Borrar DB de ASN?' );
-        bap_render_single_db_card( '3. Base de Datos AbuseIPDB', file_exists( $abuse_file ), (int) get_option( 'bap_abuseipdb_count', 0 ) . ' IPs', get_option( 'bap_abuseipdb_last_updated', '' ), 'bap_update_abuse_db', 'Descargar / Actualizar AbuseIPDB', 'bap_up_abuse', 'bap_abuse_file', '.json,.txt,.csv,.ipv4,.gz', 'bap_upload_abuse_db', 'abuse', '¿Borrar DB de AbuseIPDB?' );
-        bap_render_single_db_card( '4. Nodos de Salida Tor', file_exists( $tor_file ), (int) get_option( 'bap_tor_count', 0 ) . ' nodos', get_option( 'bap_tor_last_updated', '' ), 'bap_update_tor_db', 'Descargar / Actualizar Tor', 'bap_up_tor', 'bap_tor_file', '.txt,.lst,.json', 'bap_upload_tor_db', 'tor', '¿Borrar lista Tor?' );
-        bap_render_single_db_card( '5. FireHOL Level 1 (Spamhaus/CIDR)', file_exists( $firehol_file ), (int) get_option( 'bap_firehol_count', 0 ) . ' redes', get_option( 'bap_firehol_last_updated', '' ), 'bap_update_firehol_db', 'Descargar / Actualizar FireHOL', 'bap_up_firehol', 'bap_firehol_file', '.netset,.txt,.json', 'bap_upload_firehol_db', 'firehol', '¿Borrar lista FireHOL?' );
-        ?>
+    <div style="<?php echo esc_attr( $container_style ); ?>">
+        <?php foreach ( $db_items as $db ) : ?>
+            <?php bap_render_single_db_card( $db['title'], $db['active'], $db['info'], $db['updated'], $db['up_btn'], $db['up_lbl'], $db['form_id'], $db['f_input'], $db['accept'], $db['ul_btn'], $db['del_t'], $db['del_c'], $db['state'] ); ?>
+        <?php endforeach; ?>
     </div>
 
-    <div class="card" style="max-width:760px;padding:16px 24px;margin-top:12px;">
-        <h2>Configuración de Bases de Datos y MySQL Externo</h2>
-        <form method="post" action="options.php">
-            <?php settings_fields( 'bap_db_settings_group' ); ?>
-            <table class="form-table">
-                <tr>
-                    <th>API Key AbuseIPDB (Opcional)</th>
-                    <td>
-                        <input type="password" name="bap_abuseipdb_key" value="<?php echo esc_attr( get_option( 'bap_abuseipdb_key', '' ) ); ?>" class="regular-text code" placeholder="Sin clave usa espejo público >=90%" />
-                        <p class="description">Permite descargar listas con puntuación exacta (0-100 %) y consultar IPs en vivo.</p>
-                    </td>
-                </tr>
-                <tr>
-                    <th>Actualización automática de DBs</th>
-                    <td>
-                        <?php
-                        $db_freq   = (string) get_option( 'bap_db_auto_update_freq', 'none' );
-                        $next_cron = wp_next_scheduled( 'bap_auto_update_dbs_event' );
-                        ?>
-                        <select name="bap_db_auto_update_freq">
-                            <option value="none" <?php selected( $db_freq, 'none' ); ?>>Desactivada</option>
-                            <option value="daily" <?php selected( $db_freq, 'daily' ); ?>>Diaria (cada 24 horas)</option>
-                            <option value="weekly" <?php selected( $db_freq, 'weekly' ); ?>>Semanal (cada 7 días)</option>
-                            <option value="2weeks" <?php selected( $db_freq, '2weeks' ); ?>>Cada 2 semanas (cada 14 días)</option>
-                            <option value="monthly" <?php selected( $db_freq, 'monthly' ); ?>>Mensual (cada 30 días)</option>
-                        </select>
-                        <?php if ( $next_cron ) : ?>
-                            <p class="description" style="color:#008a20;">Próxima actualización automática programada: <code><?php echo esc_html( wp_date( 'Y-m-d H:i:s', $next_cron ) ); ?></code></p>
-                        <?php else : ?>
-                            <p class="description">Descarga y actualiza automáticamente las 5 bases de datos en segundo plano mediante WP-Cron.</p>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-                <?php
-                if ( function_exists( 'bap_render_external_db_fields' ) ) {
-                    bap_render_external_db_fields();
-                }
-                ?>
-            </table>
-            <p class="submit" style="display:flex;gap:10px;align-items:center;">
-                <input type="submit" name="submit" class="button button-primary" value="Guardar configuración de Base de Datos" />
-                <button type="submit" form="bap_test_ext_db_form" name="bap_test_ext_db" class="button button-secondary">Probar conexión MySQL</button>
-            </p>
-        </form>
-        <form id="bap_test_ext_db_form" method="post" style="display:none;"><?php wp_nonce_field( 'bap_ext_db_test_action', 'bap_ext_db_nonce' ); ?></form>
-    </div>
-
+    <?php bap_render_db_settings_card( $db_freq ); ?>
     <?php bap_render_json_backup_card(); ?>
-
-    <?php
-    if ( function_exists( 'bap_render_ip_simulator_box' ) ) {
-        bap_render_ip_simulator_box();
-    }
-    ?>
+    <?php if ( function_exists( 'bap_render_ip_simulator_box' ) ) { bap_render_ip_simulator_box(); } ?>
 </div>
