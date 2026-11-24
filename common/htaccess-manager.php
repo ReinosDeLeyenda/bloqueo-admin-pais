@@ -77,18 +77,31 @@ function bap_sync_htaccess_rules() {
         }
     }
 
-    $rules = [];
-    if ( ! empty( $exts ) ) {
+    $block_xmlrpc = ( '1' === (string) get_option( 'bap_block_xmlrpc', '1' ) );
+    $rules        = [];
+
+    if ( ! empty( $exts ) || $block_xmlrpc ) {
         $secret = trim( (string) get_option( 'bap_secret_key', '' ) );
         $cname  = '' !== $secret ? 'bap_bypass_' . md5( $secret ) : '';
 
         $rules[] = '<IfModule mod_rewrite.c>';
         $rules[] = 'RewriteEngine On';
-        if ( '' !== $cname ) {
-            $rules[] = 'RewriteCond %{HTTP_COOKIE} !' . $cname . '= [NC]';
+
+        if ( ! empty( $exts ) ) {
+            if ( '' !== $cname ) {
+                $rules[] = 'RewriteCond %{HTTP_COOKIE} !' . $cname . '= [NC]';
+            }
+            $rules[] = 'RewriteCond %{REQUEST_URI} \.(' . implode( '|', array_unique( $exts ) ) . ')$ [NC]';
+            $rules[] = 'RewriteRule .* - [F,L]';
         }
-        $rules[] = 'RewriteCond %{REQUEST_URI} \.(' . implode( '|', array_unique( $exts ) ) . ')$ [NC]';
-        $rules[] = 'RewriteRule .* - [F,L]';
+
+        if ( $block_xmlrpc ) {
+            if ( '' !== $cname ) {
+                $rules[] = 'RewriteCond %{HTTP_COOKIE} !' . $cname . '= [NC]';
+            }
+            $rules[] = 'RewriteRule ^xmlrpc\.php$ - [F,L]';
+        }
+
         $rules[] = '</IfModule>';
     }
 

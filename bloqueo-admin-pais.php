@@ -3,7 +3,7 @@
  * Plugin Name: Bloqueo Admin por País e IP
  * Plugin URI: https://github.com
  * Description: Bloquea wp-admin, wp-login.php y el frontend por país, ASN, AbuseIPDB, Tor, FireHOL e IP usando bases de datos locales.
- * Version: 1.2.10
+ * Version: 1.2.11
  * Author: ReinosDeLeyenda
  * License: GPLv2 or later
  */
@@ -58,29 +58,32 @@ foreach ( $bap_files as $bap_file ) {
 register_activation_hook( __FILE__, 'bap_maybe_create_logs_table' );
 
 function bap_get_user_ip() {
-    $candidates = [];
+    $source = (string) get_option( 'bap_ip_source', 'remote_addr' );
+    $remote = isset( $_SERVER['REMOTE_ADDR'] ) ? trim( sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) ) : '';
 
-    if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
-        $candidates[] = trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) );
-    }
-    if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-        $ips          = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
-        $candidates[] = trim( reset( $ips ) );
-    }
-    if ( ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
-        $candidates[] = trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) ) );
-    }
-    if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
-        $candidates[] = trim( sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) );
-    }
-
-    foreach ( $candidates as $ip ) {
-        if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-            return $ip;
+    if ( 'cloudflare' === $source && ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
+        $cf_ip = trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) );
+        if ( filter_var( $cf_ip, FILTER_VALIDATE_IP ) ) {
+            return $cf_ip;
         }
     }
 
-    return '';
+    if ( 'x_forwarded_for' === $source && ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+        $ips = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
+        $fwd = trim( reset( $ips ) );
+        if ( filter_var( $fwd, FILTER_VALIDATE_IP ) ) {
+            return $fwd;
+        }
+    }
+
+    if ( 'x_real_ip' === $source && ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
+        $real = trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) ) );
+        if ( filter_var( $real, FILTER_VALIDATE_IP ) ) {
+            return $real;
+        }
+    }
+
+    return filter_var( $remote, FILTER_VALIDATE_IP ) ? $remote : '';
 }
 
 function bap_is_server_ip( $ip ) {

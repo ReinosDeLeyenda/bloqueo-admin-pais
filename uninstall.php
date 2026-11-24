@@ -23,26 +23,25 @@ if ( empty( $recipients ) ) {
 }
 
 if ( ! empty( $recipients ) ) {
-    $ip_candidates = [];
-    if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
-        $ip_candidates[] = trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) );
-    }
-    if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-        $forwarded       = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
-        $ip_candidates[] = trim( reset( $forwarded ) );
-    }
-    if ( ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
-        $ip_candidates[] = trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) ) );
-    }
-    if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
-        $ip_candidates[] = trim( sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) );
-    }
+    $source = (string) get_option( 'bap_ip_source', 'remote_addr' );
+    $remote = isset( $_SERVER['REMOTE_ADDR'] ) ? trim( sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) ) : '';
+    $ip     = filter_var( $remote, FILTER_VALIDATE_IP ) ? $remote : 'Desconocida';
 
-    $ip = 'Desconocida';
-    foreach ( $ip_candidates as $cand ) {
-        if ( filter_var( $cand, FILTER_VALIDATE_IP ) ) {
-            $ip = $cand;
-            break;
+    if ( 'cloudflare' === $source && ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
+        $cf_ip = trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) );
+        if ( filter_var( $cf_ip, FILTER_VALIDATE_IP ) ) {
+            $ip = $cf_ip;
+        }
+    } elseif ( 'x_forwarded_for' === $source && ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+        $forwarded = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
+        $fwd_ip    = trim( reset( $forwarded ) );
+        if ( filter_var( $fwd_ip, FILTER_VALIDATE_IP ) ) {
+            $ip = $fwd_ip;
+        }
+    } elseif ( 'x_real_ip' === $source && ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
+        $real_ip = trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) ) );
+        if ( filter_var( $real_ip, FILTER_VALIDATE_IP ) ) {
+            $ip = $real_ip;
         }
     }
 

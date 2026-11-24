@@ -24,6 +24,24 @@ if ( ! defined( 'ABSPATH' ) ) {
                 $asn_mode     = get_option( 'bap_asn_mode', 'allow' );
                 ?>
                 <tr>
+                    <th><label for="bap_ip_source">Detección de IP del visitante</label></th>
+                    <td>
+                        <?php $ip_source = get_option( 'bap_ip_source', 'remote_addr' ); ?>
+                        <select id="bap_ip_source" name="bap_ip_source">
+                            <option value="remote_addr" <?php selected( $ip_source, 'remote_addr' ); ?>>Conexión directa — REMOTE_ADDR (Recomendado / Anti-Spoofing)</option>
+                            <option value="cloudflare" <?php selected( $ip_source, 'cloudflare' ); ?>>Cloudflare CDN — HTTP_CF_CONNECTING_IP</option>
+                            <option value="x_forwarded_for" <?php selected( $ip_source, 'x_forwarded_for' ); ?>>Proxy inverso / Balanceador — HTTP_X_FORWARDED_FOR</option>
+                            <option value="x_real_ip" <?php selected( $ip_source, 'x_real_ip' ); ?>>Nginx Proxy — HTTP_X_REAL_IP</option>
+                        </select>
+                        <p class="description">
+                            Usa <strong>REMOTE_ADDR</strong> salvo que tu web pase por Cloudflare o un proxy inverso; de lo contrario, un atacante podría falsificar cabeceras HTTP para saltarse el bloqueo.
+                            <?php if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) && 'cloudflare' !== $ip_source ) : ?>
+                                <br /><span style="color:#d97706;font-weight:600;">Aviso: Se ha detectado tráfico de Cloudflare (<code><?php echo esc_html( sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) ); ?></code>). Considera seleccionar Cloudflare CDN.</span>
+                            <?php endif; ?>
+                        </p>
+                    </td>
+                </tr>
+                <tr>
                     <th>Rutas / Páginas a proteger</th>
                     <td>
                         <?php
@@ -115,6 +133,24 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <label>
                             <input type="checkbox" name="bap_block_nonexistent_users" value="1" <?php checked( get_option( 'bap_block_nonexistent_users', '1' ), '1' ); ?> />
                             Bloquear y registrar al instante cualquier intento de acceso con un usuario o email que no exista
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Bloquear XML-RPC</th>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="bap_block_xmlrpc" value="1" <?php checked( get_option( 'bap_block_xmlrpc', '1' ), '1' ); ?> />
+                            Desactivar <code>xmlrpc.php</code> y métodos pingback para frenar ataques de fuerza bruta y DDoS
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Evitar enumeración de usuarios</th>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="bap_block_user_enum" value="1" <?php checked( get_option( 'bap_block_user_enum', '1' ), '1' ); ?> />
+                            Bloquear consultas <code>/?author=N</code> y ocultar el endpoint <code>/wp-json/wp/v2/users</code> a visitantes no autenticados
                         </label>
                     </td>
                 </tr>

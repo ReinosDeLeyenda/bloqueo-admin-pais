@@ -6,12 +6,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 function bap_get_exportable_options( $include_secrets = false ) {
     $keys = [
         'bap_db_auto_update_freq',
+        'bap_ip_source',
         'bap_hibp_enabled', 'bap_hibp_check_login', 'bap_hibp_login_action',
         'bap_2fa_enabled', 'bap_2fa_enforce_admins', 'bap_2fa_remember_device',
         'bap_protected_paths', 'bap_enable_htaccess', 'bap_country_mode', 'bap_asn_mode',
-        'bap_block_nonexistent_users', 'bap_block_tor', 'bap_block_firehol',
+        'bap_block_nonexistent_users', 'bap_block_xmlrpc', 'bap_block_user_enum',
+        'bap_block_tor', 'bap_block_firehol',
         'bap_allowed_countries', 'bap_blocked_countries', 'bap_allowed_asns', 'bap_blocked_asns',
-        'bap_auto_ban_attempts', 'bap_abuseipdb_min_risk', 'bap_whitelist_ips', 'bap_blacklist_ips',
+        'bap_auto_ban_attempts', 'bap_auto_ban_duration',
+        'bap_abuseipdb_min_risk', 'bap_whitelist_ips', 'bap_blacklist_ips',
         'bap_redirect_url', 'bap_notify_freq', 'bap_notify_emails',
         'bap_web_enabled', 'bap_web_scope', 'bap_web_paths', 'bap_web_country_mode',
         'bap_web_allowed_countries', 'bap_web_blocked_countries', 'bap_web_asn_mode',

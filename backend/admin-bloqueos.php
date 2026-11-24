@@ -40,6 +40,15 @@ add_action( 'admin_init', function() {
         'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
         'default'           => '0',
     ]);
+    register_setting( 'bap_settings_group', 'bap_block_xmlrpc', [
+        'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
+        'default'           => '1'
+    ]);
+
+    register_setting( 'bap_settings_group', 'bap_block_user_enum', [
+        'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
+        'default'           => '1'
+    ]);
     register_setting( 'bap_settings_group', 'bap_2fa_enforce_admins', [
         'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
         'default'           => '0',
@@ -136,6 +145,11 @@ add_action( 'admin_init', function() {
         'default'           => ''
     ]);
 
+    register_setting( 'bap_settings_group', 'bap_ip_source', [
+        'sanitize_callback' => fn( $i ) => in_array( $i, [ 'remote_addr', 'cloudflare', 'x_forwarded_for', 'x_real_ip' ], true ) ? $i : 'remote_addr',
+        'default'           => 'remote_addr'
+    ]);
+
     register_setting( 'bap_settings_group', 'bap_secret_key', [
         'sanitize_callback' => function( $input ) {
             $raw = trim( (string) $input );
@@ -190,6 +204,7 @@ add_action( 'admin_init', function() {
 add_action( 'update_option_bap_enable_htaccess', 'bap_sync_htaccess_rules' );
 add_action( 'update_option_bap_protected_paths', 'bap_sync_htaccess_rules' );
 add_action( 'update_option_bap_secret_key', 'bap_sync_htaccess_rules' );
+add_action( 'update_option_bap_block_xmlrpc', 'bap_sync_htaccess_rules' );
 
 function bap_render_bloqueos_page() {
     $test_notice = '';

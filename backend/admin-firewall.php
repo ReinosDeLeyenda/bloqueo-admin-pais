@@ -3,6 +3,78 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+// Purgar IPs autobaneadas caducadas
+add_action( 'init', function() {
+    $duration_hours = (int) get_option( 'bap_auto_ban_duration', 24 );
+    if ( $duration_hours <= 0 ) {
+        return;
+    }
+
+    $expirations = get_option( 'bap_auto_ban_expirations', [] );
+    if ( ! is_array( $expirations ) || empty( $expirations ) ) {
+        return;
+    }
+
+    $now     = time();
+    $expired = [];
+
+    foreach ( $expirations as $ip => $expires_at ) {
+        if ( $now >= (int) $expires_at ) {
+            $expired[] = $ip;
+            unset( $expirations[ $ip ] );
+        }
+    }
+
+    if ( ! empty( $expired ) ) {
+        $bl_ips   = bap_parse_list( get_option( 'bap_blacklist_ips', '' ), false );
+        $filtered = array_diff( $bl_ips, $expired );
+
+        update_option( 'bap_blacklist_ips', implode( "\n", $filtered ) );
+        update_option( 'bap_auto_ban_expirations', $expirations, false );
+    }
+}, 0 );
+
+// Bloqueo de XML-RPC
+if ( '1' === (string) get_option( 'bap_block_xmlrpc', '1' ) ) {
+    add_filter( 'xmlrpc_enabled', '__return_false' );
+    add_filter( 'xmlrpc_methods', '__return_empty_array' );
+
+    add_action( 'init', function() {
+        $script = isset( $_SERVER['SCRIPT_FILENAME'] ) ? basename( $_SERVER['SCRIPT_FILENAME'] ) : '';
+        $uri    = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+
+        if ( 'xmlrpc.php' === $script || false !== stripos( $uri, 'xmlrpc.php' ) ) {
+            $ip = bap_get_user_ip();
+            if ( bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
+                return;
+            }
+            $country = function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'DESCONOCIDO';
+            bap_deny_access( $ip, $country, 'Acceso bloqueado a XML-RPC' );
+        }
+    }, 1 );
+}
+
+// Bloqueo de enumeración de usuarios (Author scan y REST API)
+if ( '1' === (string) get_option( 'bap_block_user_enum', '1' ) ) {
+    add_action( 'template_redirect', function() {
+        if ( ! is_user_logged_in() && ( is_author() || isset( $_GET['author'] ) ) ) {
+            $ip = bap_get_user_ip();
+            if ( bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
+                return;
+            }
+            $country = function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'DESCONOCIDO';
+            bap_deny_access( $ip, $country, 'Intento de enumeración de usuarios (?author)' );
+        }
+    }, 1 );
+
+    add_filter( 'rest_endpoints', function( $endpoints ) {
+        if ( ! is_user_logged_in() ) {
+            unset( $endpoints['/wp/v2/users'], $endpoints['/wp/v2/users/(?P<id>[\d]+)'] );
+        }
+        return $endpoints;
+    } );
+}
+
 add_action( 'wp_login_failed', function( $username ) {
     $ip = bap_get_user_ip();
     if ( bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
