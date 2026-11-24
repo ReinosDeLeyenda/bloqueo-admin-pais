@@ -75,6 +75,9 @@ function bap_handle_web_rule_actions() {
             $raw_redir = bap_sanitize_country_redirects( $raw_redir );
         }
         update_option( 'bap_web_country_redirects', $raw_redir );
+        update_option( 'bap_rl_max_req_min', max( 0, min( 5000, (int) ( $_POST['bap_rl_max_req_min'] ?? 0 ) ) ) );
+        update_option( 'bap_rl_max_404_min', max( 0, min( 1000, (int) ( $_POST['bap_rl_max_404_min'] ?? 0 ) ) ) );
+        update_option( 'bap_rl_autoban', ( '1' === (string) ( $_POST['bap_rl_autoban'] ?? '0' ) ) ? '1' : '0' );
 
         $selected = $scope;
         $label    = ( '__all__' === $scope ) ? 'Toda la web' : $scope;

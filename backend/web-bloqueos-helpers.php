@@ -115,6 +115,29 @@ function bap_render_web_response_and_general_fields( array $current ) {
                     <p class="description">Una regla por línea con formato <code>ISO => URL</code>. Se aplica antes del bloqueo.</p>
                 </td>
             </tr>
+            <tr>
+                <th scope="row">Rate Limit: Peticiones / min</th>
+                <td>
+                    <input type="number" name="bap_rl_max_req_min" value="<?php echo (int) get_option( 'bap_rl_max_req_min', 0 ); ?>" min="0" max="5000" style="width:85px;" /> peticiones/min
+                    <span class="description">(<code>0</code> = desactivado; recomendado anti-scraping: <code>120</code>)</span>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Rate Limit: Errores 404 / min</th>
+                <td>
+                    <input type="number" name="bap_rl_max_404_min" value="<?php echo (int) get_option( 'bap_rl_max_404_min', 0 ); ?>" min="0" max="1000" style="width:85px;" /> errores 404/min
+                    <span class="description">(<code>0</code> = desactivado; recomendado anti-escáneres: <code>20</code>)</span>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Auto-banear al exceder Rate Limit</th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="bap_rl_autoban" value="1" <?php checked( get_option( 'bap_rl_autoban', '0' ), '1' ); ?> />
+                        Añadir automáticamente la IP a la Lista Negra temporal (usa la duración configurada en Bloqueos Admin)
+                    </label>
+                </td>
+            </tr>
         </table>
     </div>
     <?php

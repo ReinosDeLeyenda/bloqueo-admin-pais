@@ -18,7 +18,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
         'bap_redirect_url', 'bap_notify_channel', 'bap_login_notify_channel', 'bap_login_notify_routes', 'bap_notify_freq', 'bap_notify_emails',
         'bap_email_template', 'bap_custom_email_templates', 'bap_tg_chat_ids',
         'bap_web_rules', 'bap_web_allow_seo_bots',
-        'bap_web_country_redirects', 'bap_web_redirect_url', 'bap_web_block_message',
+        'bap_web_country_redirects', 'bap_web_redirect_url', 'bap_web_block_message', 'bap_rl_max_req_min', 'bap_rl_max_404_min', 'bap_rl_autoban',
         'bap_ext_db_enabled', 'bap_ext_db_host', 'bap_ext_db_port', 'bap_ext_db_name',
         'bap_ext_db_user', 'bap_ext_db_table',
     ];
