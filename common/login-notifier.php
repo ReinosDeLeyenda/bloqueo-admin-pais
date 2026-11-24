@@ -137,38 +137,35 @@ function bap_send_successful_login_alert( WP_User $user, $is_test = false, $sing
     }
 
     if ( in_array( $channel, [ 'telegram', 'both' ], true ) && function_exists( 'bap_send_telegram_rich_article' ) ) {
-        $e      = fn( $v ) => htmlspecialchars( (string) $v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
-        $t_tag  = $is_test ? '🧪 <b>PRUEBA</b> · ' : '';
-        $header = $asn_check['changed']
-            ? "⚠️ {$t_tag}Conexión Exitosa desde ASN Diferente — {$e( $site_name )}"
-            : "✅ {$t_tag}Conexión Exitosa al Panel — {$e( $site_name )}";
+        $e           = fn( $v ) => htmlspecialchars( (string) $v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
+        $t_tag       = $is_test ? '🧪 <b>PRUEBA</b> · ' : '';
+        $status_icon = $asn_check['changed'] ? '⚠️' : '✅';
+        $asn_alert   = $asn_check['changed']
+            ? '⚠️ ATENCIÓN — CAMBIO DE OPERADOR / ASN DETECTADO: ' . $e( $asn_check['summary'] )
+            : 'Inicio de sesión verificado desde la red habitual.';
 
-        $rich = "<h2>{$header}</h2>";
-        if ( $asn_check['changed'] ) {
-            $rich .= "<p><b>⚠️ ATENCIÓN — CAMBIO DE OPERADOR / ASN DETECTADO:</b><br>{$e( $asn_check['summary'] )}</p>";
+        if ( function_exists( 'bap_render_custom_tg_template' ) ) {
+            $rendered = bap_render_custom_tg_template( 'login', [
+                '{status_icon}' => $status_icon,
+                '{badge}'       => $t_tag,
+                '{site_name}'   => $e( $site_name ),
+                '{asn_alert}'   => $asn_alert,
+                '{user_login}'  => $e( $user->user_login ),
+                '{user_email}'  => $e( $user->user_email ),
+                '{ip}'          => $e( $ip ),
+                '{country}'     => $e( $country ),
+                '{asn}'         => $e( $asn ),
+                '{last_asn}'    => $e( $asn_check['last_asn'] ),
+                '{active_asns}' => $e( $asn_check['active_asns'] ),
+                '{time}'        => $e( $time ),
+                '{user_agent}'  => $e( $ua ?: 'No registrado' ),
+            ] );
+            $rich = $rendered['rich'];
+            $fb   = $rendered['fallback'];
         } else {
-            $rich .= "<p>Inicio de sesión verificado desde la red habitual.</p>";
+            $rich = "<h2>{$status_icon} {$t_tag}Conexión Exitosa — {$e( $site_name )}</h2><p>{$asn_alert}</p>";
+            $fb   = strip_tags( $rich );
         }
-
-        $rich .= "<table><tr><th>Parámetro</th><th>Detalle</th></tr>";
-        $rich .= "<tr><td><b>Usuario</b></td><td><b>{$e( $user->user_login )}</b> ({$e( $user->user_email )})</td></tr>";
-        $rich .= "<tr><td><b>IP / País</b></td><td><code>{$e( $ip )}</code> (<b>{$e( $country )}</b>)</td></tr>";
-        $rich .= "<tr><td><b>ASN Actual</b></td><td><b>{$e( $asn )}</b></td></tr>";
-        $rich .= "<tr><td><b>ASN Última Sesión</b></td><td>{$e( $asn_check['last_asn'] )}</td></tr>";
-        $rich .= "<tr><td><b>ASNs Sesiones Activas</b></td><td>{$e( $asn_check['active_asns'] )}</td></tr>";
-        $rich .= "<tr><td><b>Fecha / Hora</b></td><td><code>{$e( $time )}</code></td></tr>";
-        $rich .= "</table>";
-        $rich .= "<blockquote expandable><b>Navegador / User-Agent:</b>\n<code>{$e( $ua ?: 'No registrado' )}</code></blockquote>";
-
-        $fb  = "<b>{$header}</b>\n\n";
-        if ( $asn_check['changed'] ) {
-            $fb .= "⚠️ <b>{$e( $asn_check['summary'] )}</b>\n\n";
-        }
-        $fb .= "• <b>Usuario:</b> {$e( $user->user_login )}\n";
-        $fb .= "• <b>IP:</b> <code>{$e( $ip )}</code> ({$e( $country )})\n";
-        $fb .= "• <b>ASN Actual:</b> <b>{$e( $asn )}</b>\n";
-        $fb .= "• <b>ASN Anterior:</b> {$e( $asn_check['last_asn'] )}\n";
-        $fb .= "<blockquote expandable><b>Sesiones activas:</b> {$e( $asn_check['active_asns'] )}\n<b>UA:</b> {$e( $ua ?: 'N/D' )}</blockquote>";
 
         if ( is_array( $single_route ) && 'telegram' === ( $single_route['type'] ?? '' ) ) {
             $clean_chat   = preg_replace( '/[^0-9\-]/', '', (string) ( $single_route['target'] ?? '' ) );

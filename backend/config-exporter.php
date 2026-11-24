@@ -22,7 +22,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
         'bap_2fa_enabled', 'bap_2fa_enforce_admins', 'bap_2fa_remember_device',
 
         // 3. Notificaciones y Plantillas Email
-        'bap_notify_channel', 'bap_notify_freq', 'bap_notify_emails',
+        'bap_notify_channel', 'bap_notify_freq', 'bap_notify_emails','bap_tg_custom_templates',
         'bap_email_template', 'bap_custom_email_templates', 'bap_tg_chat_ids',
         'bap_login_notify_channel', 'bap_login_notify_routes',
 
