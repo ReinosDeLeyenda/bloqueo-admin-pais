@@ -70,7 +70,7 @@ function bap_render_hourly_line_chart( $table ) {
     <?php
 }
 
-function bap_render_estadisticas_charts( $table, $total_blocks, $top_countries ) {
+function bap_render_estadisticas_charts( $table, $total_blocks, $top_countries, $top_uris = [], $stats_base_url = '' ) {
     global $wpdb;
 
     $since = gmdate( 'Y-m-d 00:00:00', strtotime( '-13 days' ) );
@@ -97,9 +97,10 @@ function bap_render_estadisticas_charts( $table, $total_blocks, $top_countries )
         }
         $days[] = [ 'date' => $d, 'label' => gmdate( 'd/m', strtotime( $d ) ), 'count' => $cnt ];
     }
+    $palette = [ '#d63638', '#2271b1', '#d97706', '#00a32a', '#646970' ];
     ?>
     <div style="display:flex;gap:16px;margin:0 0 20px 0;flex-wrap:wrap;">
-        <div class="card" style="flex:1.5;min-width:340px;margin:0;padding:16px 20px;">
+        <div class="card" style="flex:1.4;min-width:320px;margin:0;padding:16px 20px;">
             <h3 style="margin-top:0;margin-bottom:12px;">Evolución de bloqueos (Últimos 14 días)</h3>
             <div style="display:flex;align-items:flex-end;gap:6px;height:130px;padding:10px 6px 4px;border-bottom:1px solid #dcdcde;background:#f9f9f9;border-radius:4px 4px 0 0;">
                 <?php foreach ( $days as $item ) :
@@ -121,13 +122,11 @@ function bap_render_estadisticas_charts( $table, $total_blocks, $top_countries )
             </div>
         </div>
 
-        <div class="card" style="flex:1;min-width:280px;margin:0;padding:16px 20px;">
+        <div class="card" style="flex:1;min-width:260px;margin:0;padding:16px 20px;">
             <h3 style="margin-top:0;margin-bottom:12px;">Distribución por País (Top 5)</h3>
             <?php if ( empty( $top_countries ) || $total_blocks <= 0 ) : ?>
-                <p class="description">Aún no hay suficientes datos para mostrar la distribución.</p>
-            <?php else :
-                $palette = [ '#d63638', '#2271b1', '#d97706', '#00a32a', '#646970' ];
-            ?>
+                <p class="description">Aún no hay suficientes datos.</p>
+            <?php else : ?>
                 <div style="display:flex;flex-direction:column;gap:10px;">
                     <?php foreach ( $top_countries as $i => $tc ) :
                         $cnt   = (int) $tc->total;
@@ -139,6 +138,35 @@ function bap_render_estadisticas_charts( $table, $total_blocks, $top_countries )
                             <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
                                 <strong><?php echo esc_html( $tc->country_code ); ?></strong>
                                 <span><?php echo number_format_i18n( $cnt ); ?> (<?php echo esc_html( $share ); ?>%)</span>
+                            </div>
+                            <div style="width:100%;height:8px;background:#f0f0f1;border-radius:4px;overflow:hidden;">
+                                <div style="width:<?php echo esc_attr( $bar_w ); ?>%;height:100%;background:<?php echo esc_attr( $color ); ?>;border-radius:4px;"></div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="card" style="flex:1.1;min-width:280px;margin:0;padding:16px 20px;">
+            <h3 style="margin-top:0;margin-bottom:12px;">Distribución URLs Atacadas (Top 5)</h3>
+            <?php if ( empty( $top_uris ) || $total_blocks <= 0 ) : ?>
+                <p class="description">Aún no hay suficientes datos.</p>
+            <?php else : ?>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <?php foreach ( $top_uris as $i => $tu ) :
+                        $cnt      = (int) $tu->total;
+                        $share    = round( ( $cnt / $total_blocks ) * 100, 1 );
+                        $bar_w    = max( 3, min( 100, $share ) );
+                        $color    = $palette[ $i % count( $palette ) ];
+                        $uri_link = '' !== $stats_base_url ? add_query_arg( 'filter_uri', rawurlencode( $tu->request_uri ), $stats_base_url ) : '#';
+                    ?>
+                        <div>
+                            <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-bottom:3px;">
+                                <a href="<?php echo esc_url( $uri_link ); ?>" style="text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:68%;" title="<?php echo esc_attr( $tu->request_uri ); ?>">
+                                    <code><?php echo esc_html( $tu->request_uri ); ?></code>
+                                </a>
+                                <span style="white-space:nowrap;"><?php echo number_format_i18n( $cnt ); ?> (<?php echo esc_html( $share ); ?>%)</span>
                             </div>
                             <div style="width:100%;height:8px;background:#f0f0f1;border-radius:4px;overflow:hidden;">
                                 <div style="width:<?php echo esc_attr( $bar_w ); ?>%;height:100%;background:<?php echo esc_attr( $color ); ?>;border-radius:4px;"></div>

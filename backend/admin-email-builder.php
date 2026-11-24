@@ -7,8 +7,8 @@ function bap_get_available_email_modules() {
     return [
         'cards'          => 'Tarjetas Resumen (Total Bloqueados, IPs Únicas, Top Países, Top ASNs)',
         'countries_bars' => 'Gráfico de Barras por País (Top 5)',
+        'top_uris'       => 'Gráfico de Barras URLs Atacadas (Top 5)',
         'hourly_chart'   => 'Gráfico de Actividad por Hora (00h – 23h)',
-        'top_uris'       => 'Ranking Top 5 Rutas Atacadas',
         'events_table'   => 'Tabla de Intentos Bloqueados (Agrupados)',
     ];
 }
@@ -21,6 +21,7 @@ function bap_get_builtin_email_presets() {
             'format'      => 'html_dark',
             'table_limit' => 0,
             'modules'     => [ 'cards', 'countries_bars', 'events_table' ],
+            'sizes'       => [ 'cards' => '100', 'countries_bars' => '100', 'events_table' => '100' ],
         ],
         'top10' => [
             'name'        => 'Top 10',
@@ -28,6 +29,7 @@ function bap_get_builtin_email_presets() {
             'format'      => 'html_dark',
             'table_limit' => 10,
             'modules'     => [ 'cards', 'countries_bars', 'events_table' ],
+            'sizes'       => [ 'cards' => '100', 'countries_bars' => '100', 'events_table' => '100' ],
         ],
         'top5'  => [
             'name'        => 'Top 5',
@@ -35,6 +37,7 @@ function bap_get_builtin_email_presets() {
             'format'      => 'html_dark',
             'table_limit' => 5,
             'modules'     => [ 'cards', 'countries_bars', 'events_table' ],
+            'sizes'       => [ 'cards' => '100', 'countries_bars' => '100', 'events_table' => '100' ],
         ],
         'text'  => [
             'name'        => 'Solo texto plano',
@@ -42,6 +45,7 @@ function bap_get_builtin_email_presets() {
             'format'      => 'text',
             'table_limit' => 0,
             'modules'     => [ 'cards', 'events_table' ],
+            'sizes'       => [],
         ],
     ];
 }
@@ -59,6 +63,12 @@ function bap_sanitize_custom_template_data( array $raw ) {
         $modules = [ 'cards', 'events_table' ];
     }
 
+    $sizes = [];
+    foreach ( $all_mods as $k ) {
+        $val         = (string) ( $raw['sizes'][ $k ] ?? '100' );
+        $sizes[ $k ] = in_array( $val, [ '100', '50', '33' ], true ) ? $val : '100';
+    }
+
     $fmt = (string) ( $raw['format'] ?? 'html_dark' );
     if ( ! in_array( $fmt, [ 'html_dark', 'html_light', 'text' ], true ) ) {
         $fmt = 'html_dark';
@@ -74,6 +84,7 @@ function bap_sanitize_custom_template_data( array $raw ) {
         'format'      => $fmt,
         'table_limit' => max( 0, min( 200, (int) ( $raw['table_limit'] ?? 10 ) ) ),
         'modules'     => $modules,
+        'sizes'       => $sizes,
     ];
 }
 
@@ -107,26 +118,14 @@ function bap_handle_email_builder_actions( &$editing_id ) {
         if ( '' === $id ) {
             $id = 'tpl_' . substr( md5( uniqid( '', true ) ), 0, 8 );
         }
-        $order_raw = explode( ',', sanitize_text_field( wp_unslash( $_POST['bap_module_order'] ?? '' ) ) );
-        $enabled   = (array) ( $_POST['bap_enabled_modules'] ?? [] );
-        $ordered   = [];
-        foreach ( $order_raw as $k ) {
-            $k = trim( $k );
-            if ( in_array( $k, $enabled, true ) ) {
-                $ordered[] = $k;
-            }
-        }
-        foreach ( $enabled as $k ) {
-            if ( ! in_array( $k, $ordered, true ) ) {
-                $ordered[] = $k;
-            }
-        }
+        $ordered = array_filter( array_map( 'trim', explode( ',', sanitize_text_field( wp_unslash( $_POST['bap_module_order'] ?? '' ) ) ) ) );
 
         $customs[ $id ] = bap_sanitize_custom_template_data( [
             'name'        => wp_unslash( $_POST['bap_tpl_name'] ?? '' ),
             'format'      => wp_unslash( $_POST['bap_tpl_format'] ?? 'html_dark' ),
             'table_limit' => (int) ( $_POST['bap_tpl_limit'] ?? 10 ),
             'modules'     => $ordered,
+            'sizes'       => (array) ( $_POST['bap_mod_size'] ?? [] ),
         ] );
         update_option( 'bap_custom_email_templates', $customs );
         update_option( 'bap_email_template', 'custom_' . $id );
@@ -181,11 +180,11 @@ function bap_render_email_templates_page() {
             'name'        => '',
             'format'      => 'html_dark',
             'table_limit' => 10,
-            'modules'     => [ 'cards', 'countries_bars', 'events_table' ],
+            'modules'     => [ 'cards', 'countries_bars', 'top_uris', 'events_table' ],
+            'sizes'       => [ 'cards' => '100', 'countries_bars' => '50', 'top_uris' => '50', 'events_table' => '100' ],
         ];
     }
 
-    $ordered_keys = array_values( array_unique( array_merge( $current['modules'], array_keys( $all_mods ) ) ) );
     require plugin_dir_path( __FILE__ ) . 'admin-email-builder-view.php';
 }
 
@@ -194,21 +193,13 @@ add_action( 'wp_ajax_bap_preview_email_template', function() {
         wp_send_json_error( 'No autorizado' );
     }
 
-    $order_raw = explode( ',', sanitize_text_field( wp_unslash( $_POST['order'] ?? '' ) ) );
-    $enabled   = (array) ( $_POST['modules'] ?? [] );
-    $ordered   = [];
-    foreach ( $order_raw as $k ) {
-        $k = trim( $k );
-        if ( in_array( $k, $enabled, true ) ) {
-            $ordered[] = $k;
-        }
-    }
-
+    $ordered = array_filter( array_map( 'trim', explode( ',', sanitize_text_field( wp_unslash( $_POST['order'] ?? '' ) ) ) ) );
     $tpl_cfg = bap_sanitize_custom_template_data( [
         'name'        => wp_unslash( $_POST['name'] ?? 'Vista previa' ),
         'format'      => wp_unslash( $_POST['format'] ?? 'html_dark' ),
         'table_limit' => (int) ( $_POST['limit'] ?? 10 ),
         'modules'     => $ordered,
+        'sizes'       => (array) ( $_POST['sizes'] ?? [] ),
     ] );
 
     global $wpdb;

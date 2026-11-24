@@ -2,7 +2,9 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
-$base_url = admin_url( 'admin.php?page=bap-email-templates' );
+$base_url    = admin_url( 'admin.php?page=bap-email-templates' );
+$active_mods = $current['modules'] ?? [];
+$mod_sizes   = $current['sizes'] ?? [];
 ?>
 <div class="wrap">
     <h1>Control de Acceso al Panel</h1>
@@ -10,14 +12,14 @@ $base_url = admin_url( 'admin.php?page=bap-email-templates' );
     <?php echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
     <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
-        <div class="card" style="flex:2;min-width:420px;max-width:660px;padding:18px 24px;margin:0;">
+        <div class="card" style="flex:2;min-width:440px;max-width:720px;padding:18px 24px;margin:0;">
             <h2 style="margin-top:0;"><?php echo '' !== $editing_id ? 'Editar plantilla personalizada' : 'Crear plantilla modular personalizada'; ?></h2>
-            <p class="description">Activa los módulos que quieras incluir en el resumen y ordénalos con los botones <strong>Subir / Bajar</strong>.</p>
+            <p class="description">Arrastra las tarjetas para reordenarlas, elige su <strong>ancho (100%, 50% o 33%)</strong> para poner bloques en paralelo, o pulsa <strong>&times;</strong> para quitar un módulo.</p>
 
             <form method="post" action="<?php echo esc_url( '' !== $editing_id ? add_query_arg( 'edit_tpl', $editing_id, $base_url ) : $base_url ); ?>">
                 <?php wp_nonce_field( 'bap_tpl_builder_action' ); ?>
                 <input type="hidden" name="bap_tpl_id" value="<?php echo esc_attr( $editing_id ); ?>" />
-                <input type="hidden" name="bap_module_order" id="bap_module_order" value="<?php echo esc_attr( implode( ',', $ordered_keys ) ); ?>" />
+                <input type="hidden" name="bap_module_order" id="bap_module_order" value="<?php echo esc_attr( implode( ',', $active_mods ) ); ?>" />
 
                 <table class="form-table">
                     <tr>
@@ -43,20 +45,40 @@ $base_url = admin_url( 'admin.php?page=bap-email-templates' );
                     </tr>
                 </table>
 
-                <h3>Módulos incluidos y orden</h3>
-                <div id="bap-tpl-modules-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
-                    <?php foreach ( $ordered_keys as $m_key ) :
-                        $checked = in_array( $m_key, $current['modules'], true );
+                <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px 0;flex-wrap:wrap;gap:8px;">
+                    <h3 style="margin:0;">Módulos activos (Arrastra para ordenar)</h3>
+                    <div id="bap-available-mods-bar" style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <?php foreach ( $all_mods as $m_key => $m_label ) :
+                            $is_used = in_array( $m_key, $active_mods, true );
+                        ?>
+                            <button type="button" class="button button-small bap-add-mod-btn" data-key="<?php echo esc_attr( $m_key ); ?>" data-label="<?php echo esc_attr( $m_label ); ?>" style="<?php echo $is_used ? 'display:none;' : ''; ?>">
+                                + <?php echo esc_html( strtok( $m_label, '(' ) ); ?>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <div id="bap-tpl-modules-list" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;min-height:60px;padding:10px;border:1px dashed #8c8f94;border-radius:6px;">
+                    <?php foreach ( $active_mods as $m_key ) :
+                        if ( ! isset( $all_mods[ $m_key ] ) ) {
+                            continue;
+                        }
+                        $sz     = (string) ( $mod_sizes[ $m_key ] ?? '100' );
+                        $flex_w = ( '50' === $sz ) ? 'calc(50% - 5px)' : ( ( '33' === $sz ) ? 'calc(33.33% - 7px)' : '100%' );
                     ?>
-                        <div class="bap-mod-item" data-key="<?php echo esc_attr( $m_key ); ?>" style="display:flex;align-items:center;justify-content:space-between;background:#f6f7f7;border:1px solid #c3c4c7;padding:10px 12px;border-radius:4px;">
-                            <label style="margin:0;cursor:pointer;flex:1;">
-                                <input type="checkbox" name="bap_enabled_modules[]" value="<?php echo esc_attr( $m_key ); ?>" <?php checked( $checked ); ?> />
-                                <strong><?php echo esc_html( $all_mods[ $m_key ] ); ?></strong>
-                            </label>
-                            <span style="display:inline-flex;gap:4px;">
-                                <button type="button" class="button button-small bap-mod-up">&#9650;</button>
-                                <button type="button" class="button button-small bap-mod-down">&#9660;</button>
-                            </span>
+                        <div class="bap-mod-item" draggable="true" data-key="<?php echo esc_attr( $m_key ); ?>" style="width:<?php echo esc_attr( $flex_w ); ?>;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#f6f7f7;border:1px solid #c3c4c7;padding:10px 12px;border-radius:4px;cursor:grab;">
+                            <div style="display:flex;align-items:center;gap:6px;overflow:hidden;">
+                                <span style="color:#646970;font-weight:bold;">&#9776;</span>
+                                <strong style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="<?php echo esc_attr( $all_mods[ $m_key ] ); ?>"><?php echo esc_html( $all_mods[ $m_key ] ); ?></strong>
+                            </div>
+                            <div style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">
+                                <select name="bap_mod_size[<?php echo esc_attr( $m_key ); ?>]" class="bap-mod-size-sel" data-key="<?php echo esc_attr( $m_key ); ?>" style="font-size:11px;min-height:26px;padding:0 4px;">
+                                    <option value="100" <?php selected( $sz, '100' ); ?>>100%</option>
+                                    <option value="50" <?php selected( $sz, '50' ); ?>>50%</option>
+                                    <option value="33" <?php selected( $sz, '33' ); ?>>33%</option>
+                                </select>
+                                <button type="button" class="button button-small bap-mod-remove" title="Quitar módulo" style="color:#d63638;font-weight:700;padding:0 7px;">&times;</button>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -71,8 +93,7 @@ $base_url = admin_url( 'admin.php?page=bap-email-templates' );
                 </div>
             </form>
         </div>
-
-        <div style="flex:1;min-width:300px;max-width:420px;display:flex;flex-direction:column;gap:16px;">
+        <div style="flex:1;min-width:290px;max-width:400px;display:flex;flex-direction:column;gap:16px;">
             <div class="card" style="padding:16px 20px;margin:0;">
                 <h3 style="margin-top:0;">Plantillas predefinidas (Base)</h3>
                 <ul style="margin:0;padding:0;list-style:none;">
@@ -94,7 +115,7 @@ $base_url = admin_url( 'admin.php?page=bap-email-templates' );
             <div class="card" style="padding:16px 20px;margin:0;">
                 <h3 style="margin-top:0;">Mis plantillas personalizadas</h3>
                 <?php if ( empty( $customs ) ) : ?>
-                    <p class="description">Aún no has creado ninguna. Usa el editor de la izquierda o pulsa <strong>Clonar</strong> sobre una predefinida.</p>
+                    <p class="description">Aún no has creado ninguna. Usa el editor o pulsa <strong>Clonar</strong> sobre una predefinida.</p>
                 <?php else : ?>
                     <ul style="margin:0;padding:0;list-style:none;">
                         <?php foreach ( $customs as $cid => $ctpl ) : ?>
@@ -123,6 +144,7 @@ $base_url = admin_url( 'admin.php?page=bap-email-templates' );
             </div>
         </div>
     </div>
+
     <div class="card" style="max-width:1100px;margin-top:22px;padding:18px 24px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
             <h2 style="margin:0;">Vista previa en tiempo real</h2>
@@ -135,6 +157,7 @@ $base_url = admin_url( 'admin.php?page=bap-email-templates' );
 (function(){
     const list = document.getElementById('bap-tpl-modules-list');
     const orderInp = document.getElementById('bap_module_order');
+    const addBar = document.getElementById('bap-available-mods-bar');
     const frame = document.getElementById('bap-email-preview-frame');
     const statusEl = document.getElementById('bap-preview-status');
     const nonce = '<?php echo esc_js( wp_create_nonce( 'bap_tpl_preview_nonce' ) ); ?>';
@@ -151,7 +174,7 @@ $base_url = admin_url( 'admin.php?page=bap-email-templates' );
         fd.append('format', document.getElementById('bap_tpl_format')?.value || 'html_dark');
         fd.append('limit', document.getElementById('bap_tpl_limit')?.value || '10');
         fd.append('order', orderInp.value);
-        list.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => fd.append('modules[]', cb.value));
+        list.querySelectorAll('.bap-mod-size-sel').forEach(sel => fd.append('sizes[' + sel.dataset.key + ']', sel.value));
 
         fetch(ajaxurl, { method: 'POST', body: fd })
             .then(r => r.json())
@@ -165,7 +188,7 @@ $base_url = admin_url( 'admin.php?page=bap-email-templates' );
 
     function schedulePreview() {
         clearTimeout(timer);
-        timer = setTimeout(refreshPreview, 250);
+        timer = setTimeout(refreshPreview, 220);
     }
 
     function sync() {
@@ -173,21 +196,81 @@ $base_url = admin_url( 'admin.php?page=bap-email-templates' );
         schedulePreview();
     }
 
+    function widthForSize(sz) {
+        return sz === '50' ? 'calc(50% - 5px)' : (sz === '33' ? 'calc(33.33% - 7px)' : '100%');
+    }
+
+    list.addEventListener('change', function(e) {
+        const sel = e.target.closest('.bap-mod-size-sel');
+        if (sel) {
+            const card = sel.closest('.bap-mod-item');
+            if (card) card.style.width = widthForSize(sel.value);
+            schedulePreview();
+        }
+    });
+
     list.addEventListener('click', function(e) {
-        const up = e.target.closest('.bap-mod-up');
-        const down = e.target.closest('.bap-mod-down');
-        if (!up && !down) return;
-        const item = (up || down).closest('.bap-mod-item');
-        if (up && item.previousElementSibling) {
-            list.insertBefore(item, item.previousElementSibling);
-            sync();
-        } else if (down && item.nextElementSibling) {
-            list.insertBefore(item.nextElementSibling, item);
+        const rem = e.target.closest('.bap-mod-remove');
+        if (rem) {
+            const card = rem.closest('.bap-mod-item');
+            const key = card.dataset.key;
+            card.remove();
+            const addBtn = addBar?.querySelector('.bap-add-mod-btn[data-key="' + key + '"]');
+            if (addBtn) addBtn.style.display = 'inline-block';
             sync();
         }
     });
 
-    list.addEventListener('change', schedulePreview);
+    if (addBar) {
+        addBar.addEventListener('click', function(e) {
+            const btn = e.target.closest('.bap-add-mod-btn');
+            if (!btn) return;
+            const key = btn.dataset.key;
+            const label = btn.dataset.label;
+            btn.style.display = 'none';
+
+            const div = document.createElement('div');
+            div.className = 'bap-mod-item';
+            div.draggable = true;
+            div.dataset.key = key;
+            div.style.cssText = 'width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#f6f7f7;border:1px solid #c3c4c7;padding:10px 12px;border-radius:4px;cursor:grab;';
+            div.innerHTML = '<div style="display:flex;align-items:center;gap:6px;overflow:hidden;"><span style="color:#646970;font-weight:bold;">&#9776;</span><strong style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + label + '</strong></div>' +
+                '<div style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">' +
+                '<select name="bap_mod_size[' + key + ']" class="bap-mod-size-sel" data-key="' + key + '" style="font-size:11px;min-height:26px;padding:0 4px;"><option value="100" selected>100%</option><option value="50">50%</option><option value="33">33%</option></select>' +
+                '<button type="button" class="button button-small bap-mod-remove" title="Quitar módulo" style="color:#d63638;font-weight:700;padding:0 7px;">&times;</button></div>';
+            list.appendChild(div);
+            sync();
+        });
+    }
+
+    let dragged = null;
+    list.addEventListener('dragstart', function(e) {
+        const item = e.target.closest('.bap-mod-item');
+        if (!item) return;
+        dragged = item;
+        item.style.opacity = '0.45';
+        e.dataTransfer.effectAllowed = 'move';
+    });
+    list.addEventListener('dragend', function() {
+        if (dragged) { dragged.style.opacity = ''; dragged = null; }
+    });
+    list.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    });
+    list.addEventListener('drop', function(e) {
+        e.preventDefault();
+        const target = e.target.closest('.bap-mod-item');
+        if (!dragged || !target || dragged === target) return;
+        const items = Array.from(list.querySelectorAll('.bap-mod-item'));
+        if (items.indexOf(dragged) < items.indexOf(target)) {
+            target.after(dragged);
+        } else {
+            target.before(dragged);
+        }
+        sync();
+    });
+
     ['bap_tpl_name', 'bap_tpl_format', 'bap_tpl_limit'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('input', schedulePreview);
