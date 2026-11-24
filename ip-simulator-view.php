@@ -35,6 +35,8 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <strong>Web Pública:</strong>
                 <?php if ( 'block' === $sim_res['web_status'] ) : ?>
                     <span style="color:#d63638;font-weight:bold;">BLOQUEADA</span> — <?php echo esc_html( $sim_res['web_reason'] ); ?>
+                <?php elseif ( 'redirect' === $sim_res['web_status'] ) : ?>
+                    <span style="color:#2271b1;font-weight:bold;">REDIRIGIDA</span> — <?php echo esc_html( $sim_res['web_reason'] ); ?>
                 <?php else : ?>
                     <span style="color:#008a20;font-weight:bold;">PERMITIDA</span> — <?php echo esc_html( $sim_res['web_reason'] ); ?>
                 <?php endif; ?>

@@ -74,6 +74,9 @@ function bap_simulate_ip_rules( $ip ) {
     if ( $web_enabled ) {
         if ( $in_white ) {
             $web_reason = $is_server ? 'IP local / del servidor (exenta)' : 'Coincide con Lista Blanca';
+        } elseif ( function_exists( 'bap_get_country_redirect_url' ) && '' !== ( $c_redir = bap_get_country_redirect_url( $country ) ) ) {
+            $web_status = 'redirect';
+            $web_reason = 'Redirigida por país (' . $country . ') a ' . $c_redir;
         } elseif ( $in_black ) {
             $web_status = 'block';
             $web_reason = 'IP o rango CIDR en Lista Negra';

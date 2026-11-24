@@ -52,6 +52,14 @@ function bap_check_frontend_rules() {
         wp_die( '<h1>Acceso restringido</h1><p>' . esc_html( $msg ) . '</p>', 'Acceso Restringido', [ 'response' => 403 ] );
     };
 
+    if ( function_exists( 'bap_get_country_redirect_url' ) ) {
+        $custom_redir = bap_get_country_redirect_url( $country );
+        if ( '' !== $custom_redir ) {
+            wp_redirect( esc_url_raw( $custom_redir ), 302 );
+            exit;
+        }
+    }
+
     if ( bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_blacklist_ips', '' ) ) ) ) {
         $deny_fn( 'IP/Rango en lista negra' );
     }

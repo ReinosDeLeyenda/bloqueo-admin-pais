@@ -68,6 +68,10 @@ add_action( 'admin_init', function() {
         'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
         'default'           => '1'
     ]);
+    register_setting( 'bap_web_settings_group', 'bap_web_country_redirects', [
+        'sanitize_callback' => function_exists( 'bap_sanitize_country_redirects' ) ? 'bap_sanitize_country_redirects' : 'sanitize_textarea_field',
+        'default'           => ''
+    ]);
     register_setting( 'bap_web_settings_group', 'bap_web_redirect_url', [
         'sanitize_callback' => fn( $i ) => '' === trim( (string) $i ) ? '' : esc_url_raw( trim( (string) $i ) ),
         'default'           => ''
@@ -83,4 +87,3 @@ function bap_render_web_bloqueos_page() {
     wp_enqueue_script( 'bap-countries-picker', plugin_dir_url( __FILE__ ) . 'countries-picker.js', [], '13.2', true );
     require plugin_dir_path( __FILE__ ) . 'web-bloqueos-view.php';
 }
-
