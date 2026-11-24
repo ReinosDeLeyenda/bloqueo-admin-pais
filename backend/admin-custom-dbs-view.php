@@ -10,6 +10,25 @@ function bap_render_custom_dbs_section() {
         <h2 style="margin-top:0;">Bases de Datos Personalizadas (IPs / Rangos CIDR)</h2>
         <p class="description">Añade tus propias listas externas por <strong>URL</strong> (se actualizarán también con el cron automático) o sube archivos locales (<code>.txt</code>, <code>.netset</code>, <code>.csv</code>, <code>.json</code>, <code>.gz</code>) para bloquear amenazas o permitir redes de confianza.</p>
 
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 6px 0;">
+            <strong style="font-size:12px;">Añadir presets gratuitos en 1 clic:</strong>
+            <form method="post" style="display:inline;">
+                <?php wp_nonce_field( 'bap_db_action' ); ?>
+                <input type="hidden" name="bap_cdb_preset" value="vpn" />
+                <button type="submit" name="bap_add_custom_db_preset" class="button button-secondary button-small">+ VPNs Comerciales (Admin)</button>
+            </form>
+            <form method="post" style="display:inline;">
+                <?php wp_nonce_field( 'bap_db_action' ); ?>
+                <input type="hidden" name="bap_cdb_preset" value="datacenter" />
+                <button type="submit" name="bap_add_custom_db_preset" class="button button-secondary button-small">+ Datacenters / Cloud (Admin)</button>
+            </form>
+            <form method="post" style="display:inline;">
+                <?php wp_nonce_field( 'bap_db_action' ); ?>
+                <input type="hidden" name="bap_cdb_preset" value="proxies" />
+                <button type="submit" name="bap_add_custom_db_preset" class="button button-secondary button-small">+ Proxies Abiertos (Admin y Web)</button>
+            </form>
+        </div>
+
         <form method="post" enctype="multipart/form-data" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;background:#f6f7f7;padding:12px 14px;border:1px solid #dcdcde;border-radius:4px;margin:14px 0;">
             <?php wp_nonce_field( 'bap_db_action' ); ?>
             <div>

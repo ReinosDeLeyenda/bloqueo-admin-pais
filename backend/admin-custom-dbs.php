@@ -28,6 +28,59 @@ function bap_handle_custom_db_actions() {
 
     $dbs = bap_get_custom_dbs();
 
+    if ( isset( $_POST['bap_add_custom_db_preset'] ) ) {
+        $gh_raw  = 'https://' . implode( '.', [ 'raw', 'githubusercontent', 'com' ] ) . '/';
+        $presets = [
+            'vpn'        => [
+                'name'   => 'VPNs Comerciales (X4BNet)',
+                'url'    => $gh_raw . implode( '/', [ 'X4BNet', 'lists_vpn', 'main', 'output', 'vpn', 'ipv4.txt' ] ),
+                'action' => 'block',
+                'scope'  => 'admin',
+            ],
+            'datacenter' => [
+                'name'   => 'Datacenters / Cloud (X4BNet)',
+                'url'    => $gh_raw . implode( '/', [ 'X4BNet', 'lists_vpn', 'main', 'output', 'datacenter', 'ipv4.txt' ] ),
+                'action' => 'block',
+                'scope'  => 'admin',
+            ],
+            'proxies'    => [
+                'name'   => 'Proxies Abiertos (FireHOL)',
+                'url'    => $gh_raw . implode( '/', [ 'firehol', 'blocklist-ipsets', 'master', 'firehol_proxies.netset' ] ),
+                'action' => 'block',
+                'scope'  => 'both',
+            ],
+        ];
+
+        $pkey = sanitize_key( $_POST['bap_cdb_preset'] ?? '' );
+        if ( ! isset( $presets[ $pkey ] ) ) {
+            return '';
+        }
+
+        $cfg = $presets[ $pkey ];
+        foreach ( $dbs as $existing ) {
+            if ( ( $existing['url'] ?? '' ) === $cfg['url'] ) {
+                return '<div class="notice notice-info is-dismissible"><p>La lista <strong>' . esc_html( $cfg['name'] ) . '</strong> ya estaba añadida.</p></div>';
+            }
+        }
+
+        $id         = 'cdb_' . substr( md5( uniqid( '', true ) ), 0, 8 );
+        $dbs[ $id ] = [
+            'name'         => $cfg['name'],
+            'url'          => $cfg['url'],
+            'action'       => $cfg['action'],
+            'scope'        => $cfg['scope'],
+            'enabled'      => '1',
+            'count'        => 0,
+            'last_updated' => '',
+        ];
+        update_option( 'bap_custom_dbs', $dbs );
+
+        $res = bap_download_custom_db( $id );
+        return is_wp_error( $res )
+            ? '<div class="notice notice-warning is-dismissible"><p>Lista <strong>' . esc_html( $cfg['name'] ) . '</strong> añadida, pero falló la descarga inicial: ' . esc_html( $res->get_error_message() ) . '</p></div>'
+            : '<div class="notice notice-success is-dismissible"><p><strong>¡Preset "' . esc_html( $cfg['name'] ) . '" instalado (' . number_format_i18n( $res ) . ' rangos CIDR)!</strong></p></div>';
+    }
+
     if ( isset( $_POST['bap_add_custom_db'] ) ) {
         $name   = trim( sanitize_text_field( wp_unslash( $_POST['bap_cdb_name'] ?? '' ) ) );
         $url    = esc_url_raw( trim( (string) wp_unslash( $_POST['bap_cdb_url'] ?? '' ) ) );
