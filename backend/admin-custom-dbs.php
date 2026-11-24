@@ -5,17 +5,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once plugin_dir_path( __FILE__ ) . 'admin-custom-dbs-view.php';
 
-function bap_read_uploaded_custom_db_file( array $file ) {
+function bap_install_uploaded_custom_db_file( $id, array $file ) {
     $tmp = $file['tmp_name'] ?? '';
     $fn  = $file['name'] ?? '';
     if ( '.gz' === strtolower( substr( $fn, -3 ) ) ) {
-        $unp = wp_tempnam( 'bap_cdb' );
+        $unp = wp_tempnam( 'bap_cdb_up' );
         bap_decompress_gz_to_file( $tmp, $unp );
-        $content = (string) @file_get_contents( $unp );
+        $res = bap_install_custom_db_from_file( $id, $unp );
         @unlink( $unp );
-        return $content;
+        return $res;
     }
-    return (string) @file_get_contents( $tmp );
+    return bap_install_custom_db_from_file( $id, $tmp );
 }
 
 function bap_handle_custom_db_actions() {
@@ -104,7 +104,7 @@ function bap_handle_custom_db_actions() {
         update_option( 'bap_custom_dbs', $dbs );
 
         if ( ! empty( $_FILES['bap_cdb_file']['tmp_name'] ) ) {
-            $res = bap_install_custom_db_from_content( $id, bap_read_uploaded_custom_db_file( $_FILES['bap_cdb_file'] ) );
+            $res = bap_install_uploaded_custom_db_file( $id, $_FILES['bap_cdb_file'] );
             return is_wp_error( $res )
                 ? '<div class="notice notice-error is-dismissible"><p>' . esc_html( $res->get_error_message() ) . '</p></div>'
                 : '<div class="notice notice-success is-dismissible"><p><strong>¡Base de datos personalizada creada e instalada (' . number_format_i18n( $res ) . ' entradas)!</strong></p></div>';
@@ -130,7 +130,7 @@ function bap_handle_custom_db_actions() {
 
     if ( isset( $_POST['bap_upload_custom_db'] ) && ! empty( $_FILES['bap_cdb_up_file']['tmp_name'] ) ) {
         $id  = sanitize_key( $_POST['bap_cdb_id'] ?? '' );
-        $res = bap_install_custom_db_from_content( $id, bap_read_uploaded_custom_db_file( $_FILES['bap_cdb_up_file'] ) );
+        $res = bap_install_uploaded_custom_db_file( $id, $_FILES['bap_cdb_up_file'] );
         return is_wp_error( $res )
             ? '<div class="notice notice-error is-dismissible"><p>' . esc_html( $res->get_error_message() ) . '</p></div>'
             : '<div class="notice notice-success is-dismissible"><p><strong>¡Archivo importado correctamente (' . number_format_i18n( $res ) . ' entradas)!</strong></p></div>';
