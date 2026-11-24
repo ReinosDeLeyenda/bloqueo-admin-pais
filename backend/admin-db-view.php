@@ -83,4 +83,5 @@ if ( $all_missing ) {
     <?php bap_render_db_settings_card( $db_freq ); ?>
     <?php bap_render_json_backup_card(); ?>
     <?php if ( function_exists( 'bap_render_ip_simulator_box' ) ) { bap_render_ip_simulator_box(); } ?>
+    <?php if ( function_exists( 'bap_render_core_integrity_box' ) ) { bap_render_core_integrity_box(); } ?>
 </div>
