@@ -3,25 +3,6 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-add_action( 'admin_init', function() {
-    register_setting( 'bap_web_settings_group', 'bap_web_allow_seo_bots', [
-        'sanitize_callback' => fn( $i ) => ( '1' === (string) $i ) ? '1' : '0',
-        'default'           => '1',
-    ] );
-    register_setting( 'bap_web_settings_group', 'bap_web_country_redirects', [
-        'sanitize_callback' => 'bap_sanitize_country_redirects',
-        'default'           => '',
-    ] );
-    register_setting( 'bap_web_settings_group', 'bap_web_redirect_url', [
-        'sanitize_callback' => fn( $i ) => esc_url_raw( trim( (string) $i ) ),
-        'default'           => '',
-    ] );
-    register_setting( 'bap_web_settings_group', 'bap_web_block_message', [
-        'sanitize_callback' => fn( $i ) => sanitize_text_field( trim( (string) $i ) ),
-        'default'           => 'Este contenido no está disponible en tu ubicación o red.',
-    ] );
-} );
-
 function bap_handle_web_rule_actions() {
     if ( ! current_user_can( 'manage_options' ) ) {
         return [ 'notice' => '', 'selected' => '__all__', 'rules' => bap_get_web_rules() ];
@@ -84,9 +65,20 @@ function bap_handle_web_rule_actions() {
         ] );
 
         update_option( 'bap_web_rules', $rules );
+
+        // Guardar también los ajustes generales agrupados
+        $allow_seo = ( '1' === (string) ( $_POST['bap_web_allow_seo_bots'] ?? '0' ) ) ? '1' : '0';
+        update_option( 'bap_web_allow_seo_bots', $allow_seo );
+
+        $raw_redir = (string) wp_unslash( $_POST['bap_web_country_redirects'] ?? '' );
+        if ( function_exists( 'bap_sanitize_country_redirects' ) ) {
+            $raw_redir = bap_sanitize_country_redirects( $raw_redir );
+        }
+        update_option( 'bap_web_country_redirects', $raw_redir );
+
         $selected = $scope;
         $label    = ( '__all__' === $scope ) ? 'Toda la web' : $scope;
-        $notice   = '<div class="notice notice-success is-dismissible"><p><strong>Regla guardada correctamente</strong> para: <code>' . esc_html( $label ) . '</code></p></div>';
+        $notice   = '<div class="notice notice-success is-dismissible"><p><strong>Configuración guardada</strong> para <code>' . esc_html( $label ) . '</code> y ajustes generales.</p></div>';
     }
 
     if ( ! isset( $rules[ $selected ] ) ) {

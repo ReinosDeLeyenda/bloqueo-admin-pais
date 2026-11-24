@@ -18,7 +18,7 @@ $ops           = $current['ops'];
     <?php echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
     <div class="card" style="max-width:920px;margin-top:16px;padding:18px 22px;">
-        <h2 style="margin-top:0;">1. Constructor de reglas de Bloqueos Web</h2>
+        <h2 style="margin-top:0;">Firewall Avanzado de Bloqueos Web (Frontend)</h2>
         <p class="description">Usa los botones <strong>Subir / Bajar</strong> (o arrastra cada bloque) para ordenar la prioridad, y pulsa los interruptores <strong>Y / O</strong> para encadenar condiciones.</p>
 
         <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;background:#f6f7f7;padding:12px 14px;border:1px solid #dcdcde;border-radius:4px;margin:14px 0;">
@@ -67,11 +67,11 @@ $ops           = $current['ops'];
                 <?php endforeach; ?>
             </div>
 
+            <?php bap_render_web_response_and_general_fields( $current ); ?>
+
             <p class="submit">
-                <button type="submit" name="bap_save_web_rule" class="button button-primary">Guardar regla de <?php echo esc_html( '__all__' === $selected ? 'Toda la web' : $selected ); ?></button>
+                <button type="submit" name="bap_save_web_rule" class="button button-primary button-large">Guardar configuración de <?php echo esc_html( '__all__' === $selected ? 'Toda la web' : $selected ); ?></button>
             </p>
         </form>
     </div>
-
-    <?php bap_render_web_general_settings(); ?>
 </div>
