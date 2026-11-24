@@ -27,10 +27,10 @@ function bap_render_estadisticas_page() {
     global $wpdb;
     bap_maybe_create_logs_table();
 
-    $notice      = bap_handle_stats_actions();
-    $table       = bap_get_logs_table_name();
-    $filter_uri  = isset( $_GET['filter_uri'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_uri'] ) ) : '';
-    $filter_q    = isset( $_GET['filter_q'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_q'] ) ) : '';
+    $notice     = bap_handle_stats_actions();
+    $table      = bap_get_logs_table_name();
+    $filter_uri = isset( $_GET['filter_uri'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_uri'] ) ) : '';
+    $filter_q   = isset( $_GET['filter_q'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_q'] ) ) : '';
 
     $total_blocks  = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$table}`" );
     $top_countries = $wpdb->get_results( "SELECT country_code, COUNT(*) as total FROM `{$table}` GROUP BY country_code ORDER BY total DESC LIMIT 5" );
@@ -54,6 +54,23 @@ function bap_render_estadisticas_page() {
     $sql       = "SELECT * FROM `{$table}` {$where_sql} ORDER BY id DESC LIMIT 100";
     $logs      = ! empty( $params ) ? $wpdb->get_results( $wpdb->prepare( $sql, $params ) ) : $wpdb->get_results( $sql );
 
-    wp_enqueue_script( 'bap-admin-estadisticas', plugin_dir_url( __FILE__ ) . 'admin-estadisticas.js', [], '1.4', true );
+    // Obtener primera vez, última vez y total de ataques de las IPs visibles
+    $ip_history = [];
+    if ( ! empty( $logs ) ) {
+        $unique_ips = array_values( array_unique( array_filter( array_map( fn( $l ) => trim( (string) $l->ip_address ), $logs ) ) ) );
+        if ( ! empty( $unique_ips ) ) {
+            $placeholders = implode( ', ', array_fill( 0, count( $unique_ips ), '%s' ) );
+            $agg_sql      = "SELECT ip_address, MIN(created_at) AS first_seen, MAX(created_at) AS last_seen, COUNT(*) AS total_hits
+                             FROM `{$table}`
+                             WHERE ip_address IN ({$placeholders})
+                             GROUP BY ip_address";
+            $agg_rows     = $wpdb->get_results( $wpdb->prepare( $agg_sql, $unique_ips ), ARRAY_A );
+            foreach ( (array) $agg_rows as $r ) {
+                $ip_history[ $r['ip_address'] ] = $r;
+            }
+        }
+    }
+
+    wp_enqueue_script( 'bap-admin-estadisticas', plugin_dir_url( __FILE__ ) . 'admin-estadisticas.js', [], '1.5', true );
     require plugin_dir_path( __FILE__ ) . 'admin-estadisticas-view.php';
 }

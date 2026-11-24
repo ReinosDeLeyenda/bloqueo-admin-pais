@@ -1,56 +1,133 @@
 (function () {
-    const table = document.getElementById('bap_logs_table');
-    if (table) {
-        const headers = table.querySelectorAll('th.bap-sort');
-        let currentCol = 4;
-        let asc = false;
+    const table = document.getElementById('bap-logs-table');
+    if (!table) return;
 
-        headers.forEach((th, idx) => {
-            th.addEventListener('click', function () {
-                const type = th.getAttribute('data-type') || 'str';
-                asc = (currentCol === idx) ? !asc : (type === 'str' || type === 'ip');
-                currentCol = idx;
+    const tip = document.createElement('div');
+    tip.style.cssText = 'display:none;position:fixed;z-index:999999;background:#1d2327;color:#f0f0f1;border:1px solid #3c434a;border-radius:6px;padding:12px 14px;font-size:12px;line-height:1.55;max-width:440px;word-break:break-word;box-shadow:0 6px 20px rgba(0,0,0,0.45);pointer-events:none;';
+    document.body.appendChild(tip);
 
-                headers.forEach(h => {
-                    const arrow = h.querySelector('.bap-arrow');
-                    if (arrow) arrow.textContent = '';
-                });
-                const activeArrow = th.querySelector('.bap-arrow');
-                if (activeArrow) activeArrow.textContent = asc ? '▲' : '▼';
-
-                const tbody = table.querySelector('tbody');
-                const rows = Array.from(tbody.querySelectorAll('tr'));
-                rows.sort((a, b) => {
-                    const va = a.children[idx].getAttribute('data-sort') || '';
-                    const vb = b.children[idx].getAttribute('data-sort') || '';
-                    if (type === 'num') {
-                        return asc ? (Number(va) - Number(vb)) : (Number(vb) - Number(va));
-                    }
-                    return asc ? va.localeCompare(vb) : vb.localeCompare(va);
-                });
-                rows.forEach(r => tbody.appendChild(r));
-            });
-        });
+    function addLine(parent, label, value, valueColor) {
+        const row = document.createElement('div');
+        row.style.marginBottom = '3px';
+        const strong = document.createElement('strong');
+        strong.style.color = '#a7aaad';
+        strong.textContent = label + ': ';
+        const span = document.createElement('span');
+        if (valueColor) {
+            span.style.color = valueColor;
+            span.style.fontWeight = '600';
+        }
+        span.textContent = value;
+        row.appendChild(strong);
+        row.appendChild(span);
+        parent.appendChild(row);
     }
 
-    document.addEventListener('click', function (e) {
-        const ipLink = e.target.closest('a.bap-link-ip2loc');
+    function positionTip(e) {
+        const offset = 16;
+        let left = e.clientX + offset;
+        let top = e.clientY + offset;
+        const rect = tip.getBoundingClientRect();
+        if (left + rect.width > window.innerWidth - 12) {
+            left = Math.max(12, e.clientX - rect.width - offset);
+        }
+        if (top + rect.height > window.innerHeight - 12) {
+            top = Math.max(12, e.clientY - rect.height - offset);
+        }
+        tip.style.left = left + 'px';
+        tip.style.top = top + 'px';
+    }
+
+    table.addEventListener('mouseover', function (e) {
+        const tr = e.target.closest('tr.bap-log-row');
+        if (!tr || !tr.dataset.tip) return;
+        let d = null;
+        try { d = JSON.parse(tr.dataset.tip); } catch (err) { return; }
+
+        tip.textContent = '';
+
+        const header = document.createElement('div');
+        header.style.cssText = 'font-size:13px;font-weight:700;color:#72aee6;border-bottom:1px solid #3c434a;padding-bottom:6px;margin-bottom:8px;';
+        header.textContent = 'IP Atacante: ' + d.ip;
+        tip.appendChild(header);
+
+        addLine(tip, 'Última vez', d.last_seen, '#ffffff');
+        addLine(tip, 'Primera vez', d.first_seen, '#ffffff');
+        addLine(tip, 'Total bloqueos de esta IP', String(d.total_hits), '#f86368');
+
+        const sep = document.createElement('hr');
+        sep.style.cssText = 'border:none;border-top:1px solid #2c3338;margin:7px 0;';
+        tip.appendChild(sep);
+
+        addLine(tip, 'País', d.country);
+        addLine(tip, 'ASN / Proveedor', d.asn);
+        addLine(tip, 'Riesgo AbuseIPDB', d.risk, d.risk !== 'N/D' ? '#dba617' : '');
+        addLine(tip, 'Nodo Tor / FireHOL', 'Tor: ' + d.tor + ' | FireHOL: ' + d.firehol);
+        addLine(tip, 'Entorno / Tipo', d.block_type);
+        addLine(tip, 'Ruta atacada', d.uri, '#72aee6');
+        addLine(tip, 'Motivo', d.reason);
+        addLine(tip, 'User-Agent', d.user_agent || 'No registrado', '#c3c4c7');
+
+        tip.style.display = 'block';
+        positionTip(e);
+    });
+
+    table.addEventListener('mousemove', function (e) {
+        if (tip.style.display === 'block') {
+            positionTip(e);
+        }
+    });
+
+    table.addEventListener('mouseout', function (e) {
+        const tr = e.target.closest('tr.bap-log-row');
+        if (tr && !tr.contains(e.relatedTarget)) {
+            tip.style.display = 'none';
+        }
+    });
+
+    const tbody = table.querySelector('tbody');
+    const headers = table.querySelectorAll('th[data-col]');
+    let sortState = { col: -1, asc: true };
+
+    headers.forEach(th => {
+        th.addEventListener('click', () => {
+            const col = parseInt(th.dataset.col, 10);
+            const type = th.dataset.type || 'text';
+            const asc = (sortState.col === col) ? !sortState.asc : true;
+            sortState = { col, asc };
+
+            const rows = Array.from(tbody.querySelectorAll('tr')).filter(r => r.children.length > 1);
+            rows.sort((a, b) => {
+                const va = (a.children[col]?.dataset.sort ?? a.children[col]?.textContent ?? '').trim();
+                const vb = (b.children[col]?.dataset.sort ?? b.children[col]?.textContent ?? '').trim();
+
+                if (type === 'num') {
+                    return asc ? (parseFloat(va) - parseFloat(vb)) : (parseFloat(vb) - parseFloat(va));
+                }
+                return asc ? va.localeCompare(vb, undefined, { numeric: true }) : vb.localeCompare(va, undefined, { numeric: true });
+            });
+
+            rows.forEach(r => tbody.appendChild(r));
+        });
+    });
+
+    table.addEventListener('click', e => {
+        const ipLink = e.target.closest('a.bap-ip2loc-link');
         if (ipLink) {
             e.preventDefault();
-            const ip = ipLink.getAttribute('data-ip');
-            if (ip) {
-                const url = 'https://ip2location.com' + encodeURIComponent(ip);
-                window.open(url, '_blank', 'noopener,noreferrer');
+            const ip = (ipLink.dataset.ip || ipLink.textContent || '').trim();
+            if (ip && ip !== 'N/D') {
+                window.open('https:' + '//://ip2location.com' + encodeURIComponent(ip), '_blank', 'noopener,noreferrer');
             }
             return;
         }
-        const abuseLink = e.target.closest('a.bap-link-abuse');
+
+        const abuseLink = e.target.closest('a.bap-abuse-link');
         if (abuseLink) {
             e.preventDefault();
-            const ip = abuseLink.getAttribute('data-ip');
-            if (ip) {
-                const url = ['https:/', '://abuseipdb.com', 'check', encodeURIComponent(ip)].join('/');
-                window.open(url, '_blank', 'noopener,noreferrer');
+            const ip = (abuseLink.dataset.ip || '').trim();
+            if (ip && ip !== 'N/D') {
+                window.open('https:' + '//://abuseipdb.com' + encodeURIComponent(ip), '_blank', 'noopener,noreferrer');
             }
         }
     });

@@ -175,5 +175,14 @@ if ( ! defined( 'ABSPATH' ) ) {
             <input type="file" name="bap_json_file" accept=".json" required />
             <input type="submit" name="bap_import_json" class="button button-secondary" value="Importar configuración (.json)" onclick="return confirm('Esto sobrescribirá tus reglas actuales con las del archivo JSON. ¿Continuar?');" />
         </form>
+
     </div>
+    <?php
+    if ( function_exists( 'bap_render_external_db_settings_box' ) ) {
+        bap_render_external_db_settings_box();
+    }
+    if ( function_exists( 'bap_render_ip_simulator_box' ) ) {
+        bap_render_ip_simulator_box();
+    }
+    ?>
 </div>

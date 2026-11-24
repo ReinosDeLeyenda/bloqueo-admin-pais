@@ -28,8 +28,28 @@ $abuse_base  = 'https://www.' . '://abuseipdb.com';
                 $risk      = ( '' !== $ip_val && function_exists( 'bap_get_abuseipdb_score' ) ) ? bap_get_abuseipdb_score( $ip_val ) : null;
                 $risk_sort = ( null === $risk ) ? -1 : (int) $risk;
                 $uri_val   = isset( $log->request_uri ) && '' !== (string) $log->request_uri ? (string) $log->request_uri : '/';
+                $ua_val    = isset( $log->user_agent ) && '' !== trim( (string) $log->user_agent ) ? trim( (string) $log->user_agent ) : 'No registrado';
+                $hist      = $ip_history[ $ip_val ] ?? [];
+                $is_tor    = ( '' !== $ip_val && function_exists( 'bap_is_tor_exit_node' ) && bap_is_tor_exit_node( $ip_val ) ) ? 'Sí' : 'No';
+                $fh_cidr   = ( '' !== $ip_val && function_exists( 'bap_is_in_firehol' ) ) ? bap_is_in_firehol( $ip_val ) : false;
+
+                $tooltip_payload = [
+                    'ip'         => '' !== $ip_val ? $ip_val : 'N/D',
+                    'last_seen'  => (string) ( $hist['last_seen'] ?? $log->created_at ),
+                    'first_seen' => (string) ( $hist['first_seen'] ?? $log->created_at ),
+                    'total_hits' => (int) ( $hist['total_hits'] ?? 1 ),
+                    'country'    => (string) ( $log->country_code ?: 'DESCONOCIDO' ),
+                    'asn'        => (string) ( $log->asn ?: 'N/D' ),
+                    'risk'       => ( null === $risk ) ? 'N/D' : $risk . '%',
+                    'tor'        => $is_tor,
+                    'firehol'    => ( false !== $fh_cidr ) ? 'Sí (' . $fh_cidr . ')' : 'No',
+                    'block_type' => (string) ( $log->block_type ?? 'N/D' ),
+                    'uri'        => $uri_val,
+                    'reason'     => (string) $log->reason,
+                    'user_agent' => $ua_val,
+                ];
             ?>
-                <tr>
+                <tr class="bap-log-row" data-tip="<?php echo esc_attr( wp_json_encode( $tooltip_payload ) ); ?>">
                     <td data-sort="<?php echo esc_attr( $log->created_at ); ?>"><?php echo esc_html( $log->created_at ); ?></td>
                     <td data-sort="<?php echo esc_attr( $ip_hex ); ?>">
                         <?php if ( '' !== $ip_val ) : ?>

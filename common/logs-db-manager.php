@@ -5,160 +5,105 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 function bap_get_logs_table_name() {
     global $wpdb;
-    if ( '1' === (string) get_option( 'bap_ext_db_enabled', '0' ) ) {
-        $custom = preg_replace( '/[^a-zA-Z0-9_]/', '', (string) get_option( 'bap_ext_db_table', '' ) );
-        if ( '' !== $custom ) {
-            return $custom;
-        }
-    }
     return $wpdb->prefix . 'bap_blocked_logs';
 }
 
-function bap_maybe_create_logs_table( $force = false ) {
-    global $wpdb;
-    $db     = bap_get_logs_db();
-    $table  = bap_get_logs_table_name();
-    $is_ext = ( $db !== $wpdb );
-    $ver_opt = $is_ext ? 'bap_ext_logs_table_ver' : 'bap_logs_table_ver';
-    $db_ver  = '1.1';
-
-    if ( ! $force && get_option( $ver_opt ) === $db_ver ) {
+function bap_maybe_create_logs_table() {
+    if ( '1.2' === get_option( 'bap_logs_table_ver' ) ) {
         return;
     }
+    global $wpdb;
+    $table   = bap_get_logs_table_name();
+    $charset = $wpdb->get_charset_collate();
 
-    $charset = $db->get_charset_collate();
-    $sql = "CREATE TABLE IF NOT EXISTS `{$table}` (
+    $sql = "CREATE TABLE `{$table}` (
         id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-        site_host varchar(190) NOT NULL DEFAULT '',
-        ip_address varchar(45) NOT NULL DEFAULT '',
-        country_code varchar(16) NOT NULL DEFAULT 'DESCONOCIDO',
-        asn varchar(128) NOT NULL DEFAULT '',
-        reason varchar(255) NOT NULL DEFAULT '',
-        request_uri text NOT NULL,
+        ip_address varchar(45) NOT NULL,
+        country_code varchar(16) NOT NULL,
+        asn varchar(190) NOT NULL DEFAULT '',
         block_type varchar(32) NOT NULL DEFAULT 'admin',
-        created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+        reason varchar(255) NOT NULL,
+        request_uri text NOT NULL,
+        user_agent text NOT NULL,
+        created_at datetime NOT NULL,
         PRIMARY KEY (id),
-        KEY site_host (site_host),
-        KEY ip_address (ip_address),
-        KEY country_code (country_code),
-        KEY created_at (created_at)
+        KEY idx_created_at (created_at),
+        KEY idx_ip_address (ip_address)
     ) {$charset};";
 
-    $db->query( $sql );
-
-    // Añadir columna site_host si la tabla ya existía en v1.0
-    $cols = $db->get_col( "DESCRIBE `{$table}`", 0 );
-    if ( is_array( $cols ) && ! in_array( 'site_host', $cols, true ) ) {
-        $db->query( "ALTER TABLE `{$table}` ADD COLUMN site_host varchar(190) NOT NULL DEFAULT '' AFTER id, ADD KEY site_host (site_host)" );
-    }
-
-    if ( ! $is_ext ) {
-        $legacy = get_option( 'bap_blocked_logs', null );
-        if ( is_array( $legacy ) && ! empty( $legacy ) ) {
-            $host = (string) wp_parse_url( home_url(), PHP_URL_HOST );
-            foreach ( $legacy as $entry ) {
-                $ip  = trim( (string) ( $entry['ip'] ?? '' ) );
-                $cnt = max( 1, (int) ( $entry['count'] ?? 1 ) );
-                if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-                    continue;
-                }
-                $asn = function_exists( 'bap_get_asn_by_ip' ) ? bap_get_asn_by_ip( $ip ) : '';
-                for ( $i = 0; $i < $cnt; $i++ ) {
-                    $db->insert(
-                        $table,
-                        [
-                            'site_host'    => $host,
-                            'ip_address'   => $ip,
-                            'country_code' => (string) ( $entry['country'] ?? 'DESCONOCIDO' ),
-                            'asn'          => (string) $asn,
-                            'reason'       => (string) ( $entry['reason'] ?? 'Migrado' ),
-                            'request_uri'  => '',
-                            'block_type'   => 'legacy',
-                            'created_at'   => (string) ( $entry['last_hit'] ?? current_time( 'mysql' ) ),
-                        ],
-                        [ '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
-                    );
-                }
-            }
-            delete_option( 'bap_blocked_logs' );
-        }
-    }
-
-    update_option( $ver_opt, $db_ver );
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    dbDelta( $sql );
+    update_option( 'bap_logs_table_ver', '1.2' );
 }
 add_action( 'admin_init', 'bap_maybe_create_logs_table' );
 
+function bap_get_sanitized_user_agent() {
+    if ( empty( $_SERVER['HTTP_USER_AGENT'] ) ) {
+        return '';
+    }
+    return mb_substr( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ), 0, 500 );
+}
+
 function bap_log_blocked_attempt( $ip, $country, $reason ) {
-    if ( empty( $ip ) || ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-        return;
+    global $wpdb;
+    bap_maybe_create_logs_table();
+
+    $uri        = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
+    $asn        = function_exists( 'bap_get_asn_by_ip' ) ? bap_get_asn_by_ip( $ip ) : '';
+    $type       = ( 0 === strpos( $reason, 'Web:' ) ) ? 'web' : 'admin';
+    $user_agent = bap_get_sanitized_user_agent();
+    $now        = current_time( 'mysql' );
+
+    $logged_externally = false;
+    if ( function_exists( 'bap_log_to_external_db' ) ) {
+        $logged_externally = bap_log_to_external_db( $ip, $country, $asn, $type, $reason, $uri, $now, $user_agent );
     }
 
-    bap_maybe_create_logs_table();
-    $db    = bap_get_logs_db();
-    $table = bap_get_logs_table_name();
-    $asn   = function_exists( 'bap_get_asn_by_ip' ) ? bap_get_asn_by_ip( $ip ) : '';
-    $uri   = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-    $type  = ( 0 === strpos( $reason, 'Web:' ) ) ? 'web' : 'admin';
-    $host  = (string) wp_parse_url( home_url(), PHP_URL_HOST );
-
-    $db->insert(
-        $table,
-        [
-            'site_host'    => $host,
-            'ip_address'   => $ip,
-            'country_code' => $country ?: 'DESCONOCIDO',
-            'asn'          => $asn,
-            'reason'       => $reason,
-            'request_uri'  => $uri,
-            'block_type'   => $type,
-            'created_at'   => current_time( 'mysql' ),
-        ],
-        [ '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
-    );
-
-    $max_attempts = (int) get_option( 'bap_auto_ban_attempts', 5 );
-    if ( $max_attempts > 0 ) {
-        $total_ip_hits = (int) $db->get_var(
-            $db->prepare( "SELECT COUNT(*) FROM `{$table}` WHERE ip_address = %s", $ip )
+    if ( ! $logged_externally ) {
+        $wpdb->insert(
+            bap_get_logs_table_name(),
+            [
+                'ip_address'   => $ip,
+                'country_code' => $country,
+                'asn'          => $asn,
+                'block_type'   => $type,
+                'reason'       => $reason,
+                'request_uri'  => $uri,
+                'user_agent'   => $user_agent,
+                'created_at'   => $now,
+            ],
+            [ '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ]
         );
-        if ( $total_ip_hits >= $max_attempts ) {
+    }
+
+    $max_attempts = (int) get_option( 'bap_auto_ban_attempts', 0 );
+    if ( $max_attempts > 0 && ! bap_is_server_ip( $ip ) ) {
+        $key      = 'bap_att_' . md5( $ip );
+        $attempts = (int) get_transient( $key ) + 1;
+        set_transient( $key, $attempts, HOUR_IN_SECONDS );
+
+        if ( $attempts >= $max_attempts ) {
             $blacklist = bap_parse_list( get_option( 'bap_blacklist_ips', '' ), false );
             if ( ! in_array( $ip, $blacklist, true ) ) {
                 $blacklist[] = $ip;
                 update_option( 'bap_blacklist_ips', implode( "\n", $blacklist ) );
             }
+            delete_transient( $key );
         }
     }
-
-    if ( function_exists( 'bap_queue_or_send_notification' ) ) {
-        bap_queue_or_send_notification( $ip, $country, $reason );
-    }
 }
 
-function bap_purge_old_logs( $days = null ) {
-    if ( null === $days ) {
-        $days = (int) get_option( 'bap_logs_retention_days', 90 );
+add_action( 'bap_daily_logs_cleanup', function() {
+    $days = (int) get_option( 'bap_logs_retention_days', 30 );
+    if ( $days <= 0 ) {
+        return;
     }
-    $days = max( 0, (int) $days );
-    if ( 0 === $days ) {
-        return 0;
-    }
+    global $wpdb;
+    $table  = bap_get_logs_table_name();
+    $cutoff = gmdate( 'Y-m-d H:i:s', time() - ( $days * DAY_IN_SECONDS ) );
+    $wpdb->query( $wpdb->prepare( "DELETE FROM `{$table}` WHERE created_at < %s", $cutoff ) );
+} );
 
-    $db      = bap_get_logs_db();
-    $table   = bap_get_logs_table_name();
-    $cutoff  = wp_date( 'Y-m-d H:i:s', time() - ( $days * DAY_IN_SECONDS ) );
-    $deleted = $db->query(
-        $db->prepare( "DELETE FROM `{$table}` WHERE created_at < %s", $cutoff )
-    );
-
-    return false === $deleted ? 0 : (int) $deleted;
+if ( ! wp_next_scheduled( 'bap_daily_logs_cleanup' ) ) {
+    wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'bap_daily_logs_cleanup' );
 }
-
-add_action( 'bap_auto_update_dbs_event', 'bap_purge_old_logs' );
-add_action( 'bap_daily_logs_cleanup', 'bap_purge_old_logs' );
-
-add_action( 'init', function() {
-    if ( ! wp_next_scheduled( 'bap_daily_logs_cleanup' ) ) {
-        wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'bap_daily_logs_cleanup' );
-    }
-});
