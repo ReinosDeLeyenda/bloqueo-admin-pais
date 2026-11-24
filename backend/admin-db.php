@@ -9,6 +9,7 @@ add_action( 'admin_menu', function() {
     add_submenu_page( 'bap-admin-db', 'Bloqueos Admin', 'Bloqueos Admin', 'manage_options', 'bap-admin-bloqueos', 'bap_render_bloqueos_page' );
     add_submenu_page( 'bap-admin-db', 'Bloqueos Web', 'Bloqueos Web', 'manage_options', 'bap-web-bloqueos', 'bap_render_web_bloqueos_page' );
     add_submenu_page( 'bap-admin-db', 'Estadísticas', 'Estadísticas', 'manage_options', 'bap-admin-estadisticas', 'bap_render_estadisticas_page' );
+    add_submenu_page( 'bap-admin-db', 'Plantillas Email', 'Plantillas Email', 'manage_options', 'bap-email-templates', 'bap_render_email_templates_page' );
 });
 
 add_filter( 'plugin_action_links_' . plugin_basename( dirname( __DIR__ ) . '/bloqueo-admin-pais.php' ), function( $links ) {
@@ -23,6 +24,7 @@ function bap_render_tabs( $active_slug ) {
         'bap-admin-bloqueos'     => '2. Bloqueos Admin',
         'bap-web-bloqueos'       => '3. Bloqueos Web',
         'bap-admin-estadisticas' => '4. Estadísticas',
+        'bap-email-templates'    => '5. Plantillas Email',
     ];
     echo '<h2 class="nav-tab-wrapper" style="margin-bottom:20px;">';
     foreach ( $tabs as $slug => $label ) {

@@ -238,6 +238,14 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <option value="top10" <?php selected( $email_tpl, 'top10' ); ?>>Top 10 (Tarjetas + Barras Países + Top 10 bloqueos)</option>
                             <option value="top5" <?php selected( $email_tpl, 'top5' ); ?>>Top 5 (Tarjetas + Barras Países + Top 5 bloqueos)</option>
                             <option value="text" <?php selected( $email_tpl, 'text' ); ?>>Solo texto plano (Agrupado)</option>
+                            <?php $custom_tpls = function_exists( 'bap_get_custom_email_templates' ) ? bap_get_custom_email_templates() : []; ?>
+                            <?php if ( ! empty( $custom_tpls ) ) : ?>
+                                <optgroup label="Mis plantillas personalizadas">
+                                    <?php foreach ( $custom_tpls as $cid => $ctpl ) : ?>
+                                        <option value="<?php echo esc_attr( 'custom_' . $cid ); ?>" <?php selected( $email_tpl, 'custom_' . $cid ); ?>><?php echo esc_html( $ctpl['name'] ); ?></option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
                         </select>
                         <p class="description">Elige el formato y nivel de detalle de los correos de resumen programados (recuerda guardar antes de enviar prueba).</p>
                     </td>
