@@ -134,22 +134,20 @@ function bap_evaluate_rule_profile( $ip, $country, array $profile, $auto_ban_abu
 }
 
 function bap_evaluate_ip_access( $ip, $country, $context = 'admin', $auto_ban_abuse = false, $uri = '' ) {
-    if ( 'web' === $context ) {
-        $matched = bap_match_web_rule_for_uri( $uri );
-        $rule    = $matched['rule'];
-        $label   = ( '__all__' === $matched['scope'] ) ? 'Global' : $matched['scope'];
-
-        if ( '1' !== (string) ( $rule['enabled'] ?? '0' ) ) {
+    if ( function_exists( 'bap_match_ip_in_custom_dbs' ) ) {
+        $cdb_hit = bap_match_ip_in_custom_dbs( $ip, $context );
+        if ( is_array( $cdb_hit ) ) {
+            if ( 'allow' === $cdb_hit['action'] ) {
+                return [
+                    'status' => 'allow',
+                    'reason' => 'Lista blanca DB personalizada (' . $cdb_hit['name'] . ')',
+                ];
+            }
             return [
-                'status' => 'allow',
-                'reason' => 'Sin bloqueo activo para [' . $label . ']',
-                'scope'  => $matched['scope'],
+                'status' => 'block',
+                'reason' => 'DB personalizada (' . $cdb_hit['name'] . ')',
             ];
         }
-
-        $res          = bap_evaluate_rule_profile( $ip, $country, $rule, false, 'Cumple reglas Web [' . $label . ']' );
-        $res['scope'] = $matched['scope'];
-        return $res;
     }
 
     $c_mode  = (string) get_option( 'bap_country_mode', 'allow' );

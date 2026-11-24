@@ -11,7 +11,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
         'bap_2fa_enabled', 'bap_2fa_enforce_admins', 'bap_2fa_remember_device',
         'bap_protected_paths', 'bap_enable_htaccess', 'bap_country_mode', 'bap_asn_mode',
         'bap_block_nonexistent_users', 'bap_block_xmlrpc', 'bap_block_user_enum',
-        'bap_block_tor', 'bap_block_firehol',
+        'bap_block_tor', 'bap_block_firehol','bap_custom_dbs',
         'bap_allowed_countries', 'bap_blocked_countries', 'bap_allowed_asns', 'bap_blocked_asns',
         'bap_auto_ban_attempts', 'bap_auto_ban_duration',
         'bap_abuseipdb_min_risk', 'bap_whitelist_ips', 'bap_blacklist_ips',

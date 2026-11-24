@@ -79,6 +79,7 @@ if ( $all_missing ) {
         <?php endforeach; ?>
     </div>
 
+    <?php if ( function_exists( 'bap_render_custom_dbs_section' ) ) { bap_render_custom_dbs_section(); } ?>
     <?php bap_render_db_settings_card( $db_freq ); ?>
     <?php bap_render_json_backup_card(); ?>
     <?php if ( function_exists( 'bap_render_ip_simulator_box' ) ) { bap_render_ip_simulator_box(); } ?>

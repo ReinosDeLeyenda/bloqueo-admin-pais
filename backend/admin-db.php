@@ -68,6 +68,9 @@ function bap_run_all_db_updates() {
             $errs[] = $name . ': ' . $r->get_error_message();
         }
     }
+    if ( function_exists( 'bap_update_all_custom_dbs' ) ) {
+        $errs = array_merge( $errs, bap_update_all_custom_dbs() );
+    }
     return $errs;
 }
 
@@ -92,7 +95,12 @@ function bap_handle_db_actions() {
     if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'bap_db_action' ) ) {
         return '';
     }
-
+    if ( function_exists( 'bap_handle_custom_db_actions' ) ) {
+        $cdb_msg = bap_handle_custom_db_actions();
+        if ( '' !== $cdb_msg ) {
+            return $cdb_msg;
+        }
+    }
     if ( isset( $_POST['bap_update_all_dbs'] ) ) {
         $errs = bap_run_all_db_updates();
         return empty( $errs )
