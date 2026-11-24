@@ -46,6 +46,38 @@ add_action( 'update_option_bap_notify_freq', function( $old_val, $new_val ) {
 
 add_action( 'bap_send_digest_email_event', 'bap_flush_email_digest' );
 
+add_action( 'phpmailer_init', function( $phpmailer ) {
+    if ( 'text/html' === $phpmailer->ContentType && '' === trim( (string) $phpmailer->AltBody ) ) {
+        $plain = preg_replace( '/<style\b[^>]*>.*?<\/style>/is', '', (string) $phpmailer->Body );
+        $plain = preg_replace( '/<(br|\/p|\/div|\/tr|\/h[1-6]|\/li)\b[^>]*>/i', "\n", $plain );
+        $plain = wp_strip_all_tags( $plain );
+        $plain = html_entity_decode( $plain, ENT_QUOTES, 'UTF-8' );
+        $plain = preg_replace( "/[ \t]+/", ' ', $plain );
+        $plain = preg_replace( "/\n{3,}/", "\n\n", $plain );
+        $phpmailer->AltBody = trim( $plain );
+    }
+} );
+
+function bap_send_mail( $to, $subject, $message, $headers = [] ) {
+    $headers   = is_array( $headers ) ? $headers : ( '' !== $headers ? explode( "\n", str_replace( "\r\n", "\n", $headers ) ) : [] );
+    $site_name = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+    $from_mail = sanitize_email( (string) get_option( 'admin_email', '' ) );
+
+    $has_from = false;
+    foreach ( $headers as $h ) {
+        if ( 0 === stripos( trim( (string) $h ), 'From:' ) ) {
+            $has_from = true;
+            break;
+        }
+    }
+    if ( ! $has_from && is_email( $from_mail ) ) {
+        $safe_name = str_replace( [ '"', "\r", "\n" ], '', $site_name );
+        $headers[] = 'From: "' . $safe_name . '" <' . $from_mail . '>';
+    }
+
+    return wp_mail( $to, $subject, $message, $headers );
+}
+
 function bap_get_notify_recipients() {
     $raw = trim( (string) get_option( 'bap_notify_emails', '' ) );
     if ( '' === $raw ) {
@@ -99,7 +131,7 @@ function bap_queue_or_send_notification( $ip, $country, $reason ) {
                  . "Riesgo AbuseIPDB: {$item['risk']}\n"
                  . "Motivo: {$item['reason']}\n"
                  . "URL solicitada: {$item['uri']}\n";
-        wp_mail( bap_get_notify_recipients(), $subject, $body );
+        bap_send_mail( bap_get_notify_recipients(), $subject, $body );
         return;
     }
 
@@ -136,7 +168,7 @@ function bap_flush_email_digest() {
     $tpl     = (string) get_option( 'bap_email_template', 'full' );
     $mail    = bap_render_digest_by_template( $queue, false, $tpl );
 
-    wp_mail( bap_get_notify_recipients(), $subject, $mail['body'], $mail['headers'] );
+    bap_send_mail( bap_get_notify_recipients(), $subject, $mail['body'], $mail['headers'] );
 }
 
 function bap_send_test_digest_email() {
@@ -171,9 +203,9 @@ function bap_send_test_digest_email() {
     }
 
     $site    = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
-    $subject = '[' . $site . '] Prueba de resumen agrupado (' . count( $queue ) . ' eventos)';
+    $subject = '[' . $site . '] Verificación de resumen de actividad (' . count( $queue ) . ' eventos)';
     $tpl     = (string) get_option( 'bap_email_template', 'full' );
     $mail    = bap_render_digest_by_template( $queue, true, $tpl );
 
-    return wp_mail( bap_get_notify_recipients(), $subject, $mail['body'], $mail['headers'] );
+    return bap_send_mail( bap_get_notify_recipients(), $subject, $mail['body'], $mail['headers'] );
 }

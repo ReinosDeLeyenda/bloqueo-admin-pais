@@ -114,9 +114,9 @@ function bap_send_successful_login_alert( WP_User $user, $is_test = false, $sing
             ? $custom_emails
             : ( function_exists( 'bap_get_notify_recipients' ) ? bap_get_notify_recipients() : [ get_option( 'admin_email' ) ] );
 
-        $prefix  = $asn_check['changed'] ? '⚠️ [NUEVO ASN] ' : '✅ ';
-        $t_badge = $is_test ? '[PRUEBA] ' : '';
-        $subject = "{$prefix}{$t_badge}[{$site_name}] Inicio de sesión exitoso: {$user->user_login}";
+        $prefix  = $asn_check['changed'] ? '[Aviso ASN] ' : '';
+        $t_badge = $is_test ? '(Verificación) ' : '';
+        $subject = "{$prefix}{$t_badge}[{$site_name}] Inicio de sesión en el panel: {$user->user_login}";
 
         $body  = "Se ha detectado un inicio de sesión exitoso en {$site_name}:\n\n";
         if ( $asn_check['changed'] ) {
@@ -131,7 +131,8 @@ function bap_send_successful_login_alert( WP_User $user, $is_test = false, $sing
         $body .= "• ASNs Sesiones Activas: {$asn_check['active_asns']}\n";
         $body .= "• Navegador / User-Agent: " . ( $ua ?: 'No registrado' ) . "\n";
 
-        if ( ! wp_mail( $recipients, $subject, $body ) ) {
+        $sent = function_exists( 'bap_send_mail' ) ? bap_send_mail( $recipients, $subject, $body ) : wp_mail( $recipients, $subject, $body );
+        if ( ! $sent ) {
             $ok = false;
         }
     }

@@ -7,12 +7,14 @@ function bap_handle_test_email_post() {
     if ( isset( $_POST['bap_send_test_email'] ) && check_admin_referer( 'bap_test_email_action' ) ) {
         $recipients = function_exists( 'bap_get_notify_recipients' ) ? bap_get_notify_recipients() : [ get_option( 'admin_email' ) ];
         $site       = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
-        $subject    = '[' . $site . '] Email de prueba - Bloqueo Admin';
-        $body       = "Este es un correo de prueba enviado desde el plugin Bloqueo Admin por País e IP.\n\nFecha/Hora: " . current_time( 'mysql' ) . "\nDestinatarios activos: " . implode( ', ', $recipients ) . "\n";
-        return wp_mail( $recipients, $subject, $body )
-            ? '<div class="notice notice-success is-dismissible"><p><strong>¡Email de prueba enviado correctamente a:</strong> <code>' . esc_html( implode( ', ', $recipients ) ) . '</code>!</p></div>'
+        $subject    = '[' . $site . '] Verificación de notificaciones de seguridad';
+        $body       = "Hola,\n\nEste mensaje confirma que las notificaciones por correo electrónico de Bloqueo Admin están configuradas correctamente en {$site}.\n\nFecha y hora: " . current_time( 'mysql' ) . "\nDestinatarios activos: " . implode( ', ', $recipients ) . "\n";
+        $sent       = function_exists( 'bap_send_mail' ) ? bap_send_mail( $recipients, $subject, $body ) : wp_mail( $recipients, $subject, $body );
+        return $sent
+            ? '<div class="notice notice-success is-dismissible"><p><strong>¡Correo de verificación enviado correctamente a:</strong> <code>' . esc_html( implode( ', ', $recipients ) ) . '</code>!</p></div>'
             : '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> WordPress (<code>wp_mail</code>) no pudo enviar el correo.</p></div>';
     }
+
     if ( isset( $_POST['bap_send_test_digest'] ) && check_admin_referer( 'bap_test_email_action' ) ) {
         $recipients = function_exists( 'bap_get_notify_recipients' ) ? bap_get_notify_recipients() : [ get_option( 'admin_email' ) ];
         $sent       = function_exists( 'bap_send_test_digest_email' ) ? bap_send_test_digest_email() : false;
