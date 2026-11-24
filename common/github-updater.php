@@ -61,7 +61,7 @@ add_filter( 'pre_set_site_transient_update_plugins', function( $transient ) {
         return $transient;
     }
 
-    $plugin_slug = plugin_basename( dirname( __FILE__ ) . '/bloqueo-admin-pais.php' );
+    $plugin_slug = plugin_basename( dirname( __DIR__ ) . '/bloqueo-admin-pais.php' );
     $current_ver = $transient->checked[ $plugin_slug ] ?? '1.0';
     $release     = bap_get_github_latest_release();
 
@@ -79,7 +79,7 @@ add_filter( 'pre_set_site_transient_update_plugins', function( $transient ) {
 });
 
 add_filter( 'plugins_api', function( $res, $action, $args ) {
-    $plugin_folder = basename( dirname( __FILE__ ) );
+    $plugin_folder = basename( dirname( __DIR__ ) );
     if ( 'plugin_information' !== $action || ( $args->slug ?? '' ) !== $plugin_folder ) {
         return $res;
     }
@@ -103,7 +103,7 @@ add_filter( 'plugins_api', function( $res, $action, $args ) {
 }, 10, 3 );
 
 add_filter( 'upgrader_source_selection', function( $source, $remote_source, $upgrader, $hook_extra ) {
-    $plugin_slug = plugin_basename( dirname( __FILE__ ) . '/bloqueo-admin-pais.php' );
+    $plugin_slug = plugin_basename( dirname( __DIR__ ) . '/bloqueo-admin-pais.php' );
     if ( ( $hook_extra['plugin'] ?? '' ) !== $plugin_slug ) {
         return $source;
     }
@@ -122,7 +122,7 @@ add_action( 'delete_site_transient_update_plugins', function() {
 });
 
 // 1. Añadir enlace "Buscar actualizaciones" en la pantalla de Plugins
-add_filter( 'plugin_action_links_' . plugin_basename( dirname( __FILE__ ) . '/bloqueo-admin-pais.php' ), function( $links ) {
+add_filter( 'plugin_action_links_' . plugin_basename( dirname( __DIR__ ) . '/bloqueo-admin-pais.php' ), function( $links ) {
     $url = wp_nonce_url(
         admin_url( 'plugins.php?bap_force_update_check=1' ),
         'bap_force_update_nonce'
@@ -138,13 +138,13 @@ add_action( 'admin_init', function() {
     }
     check_admin_referer( 'bap_force_update_nonce' );
 
-    // Borrar la caché de 6 horas de GitHub y forzar a WordPress a recomprobar
     delete_transient( 'bap_gh_release_' . md5( BAP_GITHUB_REPO ) );
     delete_site_transient( 'update_plugins' );
     wp_update_plugins();
 
-    $plugin_slug = plugin_basename( dirname( __FILE__ ) . '/bloqueo-admin-pais.php' );
-    $plugin_data = get_plugin_data( dirname( __FILE__ ) . '/bloqueo-admin-pais.php' );
+    $main_file   = dirname( __DIR__ ) . '/bloqueo-admin-pais.php';
+    $plugin_slug = plugin_basename( $main_file );
+    $plugin_data = get_plugin_data( $main_file );
     $current_ver = $plugin_data['Version'] ?? '1.0.0';
     $release     = bap_get_github_latest_release();
 

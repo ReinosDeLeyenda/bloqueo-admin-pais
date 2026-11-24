@@ -11,7 +11,7 @@ add_action( 'admin_menu', function() {
     add_submenu_page( 'bap-admin-db', 'Estadísticas', 'Estadísticas', 'manage_options', 'bap-admin-estadisticas', 'bap_render_estadisticas_page' );
 });
 
-add_filter( 'plugin_action_links_' . plugin_basename( dirname( __FILE__ ) . '/bloqueo-admin-pais.php' ), function( $links ) {
+add_filter( 'plugin_action_links_' . plugin_basename( dirname( __DIR__ ) . '/bloqueo-admin-pais.php' ), function( $links ) {
     $url = admin_url( 'admin.php?page=bap-admin-db' );
     array_unshift( $links, '<a href="' . esc_url( $url ) . '"><strong>Ajustes</strong></a>' );
     return $links;

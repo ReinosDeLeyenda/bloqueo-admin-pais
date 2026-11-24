@@ -3,7 +3,7 @@
  * Plugin Name: Bloqueo Admin por País e IP
  * Plugin URI: https://github.com
  * Description: Bloquea wp-admin, wp-login.php y el frontend por país, ASN, AbuseIPDB, Tor, FireHOL e IP usando bases de datos locales.
- * Version: 1.0.8
+ * Version: 1.0.9
  * Author: ReinosDeLeyenda
  * License: GPLv2 or later
  */
@@ -14,28 +14,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $bap_dir   = plugin_dir_path( __FILE__ );
 $bap_files = [
-    'cidr-helper.php',
-    'logs-db-manager.php',
-    'seo-bots-helper.php',
-    'htaccess-manager.php',
-    'block-page-403.php',
-    'frontend-firewall.php',
-    'admin-firewall.php',
-    'ip-simulator.php',
-    'logs-exporter.php',
-    'mmdb-reader.php',
-    'geo-db-manager.php',
-    'abuseipdb-manager.php',
-    'threat-lists-manager.php',
-    'notificaciones-mail.php',
-    'admin-db.php',
-    'country-redirects.php',
-    'admin-bloqueos.php',
-    'web-bloqueos.php',
-    'admin-estadisticas.php',
-    'github-updater.php',
-    'hibp-checker.php',
-    'two-factor-auth.php',
+    // Common
+    'common/cidr-helper.php',
+    'common/logs-db-manager.php',
+    'common/htaccess-manager.php',
+    'common/mmdb-reader.php',
+    'common/geo-db-manager.php',
+    'common/abuseipdb-manager.php',
+    'common/threat-lists-manager.php',
+    'common/notificaciones-mail.php',
+    'common/github-updater.php',
+    // Frontend
+    'frontend/seo-bots-helper.php',
+    'frontend/block-page-403.php',
+    'frontend/country-redirects.php',
+    'frontend/frontend-firewall.php',
+    // Backend
+    'backend/admin-firewall.php',
+    'backend/admin-db.php',
+    'backend/admin-bloqueos.php',
+    'backend/web-bloqueos.php',
+    'backend/admin-estadisticas.php',
+    'backend/ip-simulator.php',
+    'backend/logs-exporter.php',
+    'backend/hibp-checker.php',
+    'backend/two-factor-auth.php',
 ];
 
 foreach ( $bap_files as $bap_file ) {
