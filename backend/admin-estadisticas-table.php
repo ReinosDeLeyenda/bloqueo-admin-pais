@@ -2,76 +2,69 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
+$ip2loc_base = 'https://www.' . '://ip2location.com';
+$abuse_base  = 'https://www.' . '://abuseipdb.com';
 ?>
-<?php if ( empty( $logs ) ) : ?>
-    <p>Aún no se ha registrado ningún intento bloqueado.</p>
-<?php else : ?>
-    <table id="bap_logs_table" class="widefat striped" style="max-width: 1120px;">
-        <thead>
-            <tr>
-                <th class="bap-sort" data-type="ip" style="cursor:pointer;user-select:none;">Dirección IP <span class="bap-arrow"></span></th>
-                <th class="bap-sort" data-type="str" style="cursor:pointer;user-select:none;">País <span class="bap-arrow"></span></th>
-                <th class="bap-sort" data-type="num" style="cursor:pointer;user-select:none;">Riesgo <span class="bap-arrow"></span></th>
-                <th class="bap-sort" data-type="str" style="cursor:pointer;user-select:none;">ASN / Proveedor <span class="bap-arrow"></span></th>
-                <th class="bap-sort" data-type="num" style="cursor:pointer;user-select:none;">Intentos <span class="bap-arrow">▼</span></th>
-                <th class="bap-sort" data-type="str" style="cursor:pointer;user-select:none;">Estado / Motivo <span class="bap-arrow"></span></th>
-                <th class="bap-sort" data-type="str" style="cursor:pointer;user-select:none;">Último intento <span class="bap-arrow"></span></th>
-                <th>Acción</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ( $logs as $entry ) : ?>
-                <?php
-                $ip_val    = $entry['ip'];
-                $is_banned = in_array( $ip_val, $blacklist, true );
-                $risk      = function_exists( 'bap_get_abuseipdb_score' ) ? bap_get_abuseipdb_score( $ip_val ) : null;
+<table id="bap-logs-table" class="widefat fixed striped">
+    <thead>
+        <tr>
+            <th data-col="0" data-type="text" style="width:145px;cursor:pointer;">Fecha y Hora &#8597;</th>
+            <th data-col="1" data-type="ip" style="width:130px;cursor:pointer;">Dirección IP &#8597;</th>
+            <th data-col="2" data-type="num" style="width:95px;cursor:pointer;">AbuseIPDB &#8597;</th>
+            <th data-col="3" data-type="text" style="width:70px;cursor:pointer;">País &#8597;</th>
+            <th data-col="4" data-type="text" style="width:185px;cursor:pointer;">ASN / Proveedor &#8597;</th>
+            <th data-col="5" data-type="text" style="width:200px;cursor:pointer;">Ruta Atacada &#8597;</th>
+            <th data-col="6" data-type="text" style="cursor:pointer;">Motivo &#8597;</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php if ( empty( $logs ) ) : ?>
+            <tr><td colspan="7">No hay registros de bloqueos todavía.</td></tr>
+        <?php else : ?>
+            <?php foreach ( $logs as $log ) :
+                $ip_val    = trim( (string) $log->ip_address );
+                $packed_ip = @inet_pton( $ip_val );
+                $ip_hex    = ( false !== $packed_ip ) ? bin2hex( str_pad( $packed_ip, 16, "\0", STR_PAD_LEFT ) ) : strtolower( $ip_val );
+                $risk      = ( '' !== $ip_val && function_exists( 'bap_get_abuseipdb_score' ) ) ? bap_get_abuseipdb_score( $ip_val ) : null;
                 $risk_sort = ( null === $risk ) ? -1 : (int) $risk;
-                $asn_text  = function_exists( 'bap_get_asn_by_ip' ) ? bap_get_asn_by_ip( $ip_val ) : 'N/D';
-                $packed    = @inet_pton( $ip_val );
-                $ip_hex    = ( false !== $packed ) ? bin2hex( str_pad( $packed, 16, "\0", STR_PAD_LEFT ) ) : $ip_val;
-
-                $safe_ip   = preg_replace( '/[^0-9a-fA-F:.]/', '', $ip_val );
-                $ip2loc    = 'https://' . implode( '.', [ 'www', 'ip2location', 'com' ] ) . '/' . $safe_ip;
-                $abuse_url = 'https://' . implode( '.', [ 'www', 'abuseipdb', 'com' ] ) . '/check/' . $safe_ip;
-                ?>
+                $uri_val   = isset( $log->request_uri ) && '' !== (string) $log->request_uri ? (string) $log->request_uri : '/';
+            ?>
                 <tr>
+                    <td data-sort="<?php echo esc_attr( $log->created_at ); ?>"><?php echo esc_html( $log->created_at ); ?></td>
                     <td data-sort="<?php echo esc_attr( $ip_hex ); ?>">
-                        <a href="<?php echo esc_url( $ip2loc ); ?>" target="_blank" rel="noopener noreferrer" title="Consultar IP en IP2Location"><code><?php echo esc_html( $ip_val ); ?></code></a>
-                    </td>
-                    <td data-sort="<?php echo esc_attr( $entry['country'] ); ?>"><strong><?php echo esc_html( $entry['country'] ); ?></strong></td>
-                    <td data-sort="<?php echo (int) $risk_sort; ?>">
-                        <a href="<?php echo esc_url( $abuse_url ); ?>" target="_blank" rel="noopener noreferrer" title="Consultar historial en AbuseIPDB" style="text-decoration:none;">
-                            <?php if ( null === $risk ) : ?>
-                                <span style="color:#8c8f94;">N/D</span>
-                            <?php else : ?>
-                                <?php $color = ( $risk >= 90 ) ? '#d63638' : ( ( $risk >= 50 ) ? '#dba617' : '#008a20' ); ?>
-                                <strong style="color:<?php echo esc_attr( $color ); ?>;"><?php echo (int) $risk; ?>%</strong>
-                            <?php endif; ?>
-                        </a>
-                    </td>
-                    <td data-sort="<?php echo esc_attr( strtolower( $asn_text ) ); ?>"><small><?php echo esc_html( $asn_text ); ?></small></td>
-                    <td data-sort="<?php echo (int) $entry['count']; ?>"><strong><?php echo number_format_i18n( (int) $entry['count'] ); ?></strong></td>
-                    <td data-sort="<?php echo esc_attr( strtolower( ( $is_banned ? 'bloqueada ' : '' ) . $entry['reason'] ) ); ?>">
-                        <?php if ( $is_banned ) : ?>
-                            <span style="color:#d63638;font-weight:bold;">[Bloqueada]</span>
+                        <?php if ( '' !== $ip_val ) : ?>
+                            <a href="<?php echo esc_url( $ip2loc_base . rawurlencode( $ip_val ) ); ?>" class="bap-ip2loc-link" data-ip="<?php echo esc_attr( $ip_val ); ?>" target="_blank" rel="noopener noreferrer" title="Consultar IP en IP2Location">
+                                <code><?php echo esc_html( $ip_val ); ?></code>
+                            </a>
+                        <?php else : ?>
+                            <code>N/D</code>
                         <?php endif; ?>
-                        <?php echo esc_html( $entry['reason'] ); ?>
                     </td>
-                    <td data-sort="<?php echo esc_attr( $entry['last_hit'] ); ?>"><?php echo esc_html( $entry['last_hit'] ); ?></td>
-                    <td>
-                        <form method="post" style="display:inline;">
-                            <?php wp_nonce_field( 'bap_logs_action' ); ?>
-                            <?php if ( $is_banned ) : ?>
-                                <input type="hidden" name="bap_unban_ip" value="<?php echo esc_attr( $ip_val ); ?>" />
-                                <input type="submit" class="button button-small" value="Desbloquear" />
-                            <?php else : ?>
-                                <input type="hidden" name="bap_ban_ip" value="<?php echo esc_attr( $ip_val ); ?>" />
-                                <input type="submit" class="button button-small" value="Bloquear IP" />
-                            <?php endif; ?>
-                        </form>
+                    <td data-sort="<?php echo esc_attr( $risk_sort ); ?>">
+                        <?php if ( '' !== $ip_val ) : ?>
+                            <a href="<?php echo esc_url( $abuse_base . rawurlencode( $ip_val ) ); ?>" class="bap-abuse-link" data-ip="<?php echo esc_attr( $ip_val ); ?>" target="_blank" rel="noopener noreferrer" title="Consultar reputación en AbuseIPDB" style="text-decoration:none;">
+                                <?php if ( null === $risk ) : ?>
+                                    <span style="color:#8c8f94;">N/D</span>
+                                <?php elseif ( $risk >= 75 ) : ?>
+                                    <strong style="color:#d63638;"><?php echo (int) $risk; ?>%</strong>
+                                <?php elseif ( $risk >= 25 ) : ?>
+                                    <strong style="color:#dba617;"><?php echo (int) $risk; ?>%</strong>
+                                <?php else : ?>
+                                    <span style="color:#00a32a;"><?php echo (int) $risk; ?>%</span>
+                                <?php endif; ?>
+                            </a>
+                        <?php else : ?>
+                            <span style="color:#8c8f94;">N/D</span>
+                        <?php endif; ?>
                     </td>
+                    <td data-sort="<?php echo esc_attr( $log->country_code ); ?>"><strong><?php echo esc_html( $log->country_code ); ?></strong></td>
+                    <td data-sort="<?php echo esc_attr( $log->asn ?? '' ); ?>"><small><?php echo esc_html( $log->asn ?: 'N/D' ); ?></small></td>
+                    <td data-sort="<?php echo esc_attr( $uri_val ); ?>" style="word-break:break-all;">
+                        <code title="<?php echo esc_attr( $uri_val ); ?>"><?php echo esc_html( $uri_val ); ?></code>
+                    </td>
+                    <td data-sort="<?php echo esc_attr( $log->reason ); ?>"><?php echo esc_html( $log->reason ); ?></td>
                 </tr>
             <?php endforeach; ?>
-        </tbody>
-    </table>
-<?php endif; ?>
+        <?php endif; ?>
+    </tbody>
+</table>
