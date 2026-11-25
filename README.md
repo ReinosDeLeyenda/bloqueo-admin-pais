@@ -26,6 +26,7 @@ Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto
 ## Características principales
 
 ### 1. Bases de Datos (`Acciones` | `Configuración`)
+* **Acciones masivas inteligentes:** Botones para **Actualizar TODAS**, **Descargar faltantes** o **Actualizar obsoletas** según la frecuencia configurada.
 * **5 fuentes gratuitas en local (sin latencia externa por visita):**
   * **Países (`.mmdb`):** Geolocalización IPv4/IPv6 mediante lector binario `.mmdb` nativo en PHP (sin dependencias externas).
   * **ASN / Proveedores (`.mmdb`):** Identificación de operadoras y centros de datos (OVH, DigitalOcean, Hetzner, etc.).
@@ -43,6 +44,11 @@ Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto
 * **Simulador de IP en vivo:** Analiza cualquier IPv4/IPv6 y ruta URL para comprobar su país, ASN, riesgo AbuseIPDB, estado Tor/FireHOL y el veredicto exacto de las reglas de Backend y Frontend.
 
 #### Subpestaña `Backend`
+* **Indicador visual de Llave Secreta y Modo Vacaciones:** Fondo del panel en **amarillo**...
+* **Alerta visual de cambio de ASN / ISP:** Banner rojo de advertencia...
+* **Modo Vacaciones y Restricción Geo/ASN por Cuenta:** Suspensión temporal y reglas por usuario.
+* **Enlaces Mágicos sin contraseña (*Magic Links*):** Acceso por Telegram y Email.
+* **Auto-baneo de subredes (/24 y /64):** Bloqueo de rangos CIDR completos.
 * **URL de Acceso Personalizada (*Hide Login*):** Oculta `/wp-login.php` y `/wp-admin` tras un *slug* secreto personalizable, reescribiendo enlaces de login/2FA/recuperación y bloqueando accesos directos.
 * **Indicador visual de Llave Secreta:** Si inicias sesión utilizando la **Llave Secreta URL**, el fondo del escritorio de WordPress se tiñe de **amarillo** como recordatorio visual de sesión privilegiada de bypass.
 * **Alerta visual de cambio de ASN / ISP:** Muestra un **banner rojo** en el panel comparando ASN, operador (ISP), país e IP cuando una nueva conexión difiere de la sesión anterior, con botones rápidos para confirmar (**OK**) o **Cambiar contraseña**.
@@ -55,6 +61,7 @@ Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto
 * **Autenticación en Dos Factores (2FA):** App Autenticadora (TOTP con QR generado 100 % en local), verificación por email, 8 códigos de respaldo, dispositivos de confianza (30 días) y obligatoriedad para Administradores.
 * **Política de Contraseñas, HIBP y Sesiones en Vivo:** Longitud mínima, complejidad, historial de **5 últimas contraseñas**, caducidad cada X días, bloqueo de claves filtradas (*Have I Been Pwned*), gestor de sesiones activas con expulsión remota y alerta inmediata si se crea o asciende un Administrador.
 #### Subpestaña `Frontend`
+* **Rutas Trampa (Auto-Baneo Instantáneo):** Detección de accesos a rutas de reconocimiento (/.env, /wp-config.php.bak, etc.).
 * **Reglas por ámbito/URL con lógica Y/O:** Aplicable a toda la web pública (`Global`) o a rutas específicas (`/tienda/*`, `/formulario*`, etc.) encadenando condiciones arrastrables.
 * **Cortafuegos WAF (Inspección de Payload y Cabeceras):** Analiza URLs (incluyendo longitud > 2048 caracteres, *null-bytes* y doble codificación), cabecera `HTTP_REFERER`, formularios `GET`/`POST` y subidas de archivos (`FILES`) contra **SQLi, XSS, Path Traversal / LFI, inyección PHP** y ejecutables, con auto-baneo opcional.
 * **Rate Limiting (Límite de peticiones y errores 404):** Controla el máximo de peticiones/minuto y errores 404/minuto por IP para frenar scrapers y escáneres de vulnerabilidades, con auto-baneo opcional.
