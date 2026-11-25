@@ -39,6 +39,7 @@ function bap_roles_verify_integrity() {
         if ( 'administrator' === $role_slug ) { continue; }
         $caps = (array) ( $rdata['capabilities'] ?? [] );
         foreach ( $danger_caps as $dc ) {
+            if ( 'unfiltered_html' === $dc && 'editor' === $role_slug && ! is_multisite() ) { continue; }
             if ( ! empty( $caps[ $dc ] ) ) {
                 $escalations[] = "{$role_slug} tiene capacidad crítica ({$dc})";
             }
