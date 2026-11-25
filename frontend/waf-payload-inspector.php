@@ -25,10 +25,20 @@ function bap_waf_flatten_values( $data, $depth = 0 ) {
 }
 
 function bap_waf_detect_attack_signature( $raw_value ) {
-    $val = rawurldecode( (string) $raw_value );
-    if ( '' === trim( $val ) ) {
+    $raw = (string) $raw_value;
+    if ( '' === trim( $raw ) ) {
         return '';
     }
+
+    if ( false !== strpos( $raw, "\0" ) || false !== stripos( $raw, '%00' ) ) {
+        return 'Null-Byte Injection (%00)';
+    }
+
+    if ( preg_match( '/%25(?:2e%252e|3c|3e|27|22|00)/i', $raw ) ) {
+        return 'Evasión por doble codificación URL';
+    }
+
+    $val = rawurldecode( $raw );
 
     $rules = [
         'SQL Injection (SQLi)'          => '/(?:\bunion\s+(?:all\s+)?select\b|\bselect\b.{1,60}\bfrom\s+(?:information_schema|mysql\.|wp_users)|\b(?:sleep|benchmark)\s*\(\s*\d+|\b(?:drop|truncate)\s+table\b|\'\s*(?:or|and)\s+[\'"]?\d+[\'"]?\s*=\s*[\'"]?\d+)/i',
@@ -93,17 +103,26 @@ add_action( 'init', function() {
         return;
     }
 
-    $threat = '';
+    $threat  = '';
+    $req_uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
 
-    // 1. Revisar subida de archivos ejecutables
-    if ( ! empty( $_FILES ) ) {
+    // 1. Verificar longitud excesiva de URI (> 2048 caracteres)
+    if ( strlen( $req_uri ) > 2048 ) {
+        $threat = 'URI excesivamente larga (> 2048 caracteres)';
+    }
+
+    // 2. Revisar subida de archivos ejecutables
+    if ( '' === $threat && ! empty( $_FILES ) ) {
         $threat = bap_waf_detect_dangerous_upload( $_FILES );
     }
 
-    // 2. Revisar URI, parámetros GET y cuerpo POST
+    // 3. Revisar URI, HTTP_REFERER, parámetros GET y cuerpo POST
     if ( '' === $threat ) {
         $samples   = [];
-        $samples[] = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+        $samples[] = $req_uri;
+        if ( ! empty( $_SERVER['HTTP_REFERER'] ) ) {
+            $samples[] = (string) wp_unslash( $_SERVER['HTTP_REFERER'] );
+        }
         if ( ! empty( $_GET ) ) {
             $samples = array_merge( $samples, bap_waf_flatten_values( wp_unslash( $_GET ) ) );
         }
