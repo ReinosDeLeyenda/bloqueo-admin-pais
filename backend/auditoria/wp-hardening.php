@@ -94,6 +94,19 @@ function bap_sync_uploads_php_protection( $enable ) {
 
     return ( false !== @file_put_contents( $ht_file, $updated ) );
 }
+// Limpieza de cabecera X-Powered-By y metadatos RSD / WLWManifest / Shortlink
+if ( '1' === (string) get_option( 'bap_harden_clean_head_headers', '0' ) ) {
+    remove_action( 'wp_head', 'rsd_link' );
+    remove_action( 'wp_head', 'wlwmanifest_link' );
+    remove_action( 'wp_head', 'wp_shortlink_wp_head', 10 );
+    remove_action( 'template_redirect', 'wp_shortlink_header', 11 );
+    add_action( 'send_headers', function() {
+        if ( ! headers_sent() && function_exists( 'header_remove' ) ) {
+            @header_remove( 'X-Powered-By' );
+        }
+    }, 99 );
+}
+
 function bap_sync_hotlink_protection( $enable ) {
     if ( ! function_exists( 'insert_with_markers' ) ) {
         require_once ABSPATH . 'wp-admin/includes/misc.php';
@@ -134,6 +147,7 @@ function bap_render_hardening_box() {
         $no_app   = ! empty( $_POST['bap_harden_disable_app_passwords'] ) ? '1' : '0';
         $no_rss   = ! empty( $_POST['bap_harden_disable_rss'] ) ? '1' : '0';
         $hotlink  = ! empty( $_POST['bap_harden_anti_hotlink'] ) ? '1' : '0';
+        $clean_hd = ! empty( $_POST['bap_harden_clean_head_headers'] ) ? '1' : '0';
 
         update_option( 'bap_harden_disable_file_edit', $no_edit );
         update_option( 'bap_harden_hide_wp_version', $hide_ver );
@@ -142,6 +156,7 @@ function bap_render_hardening_box() {
         update_option( 'bap_harden_disable_app_passwords', $no_app );
         update_option( 'bap_harden_disable_rss', $no_rss );
         update_option( 'bap_harden_anti_hotlink', $hotlink );
+        update_option( 'bap_harden_clean_head_headers', $clean_hd );
 
         $ok_up  = bap_sync_uploads_php_protection( '1' === $no_php );
         $ok_hl  = bap_sync_hotlink_protection( '1' === $hotlink );
@@ -182,9 +197,13 @@ function bap_render_hardening_box() {
                 <input type="checkbox" name="bap_harden_disable_rss" value="1" <?php checked( get_option( 'bap_harden_disable_rss', '0' ), '1' ); ?> />
                 <strong>Desactivar Feeds RSS públicos</strong> (impide el raspado automático de entradas y comentarios vía <code>/feed/</code>)
             </label>
-            <label style="display:block;margin-bottom:14px;">
+            <label style="display:block;margin-bottom:8px;">
                 <input type="checkbox" name="bap_harden_anti_hotlink" value="1" <?php checked( get_option( 'bap_harden_anti_hotlink', '0' ), '1' ); ?> />
                 <strong>Protección Anti-Hotlinking de imágenes (<code>.htaccess</code>)</strong> (impide que webs externas incrusten tus imágenes robando ancho de banda)
+            </label>
+            <label style="display:block;margin-bottom:14px;">
+                <input type="checkbox" name="bap_harden_clean_head_headers" value="1" <?php checked( get_option( 'bap_harden_clean_head_headers', '0' ), '1' ); ?> />
+                <strong>Ocultar cabecera <code>X-Powered-By</code> y metadatos RSD / WLWManifest / Shortlink</strong> (reduce la exposición de versión PHP y enlaces heredados en el <code>&lt;head&gt;</code>)
             </label>
 
             <button type="submit" name="bap_save_hardening" class="button button-primary">Guardar endurecimiento</button>
