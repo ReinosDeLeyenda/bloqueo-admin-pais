@@ -4,9 +4,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 require_once plugin_dir_path( __FILE__ ) . 'admin-estadisticas-charts.php';
 require_once plugin_dir_path( __FILE__ ) . 'admin-estadisticas-toolbar.php';
+
+$sub   = isset( $_GET['subtab'] ) ? sanitize_key( wp_unslash( $_GET['subtab'] ) ) : 'bloqueos';
+$valid = [
+    'bloqueos'  => 'Bloqueos',
+    'actividad' => 'Actividad Admin',
+];
+if ( ! isset( $valid[ $sub ] ) ) {
+    $sub = 'bloqueos';
+}
+$tab_base_url = admin_url( 'admin.php?page=bap-admin-estadisticas' );
+
 $stats_base_url = add_query_arg(
     array_filter( [
         'page'        => 'bap-admin-estadisticas',
+        'subtab'      => 'bloqueos',
         'filter_type' => 'all' !== $filter_type ? $filter_type : '',
     ] ),
     admin_url( 'admin.php' )
@@ -15,12 +27,28 @@ $stats_base_url = add_query_arg(
 <div class="wrap">
     <h1>Control de Acceso al Panel</h1>
     <?php bap_render_tabs( 'bap-admin-estadisticas' ); ?>
-    <?php echo wp_kses_post( $notice ); ?>
 
-    <?php bap_render_estadisticas_toolbar( $filter_uri, $filter_q, $filter_type, $stats_base_url ); ?>
-    <?php bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $top_asns, $top_uris, $stats_base_url ); ?>
-    <?php bap_render_estadisticas_charts( $table, $total_blocks, $top_countries, $top_uris, $stats_base_url, $type_where_sql ); ?>
+    <div style="display:flex;gap:8px;margin:0 0 18px 0;flex-wrap:wrap;">
+        <?php foreach ( $valid as $s_key => $s_lbl ) :
+            $url = add_query_arg( 'subtab', $s_key, $tab_base_url );
+            $cls = ( $sub === $s_key ) ? 'button button-primary' : 'button button-secondary';
+        ?>
+            <a href="<?php echo esc_url( $url ); ?>" class="<?php echo esc_attr( $cls ); ?>">
+                <?php echo esc_html( $s_lbl ); ?>
+            </a>
+        <?php endforeach; ?>
+    </div>
 
-    <h2 style="margin:18px 0 10px 0;">Últimos 100 intentos bloqueados</h2>
-    <?php require plugin_dir_path( __FILE__ ) . 'admin-estadisticas-table.php'; ?>
+    <?php if ( 'actividad' === $sub ) : ?>
+        <?php if ( function_exists( 'bap_render_activity_logs_subtab' ) ) { bap_render_activity_logs_subtab(); } ?>
+    <?php else : ?>
+        <?php echo wp_kses_post( $notice ); ?>
+
+        <?php bap_render_estadisticas_toolbar( $filter_uri, $filter_q, $filter_type, $stats_base_url ); ?>
+        <?php bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $top_asns, $top_uris, $stats_base_url ); ?>
+        <?php bap_render_estadisticas_charts( $table, $total_blocks, $top_countries, $top_uris, $stats_base_url, $type_where_sql ); ?>
+
+        <h2 style="margin:18px 0 10px 0;">Últimos 100 intentos bloqueados</h2>
+        <?php require plugin_dir_path( __FILE__ ) . 'admin-estadisticas-table.php'; ?>
+    <?php endif; ?>
 </div>
