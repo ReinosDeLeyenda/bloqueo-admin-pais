@@ -196,6 +196,19 @@ function bap_render_web_response_and_general_fields( array $current ) {
                     <p class="description">Nunca afecta a usuarios conectados ni a la Lista Blanca.</p>
                 </td>
             </tr>
+            <tr>
+                <th scope="row">Challenge JS Antibots (Pantalla de espera)</th>
+                <td>
+                    <?php $jsc_mode = (string) get_option( 'bap_js_challenge_mode', 'off' ); ?>
+                    <select name="bap_js_challenge_mode" style="margin-bottom:6px;">
+                        <option value="off" <?php selected( $jsc_mode, 'off' ); ?>>Desactivado</option>
+                        <option value="paths" <?php selected( $jsc_mode, 'paths' ); ?>>Solo en las rutas indicadas abajo</option>
+                        <option value="all" <?php selected( $jsc_mode, 'all' ); ?>>En toda la web publica</option>
+                    </select><br>
+                    <textarea name="bap_js_challenge_paths" rows="3" class="large-text code" style="max-width:460px;" placeholder="/tienda/*&#10;/mi-cuenta/*"><?php echo esc_textarea( get_option( 'bap_js_challenge_paths', "/tienda/*\n/mi-cuenta/*\n/registro*" ) ); ?></textarea>
+                    <p class="description">Muestra una pantalla estilo Cloudflare ("Verificando navegador...") con reto SHA-256 antes de permitir acceso. Exime usuarios conectados, Lista Blanca y bots SEO verificados.</p>
+                </td>
+            </tr>
         </table>
     </div>
     <?php

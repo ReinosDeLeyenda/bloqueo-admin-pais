@@ -42,6 +42,9 @@ function bap_handle_web_rule_actions() {
             $scope = '__all__';
         }
 
+        $jsc_m = in_array( $_POST['bap_js_challenge_mode'] ?? 'off', [ 'off', 'paths', 'all' ], true ) ? $_POST['bap_js_challenge_mode'] : 'off';
+        update_option( 'bap_js_challenge_mode', $jsc_m );
+        update_option( 'bap_js_challenge_paths', function_exists( 'bap_sanitize_protected_paths' ) ? bap_sanitize_protected_paths( wp_unslash( $_POST['bap_js_challenge_paths'] ?? '' ) ) : '' );
         update_option( 'bap_waf_enabled', ( '1' === (string) ( $_POST['bap_waf_enabled'] ?? '0' ) ) ? '1' : '0' );
         update_option( 'bap_trap_urls', function_exists( 'bap_sanitize_protected_paths' ) ? bap_sanitize_protected_paths( wp_unslash( $_POST['bap_trap_urls'] ?? '' ) ) : '' );
         update_option( 'bap_waf_autoban', ( '1' === (string) ( $_POST['bap_waf_autoban'] ?? '0' ) ) ? '1' : '0' );
