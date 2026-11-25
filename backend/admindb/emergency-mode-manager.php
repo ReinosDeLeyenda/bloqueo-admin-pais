@@ -130,7 +130,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                   . "🛟 <b>Enlace de Modo Emergencia (válido 30 min):</b>\n"
                   . htmlspecialchars( $magic_url, ENT_QUOTES, 'UTF-8' );
             foreach ( array_unique( array_filter( array_map( 'trim', preg_split( '/[\r\n,;]+/', $tg_chats ) ) ) ) as $cid ) {
-                wp_remote_post( 'https://telegram.org' . rawurlencode( $tg_token ) . '/sendMessage', [
+                wp_remote_post( 'https://api.' . 'telegram.org/bot' . rawurlencode( $tg_token ) . '/sendMessage', [
                     'timeout' => 5,
                     'body'    => [ 'chat_id' => $cid, 'text' => $text, 'parse_mode' => 'HTML' ],
                 ] );

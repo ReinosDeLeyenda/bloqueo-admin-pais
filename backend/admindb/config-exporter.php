@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 function bap_get_exportable_options( $include_secrets = false ) {
     $keys = [
         // 1. Bases de datos y MySQL externo
-        'bap_db_auto_update_freq', 'bap_custom_dbs',
+        'bap_db_auto_update_freq', 'bap_auto_scan_freq', 'bap_custom_dbs',
         'bap_harden_disable_file_edit', 'bap_harden_hide_wp_version', 'bap_harden_block_uploads_php', 'bap_harden_security_headers',
         'bap_ext_db_enabled', 'bap_ext_db_host', 'bap_ext_db_port',
         'bap_ext_db_name', 'bap_ext_db_user', 'bap_ext_db_table',

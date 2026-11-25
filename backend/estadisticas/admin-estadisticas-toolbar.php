@@ -71,6 +71,9 @@ function bap_render_estadisticas_toolbar( $filter_uri, $filter_q, $stats_base_ur
             <?php if ( function_exists( 'bap_find_ip2location_log_table' ) && '' !== bap_find_ip2location_log_table() ) : ?>
                 <button type="submit" name="bap_import_ip2location" class="button button-secondary" onclick="return confirm('¿Importar todo el historial de bloqueos desde la tabla de IP2Location?');">Importar de IP2Location</button>
             <?php endif; ?>
+            <?php if ( function_exists( 'bap_find_wordfence_log_table' ) && '' !== bap_find_wordfence_log_table() ) : ?>
+                <button type="submit" name="bap_import_wordfence" class="button button-secondary" onclick="return confirm('¿Importar todo el historial de bloqueos desde las tablas de Wordfence?');">Importar de Wordfence</button>
+            <?php endif; ?>
             <button type="submit" name="bap_clear_logs" class="button button-link-delete" style="margin-left:6px;" onclick="return confirm('¿Vaciar todos los registros?');">Vaciar historial</button>
         </form>
     </div>

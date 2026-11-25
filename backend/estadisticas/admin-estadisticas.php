@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 function bap_handle_stats_actions() {
-    if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'manage_options' ) ) {
         return '';
     }
 
@@ -25,6 +25,12 @@ function bap_handle_stats_actions() {
         return is_wp_error( $res )
             ? '<div class="notice notice-error is-dismissible"><p><strong>Error al importar:</strong> ' . esc_html( $res->get_error_message() ) . '</p></div>'
             : '<div class="notice notice-success is-dismissible"><p><strong>¡Migración completada!</strong> Se han importado <strong>' . number_format_i18n( (int) $res['hits'] ) . '</strong> registros históricos desde IP2Location.</p></div>';
+    }
+    if ( isset( $_POST['bap_import_wordfence'] ) && check_admin_referer( 'bap_logs_action' ) ) {
+        $res = function_exists( 'bap_import_wordfence_stats' ) ? bap_import_wordfence_stats() : new WP_Error( 'missing', 'Importador no disponible.' );
+        return is_wp_error( $res )
+            ? '<div class="notice notice-error is-dismissible"><p><strong>Error al importar:</strong> ' . esc_html( $res->get_error_message() ) . '</p></div>'
+            : '<div class="notice notice-success is-dismissible"><p><strong>¡Migración completada!</strong> Se han importado <strong>' . number_format_i18n( (int) $res['hits'] ) . '</strong> registros históricos desde Wordfence.</p></div>';
     }
     return '';
 }
