@@ -105,5 +105,7 @@ function bap_sync_htaccess_rules() {
         $rules[] = '</IfModule>';
     }
 
-    return insert_with_markers( $htaccess_file, 'Bloqueo Admin Pais', $rules );
+    $res = insert_with_markers( $htaccess_file, 'Bloqueo Admin Pais', $rules );
+    if ( $res && function_exists( 'bap_refresh_critical_config_hashes' ) ) { bap_refresh_critical_config_hashes(); }
+    return $res;
 }
