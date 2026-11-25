@@ -190,6 +190,7 @@ add_action( 'admin_init', function() {
     register_setting( 'bap_settings_group', 'bap_blocked_asns', [ 'sanitize_callback' => 'bap_sanitize_asn_list', 'default' => '' ] );
     register_setting( 'bap_settings_group', 'bap_auto_ban_attempts', [ 'sanitize_callback' => fn( $i ) => max( 0, (int) $i ), 'default' => 5 ] );
     register_setting( 'bap_settings_group', 'bap_auto_ban_duration', [ 'sanitize_callback' => fn( $i ) => max( 0, (int) $i ), 'default' => 24 ] );
+    register_setting( 'bap_settings_group', 'bap_subnet_autoban_threshold', [ 'sanitize_callback' => fn( $i ) => max( 0, min( 50, (int) $i ) ), 'default' => 0 ] );
     register_setting( 'bap_settings_group', 'bap_abuseipdb_min_risk', [ 'sanitize_callback' => fn( $i ) => max( 0, min( 100, (int) $i ) ), 'default' => 90 ] );
     register_setting( 'bap_settings_group', 'bap_whitelist_ips', [ 'sanitize_callback' => fn( $i ) => implode( "\n", array_filter( bap_parse_list( $i ), 'bap_is_valid_ip_or_cidr' ) ), 'default' => '' ] );
     register_setting( 'bap_settings_group', 'bap_blacklist_ips', [ 'sanitize_callback' => fn( $i ) => implode( "\n", array_filter( bap_parse_list( $i ), 'bap_is_valid_ip_or_cidr' ) ), 'default' => '' ] );

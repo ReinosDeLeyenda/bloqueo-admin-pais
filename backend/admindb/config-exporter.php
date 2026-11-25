@@ -15,7 +15,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
         'bap_ip_source', 'bap_custom_login_slug', 'bap_away_mode_enabled', 'bap_away_mode_start', 'bap_away_mode_end', 'bap_away_mode_days', 'bap_protected_paths', 'bap_enable_htaccess', 'bap_redirect_url',
         'bap_country_mode', 'bap_allowed_countries', 'bap_blocked_countries',
         'bap_asn_mode', 'bap_allowed_asns', 'bap_blocked_asns',
-        'bap_abuseipdb_min_risk', 'bap_auto_ban_attempts', 'bap_auto_ban_duration',
+        'bap_abuseipdb_min_risk', 'bap_auto_ban_attempts', 'bap_auto_ban_duration', 'bap_subnet_autoban_threshold',
         'bap_block_nonexistent_users', 'bap_block_xmlrpc', 'bap_block_user_enum',
         'bap_block_tor', 'bap_block_firehol',
         'bap_whitelist_ips', 'bap_blacklist_ips',

@@ -99,6 +99,8 @@ function bap_log_blocked_attempt( $ip, $country, $reason ) {
         }
     }
 
+    if ( function_exists( 'bap_track_and_autoban_subnet' ) ) { bap_track_and_autoban_subnet( $ip ); }
+
     if ( function_exists( 'bap_queue_or_send_notification' ) ) {
         bap_queue_or_send_notification( $ip, $country, $reason );
     }
