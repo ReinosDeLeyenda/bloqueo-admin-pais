@@ -3,7 +3,7 @@
  * Plugin Name: Bloqueo Admin por País e IP
  * Plugin URI: https://github.com
  * Description: Bloquea wp-admin, wp-login.php y el frontend por país, ASN, AbuseIPDB, Tor, FireHOL e IP usando bases de datos locales.
- * Version: 1.2.53
+ * Version: 1.3
  * Author: ReinosDeLeyenda
  * License: GPLv2 or later
  */
@@ -41,18 +41,20 @@ $bap_files = [
     'frontend/user-agent-blocker.php',
     'frontend/honeypot-protector.php',
     'frontend/waf-payload-inspector.php',
-    // Backend - 1. Base de Datos y Escáneres
+        // Backend - 1. Bases de Datos
     'backend/admindb/admin-db.php',
     'backend/admindb/admin-custom-dbs.php',
     'backend/admindb/db-settings.php',
     'backend/admindb/config-exporter.php',
-    'backend/admindb/core-integrity-scanner.php',
-    'backend/admindb/malware-scanner.php',
-    'backend/admindb/scheduled-db-scanner.php',
-    'backend/admindb/scheduled-db-scanner-view.php',
-    'backend/admindb/wp-hardening.php',
-    'backend/admindb/file-permissions-auditor.php',
-    'backend/admindb/emergency-mode-manager.php',
+    // Backend - 4. Auditoría y Hardening
+    'backend/auditoria/admin-auditoria-view.php',
+    'backend/auditoria/core-integrity-scanner.php',
+    'backend/auditoria/malware-scanner.php',
+    'backend/auditoria/scheduled-db-scanner.php',
+    'backend/auditoria/scheduled-db-scanner-view.php',
+    'backend/auditoria/wp-hardening.php',
+    'backend/auditoria/file-permissions-auditor.php',
+    'backend/auditoria/emergency-mode-manager.php',
     // Backend - 2. Bloqueos Admin
     'backend/bloqueoa/admin-firewall.php',
     'backend/bloqueoa/admin-settings-register.php',

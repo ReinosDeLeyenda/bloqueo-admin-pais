@@ -82,11 +82,4 @@ if ( $all_missing ) {
     <?php if ( function_exists( 'bap_render_custom_dbs_section' ) ) { bap_render_custom_dbs_section(); } ?>
     <?php bap_render_db_settings_card( $db_freq ); ?>
     <?php bap_render_json_backup_card(); ?>
-    <?php if ( function_exists( 'bap_render_ip_simulator_box' ) ) { bap_render_ip_simulator_box(); } ?>
-    <?php if ( function_exists( 'bap_render_core_integrity_box' ) ) { bap_render_core_integrity_box(); } ?>
-    <?php if ( function_exists( 'bap_render_malware_scanner_box' ) ) { bap_render_malware_scanner_box(); } ?>
-    <?php if ( function_exists( 'bap_render_db_injection_and_cron_box' ) ) { bap_render_db_injection_and_cron_box(); } ?>
-    <?php if ( function_exists( 'bap_render_hardening_box' ) ) { bap_render_hardening_box(); } ?>
-    <?php if ( function_exists( 'bap_render_file_permissions_box' ) ) { bap_render_file_permissions_box(); } ?>
-    <?php if ( function_exists( 'bap_render_emergency_mode_box' ) ) { bap_render_emergency_mode_box(); } ?>
 </div>

@@ -93,7 +93,7 @@ function bap_run_scheduled_security_audit() {
     $subject = "[{$site}] ALERTA: Anomalías detectadas en el escaneo automático";
     $body    = "El escaneo programado de seguridad en {$site} ha detectado los siguientes problemas:\n\n• "
              . implode( "\n• ", $alerts )
-             . "\n\nRevisa el panel: " . admin_url( 'admin.php?page=bap-admin-db' );
+             . "\n\nRevisa el panel: " . admin_url( 'admin.php?page=bap-auditoria' );
 
     $recipients = function_exists( 'bap_get_notify_recipients' ) ? bap_get_notify_recipients() : [ get_option( 'admin_email' ) ];
     if ( function_exists( 'bap_send_mail' ) ) {

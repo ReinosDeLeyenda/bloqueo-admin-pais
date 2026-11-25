@@ -8,6 +8,7 @@ add_action( 'admin_menu', function() {
     add_submenu_page( 'bap-admin-db', 'Administración Base de Datos', 'Base de Datos', 'manage_options', 'bap-admin-db', 'bap_render_db_page' );
     add_submenu_page( 'bap-admin-db', 'Bloqueos Admin', 'Bloqueos Admin', 'manage_options', 'bap-admin-bloqueos', 'bap_render_bloqueos_page' );
     add_submenu_page( 'bap-admin-db', 'Bloqueos Web', 'Bloqueos Web', 'manage_options', 'bap-web-bloqueos', 'bap_render_web_bloqueos_page' );
+    add_submenu_page( 'bap-admin-db', 'Auditoría y Hardening', 'Auditoría y Hardening', 'manage_options', 'bap-auditoria', 'bap_render_auditoria_page' );
     add_submenu_page( 'bap-admin-db', 'Estadísticas', 'Estadísticas', 'manage_options', 'bap-admin-estadisticas', 'bap_render_estadisticas_page' );
     add_submenu_page( 'bap-admin-db', 'Plantillas Email', 'Plantillas Email', 'manage_options', 'bap-email-templates', 'bap_render_email_templates_page' );
     add_submenu_page( 'bap-admin-db', 'Plantillas Telegram', 'Plantillas Telegram', 'manage_options', 'bap-tg-templates', 'bap_render_tg_templates_page' );
@@ -20,13 +21,14 @@ add_filter( 'plugin_action_links_' . plugin_basename( dirname( __DIR__, 2 ) . '/
 });
 
 function bap_render_tabs( $active_slug ) {
-    $tabs = [
-        'bap-admin-db'           => '1. Administración Base de Datos',
+        $tabs = [
+        'bap-admin-db'           => '1. Bases de Datos',
         'bap-admin-bloqueos'     => '2. Bloqueos Admin',
         'bap-web-bloqueos'       => '3. Bloqueos Web',
-        'bap-admin-estadisticas' => '4. Estadísticas',
-        'bap-email-templates'    => '5. Plantillas Email',
-        'bap-tg-templates' => '6. Plantillas Telegram',
+        'bap-auditoria'          => '4. Auditoría y Hardening',
+        'bap-admin-estadisticas' => '5. Estadísticas',
+        'bap-email-templates'    => '6. Plantillas Email',
+        'bap-tg-templates'       => '7. Plantillas Telegram',
     ];
     echo '<h2 class="nav-tab-wrapper" style="margin-bottom:20px;">';
     foreach ( $tabs as $slug => $label ) {
