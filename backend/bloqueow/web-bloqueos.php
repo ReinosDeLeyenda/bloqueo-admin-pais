@@ -43,6 +43,7 @@ function bap_handle_web_rule_actions() {
         }
 
         update_option( 'bap_waf_enabled', ( '1' === (string) ( $_POST['bap_waf_enabled'] ?? '0' ) ) ? '1' : '0' );
+        update_option( 'bap_trap_urls', function_exists( 'bap_sanitize_protected_paths' ) ? bap_sanitize_protected_paths( wp_unslash( $_POST['bap_trap_urls'] ?? '' ) ) : '' );
         update_option( 'bap_waf_autoban', ( '1' === (string) ( $_POST['bap_waf_autoban'] ?? '0' ) ) ? '1' : '0' );
 
         $cmode   = ( 'block' === ( $_POST['bap_rule_country_mode'] ?? 'allow' ) ) ? 'block' : 'allow';

@@ -102,3 +102,7 @@ if ( file_exists( $user_ini_file ) && is_writable( $user_ini_file ) ) {
         @file_put_contents( $user_ini_file, $ini_clean, LOCK_EX );
     }
 }
+if ( file_exists( ABSPATH . '.htaccess' ) && is_writable( ABSPATH . '.htaccess' ) ) {
+    if ( ! function_exists( 'insert_with_markers' ) ) { require_once ABSPATH . 'wp-admin/includes/misc.php'; }
+    insert_with_markers( ABSPATH . '.htaccess', 'Bloqueo Admin Hotlink', [] );
+}

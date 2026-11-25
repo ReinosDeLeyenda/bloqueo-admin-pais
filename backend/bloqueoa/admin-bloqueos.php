@@ -106,20 +106,3 @@ function bap_build_blacklist_tooltip_meta( array $bl_ips ) {
     return $ip_meta;
 }
 
-function bap_render_bloqueos_page() {
-    $test_notice = bap_handle_test_email_post();
-    $ip          = bap_get_user_ip();
-    $src         = '';
-    $ctry        = bap_is_server_ip( $ip ) ? 'SERVIDOR LOCAL' : bap_get_country_by_ip( $ip, $src );
-    $bl_raw      = get_option( 'bap_blacklist_ips', '' );
-    $bl_ips      = bap_parse_list( $bl_raw, false );
-    $freq        = (string) get_option( 'bap_notify_freq', 'none' );
-    $ip_meta     = bap_build_blacklist_tooltip_meta( $bl_ips );
-
-    wp_enqueue_script( 'bap-admin-bloqueos', plugin_dir_url( __FILE__ ) . 'admin-bloqueos.js', [], '12.2', true );
-    wp_enqueue_script( 'bap-countries-data', plugins_url( 'backend/comun/countries-data.js', dirname( __DIR__, 2 ) . '/bloqueo-admin-pais.php' ), [], '1.0', true );
-    wp_enqueue_script( 'bap-countries-picker', plugins_url( 'backend/comun/countries-picker.js', dirname( __DIR__, 2 ) . '/bloqueo-admin-pais.php' ), [ 'bap-countries-data' ], '13.2', true );
-    wp_localize_script( 'bap-admin-bloqueos', 'bapAdminData', [ 'ipMeta' => $ip_meta ] );
-
-    require plugin_dir_path( __FILE__ ) . 'admin-bloqueos-view.php';
-}

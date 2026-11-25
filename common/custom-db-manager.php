@@ -123,14 +123,6 @@ function bap_install_custom_db_from_file( $id, $file_path ) {
     return $count;
 }
 
-function bap_install_custom_db_from_content( $id, $content ) {
-    $tmp = wp_tempnam( 'bap_cdb_raw' );
-    file_put_contents( $tmp, (string) $content );
-    unset( $content );
-    $res = bap_install_custom_db_from_file( $id, $tmp );
-    @unlink( $tmp );
-    return $res;
-}
 
 function bap_download_custom_db( $id ) {
     $dbs = bap_get_custom_dbs();

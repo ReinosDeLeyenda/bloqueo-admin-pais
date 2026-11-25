@@ -172,7 +172,6 @@ function bap_render_web_response_and_general_fields( array $current ) {
                 </td>
             </tr>
             <tr>
-            <tr>
                 <th scope="row">Rutas Trampa (Auto-Baneo)</th>
                 <td>
                     <?php $default_traps = function_exists( 'bap_get_default_trap_urls' ) ? bap_get_default_trap_urls() : ''; ?>
@@ -183,7 +182,8 @@ function bap_render_web_response_and_general_fields( array $current ) {
                     <p class="description">Cualquier IP no autorizada que solicite estas rutas (admite comodín <code>*</code>) será <strong>añadida al instante a la Lista Negra temporal</strong>.</p>
                 </td>
             </tr>
-
+            <tr>
+                <th scope="row">Cortafuegos WAF (Payload)</th>
                 <td>
                     <label style="display:block;margin-bottom:6px;">
                         <input type="checkbox" name="bap_waf_enabled" value="1" <?php checked( get_option( 'bap_waf_enabled', '0' ), '1' ); ?> />

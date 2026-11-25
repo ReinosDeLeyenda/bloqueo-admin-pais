@@ -85,7 +85,6 @@ function bap_render_bloqueos_auth_fields() {
         </td>
     </tr>
     <tr>
-    <tr>
         <th>Acceso sin contraseña (Magic Links)</th>
         <td>
             <label>
@@ -94,7 +93,8 @@ function bap_render_bloqueos_auth_fields() {
             </label>
         </td>
     </tr>
-
+    <tr>
+        <th>Autenticación en Dos Factores (2FA)</th>
         <td>
             <label style="display:block;margin-bottom:6px;"><input type="checkbox" name="bap_2fa_enabled" value="1" <?php checked( get_option( 'bap_2fa_enabled', '0' ), '1' ); ?> /> Habilitar 2FA en los perfiles de usuario</label>
             <label style="display:block;"><input type="checkbox" name="bap_2fa_enforce_admins" value="1" <?php checked( get_option( 'bap_2fa_enforce_admins', '0' ), '1' ); ?> /> Obligar 2FA a todos los <strong>Administradores</strong></label>

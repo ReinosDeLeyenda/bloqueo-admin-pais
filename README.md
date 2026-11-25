@@ -26,7 +26,6 @@ Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto
 ## Características principales
 
 ### 1. Bases de Datos (`Acciones` | `Configuración`)
-* **Acciones masivas inteligentes:** Botones para **Actualizar TODAS**, **Descargar faltantes** o **Actualizar obsoletas** según la frecuencia configurada.
 * **5 fuentes gratuitas en local (sin latencia externa por visita):**
   * **Países (`.mmdb`):** Geolocalización IPv4/IPv6 mediante lector binario `.mmdb` nativo en PHP (sin dependencias externas).
   * **ASN / Proveedores (`.mmdb`):** Identificación de operadoras y centros de datos (OVH, DigitalOcean, Hetzner, etc.).
@@ -44,8 +43,6 @@ Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto
 * **Simulador de IP en vivo:** Analiza cualquier IPv4/IPv6 y ruta URL para comprobar su país, ASN, riesgo AbuseIPDB, estado Tor/FireHOL y el veredicto exacto de las reglas de Backend y Frontend.
 
 #### Subpestaña `Backend`
-* **Indicador visual de Llave Secreta y Modo Vacaciones:** Fondo del panel en **amarillo**...
-* **Alerta visual de cambio de ASN / ISP:** Banner rojo de advertencia...
 * **Modo Vacaciones y Restricción Geo/ASN por Cuenta:** Suspensión temporal y reglas por usuario.
 * **Enlaces Mágicos sin contraseña (*Magic Links*):** Acceso por Telegram y Email.
 * **Auto-baneo de subredes (/24 y /64):** Bloqueo de rangos CIDR completos.
