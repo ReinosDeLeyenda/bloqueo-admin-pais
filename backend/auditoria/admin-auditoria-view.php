@@ -47,6 +47,7 @@ function bap_render_auditoria_page() {
             <?php if ( function_exists( 'bap_render_hardening_box' ) ) { bap_render_hardening_box(); } ?>
             <?php if ( function_exists( 'bap_render_emergency_mode_box' ) ) { bap_render_emergency_mode_box(); } ?>
             <?php if ( function_exists( 'bap_render_early_waf_box' ) ) { bap_render_early_waf_box(); } ?>
+            <?php if ( function_exists( 'bap_render_outbound_firewall_box' ) ) { bap_render_outbound_firewall_box(); } ?>
         <?php else : ?>
             <div class="card" style="max-width:980px;padding:16px 22px;margin-bottom:20px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
