@@ -82,6 +82,23 @@ function bap_run_scheduled_security_audit() {
         $alerts[] = 'Base de Datos: ' . count( $db_hits ) . ' posible(s) inyección(es) en posts u opciones.';
     }
 
+    if ( function_exists( 'bap_check_site_ssl_certificate' ) ) {
+        $ssl = bap_check_site_ssl_certificate();
+        if ( is_array( $ssl ) && $ssl['days_left'] <= 15 ) {
+            $alerts[] = ( $ssl['days_left'] < 0 )
+                ? 'SSL CADUCADO: El certificado HTTPS ha expirado.'
+                : "SSL próximo a caducar: Quedan solo {$ssl['days_left']} día(s) ({$ssl['valid_to']}).";
+        }
+    }
+
+    if ( function_exists( 'bap_verify_critical_config_hashes' ) ) {
+        foreach ( bap_verify_critical_config_hashes() as $cfg_item ) {
+            if ( ! empty( $cfg_item['changed'] ) ) {
+                $alerts[] = "Archivo crítico alterado: {$cfg_item['label']} ha cambiado respecto a su huella SHA-256.";
+            }
+        }
+    }
+
     update_option( 'bap_last_auto_scan_time', current_time( 'mysql' ), false );
     update_option( 'bap_last_auto_scan_alerts', $alerts, false );
 

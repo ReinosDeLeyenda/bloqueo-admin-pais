@@ -1,6 +1,6 @@
 # Bloqueo Admin y Web por País, ASN e IP (WordPress)
 
-Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto el panel de administración (**Backend**) como la web pública (**Frontend**) mediante bases de datos locales, inteligencia de amenazas, cortafuegos WAF, bloqueo a nivel de servidor (`.htaccess`), autenticación en dos pasos, políticas de contraseñas, gestión de sesiones en vivo, modo emergencia anti-crash y alertas en tiempo real por Telegram y Email.
+Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto el panel de administración (**Backend**) como la web pública (**Frontend**) mediante bases de datos locales, inteligencia de amenazas, cortafuegos WAF, bloqueo a nivel de servidor (`.htaccess`), URL de acceso oculta, modo ausente por horario, autenticación en dos pasos, políticas de contraseñas, registro de actividad administrativa, monitor SSL/TLS, modo emergencia anti-crash y alertas en tiempo real por Telegram y Email.
 
 ---
 
@@ -19,13 +19,13 @@ Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto
 1. Sube la carpeta del plugin dentro de `/wp-content/plugins/bloqueo-admin-pais/`.
 2. Activa el plugin desde el menú **Plugins** de WordPress.
 3. Entra en **Bloqueo Admin → 1. Bases de Datos** y pulsa **Descargar / Actualizar TODAS las bases de datos**.
-4. Configura tus reglas en **2. Bloqueos (Backend / Frontend)**.
+4. Configura tus reglas en **2. Bloqueos** (`General`, `Backend` y `Frontend`).
 
 ---
 
 ## Características principales
 
-### 1. Bases de Datos Locales, Auditoría, Reparación y Modo Emergencia
+### 1. Bases de Datos (`Acciones` | `Configuración`)
 * **5 fuentes gratuitas en local (sin latencia externa por visita):**
   * **Países (`.mmdb`):** Geolocalización IPv4/IPv6 mediante lector binario `.mmdb` nativo en PHP (sin dependencias externas).
   * **ASN / Proveedores (`.mmdb`):** Identificación de operadoras y centros de datos (OVH, DigitalOcean, Hetzner, etc.).
@@ -33,49 +33,49 @@ Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto
   * **Nodos de Salida Tor:** Lista oficial de nodos de salida de la red Tor.
   * **FireHOL Level 1 / Spamhaus DROP:** Subredes CIDR secuestradas o maliciosas.
 * **Bases de datos personalizadas (IPs / CIDR):** Añade listas propias por **URL remota** (auto-actualizable) o subiendo archivos locales (`.txt`, `.netset`, `.csv`, `.json`, `.gz`) con procesamiento en streaming y caché por IP, incluyendo **presets en 1 clic** (VPNs Comerciales, Datacenters/Cloud y Proxies Abiertos).
-* **Escáner de Integridad (Core + Plugins), Visor Diff y Restauración en 1 clic:** Compara todos los archivos del núcleo de WordPress y de los plugins oficiales de WordPress.org contra sus hashes MD5 oficiales, muestra las diferencias línea a línea (**Diff**) y permite **restaurar archivos modificados o faltantes en 1 clic** directamente desde el SVN oficial de WordPress.org.
-* **Escáner de Malware y Backdoors (`wp-content`):** Analiza plugins, temas y `mu-plugins` buscando código ofuscado o webshells y detecta archivos `.php` ocultos dentro de `wp-content/uploads/`.
-* **Escáner de Inyecciones en Base de Datos y Auditoría Programada:** Analiza entradas, páginas (`wp_posts`) y opciones (`wp_options`) en busca de scripts ocultos (`<script>`, `eval`, redirecciones JS o PHP inyectado) y ejecuta auditorías automáticas periódicas (diarias o semanales) con alertas a Telegram y Email.
-* **Auditoría de Permisos de Archivos y Carpetas:** Verifica que `wp-config.php`, `.htaccess` y los directorios críticos de WordPress no tengan permisos inseguros (`0777` / `0666`).
-* **Modo Emergencia Anti-Crash (`mu-plugins`):** Instala un cargador ultraligero en `wp-content/mu-plugins/` que detecta errores fatales en el backend (incluso si ocurren dentro de este mismo plugin) y envía al instante un **enlace mágico firmado** por Telegram y Email para entrar al panel aislando los plugins en tu sesión.
-* **Endurecimiento de WordPress (Hardening en 1 clic):** Desactiva el editor de archivos integrado (`DISALLOW_FILE_EDIT`), oculta la versión de WordPress, bloquea la ejecución de PHP en `wp-content/uploads/` y añade cabeceras HTTP de seguridad.
-* **Descarga programada y Copias de Seguridad (`.json`):** Actualización automática mediante **WP-Cron** y exportación/importación completa de toda la configuración en `.json`.
+* **Actualización programada, MySQL Externo y Copias de Seguridad (`.json`):** Descarga automática mediante **WP-Cron**, almacenamiento centralizado en servidor MySQL remoto con cifrado AES-256-CBC y exportación/importación completa en `.json`.
 
-### 2. Bloqueos Admin (Backend), Sesiones y Contraseñas
+### 2. Bloqueos (`General` | `Backend` | `Frontend`)
+
+#### Subpestaña `General`
 * **Detección segura de IP (Anti-Spoofing):** Selector explícito de origen de IP (`REMOTE_ADDR`, `CF-Connecting-IP` de Cloudflare, `X-Forwarded-For` o `X-Real-IP`).
-* **Rutas personalizables con comodines (`*`):** Protege `/wp-admin/*`, `/wp-login.php`, `/wp-register.php`, `/xmlrpc.php`, `/wp-json/wp/v2/users*` y archivos sensibles (`*.log`, `.zip`, `.rar`, `.tar.gz`, `.sql`, `.env`, `.git*`).
-* **Bloqueo rápido vía `.htaccess` (opcional):** Corta descargas directas de archivos sensibles y `xmlrpc.php` en Apache/LiteSpeed antes de cargar PHP.
-* **Blindaje de vectores alternativos:** Desactivación de `xmlrpc.php` y bloqueo de enumeración de usuarios (`/?author=N` y endpoint `/wp-json/wp/v2/users`).
-* **Filtros exclusivos (Permitidos o Bloqueados):** Control independiente por **País** (con buscador autocompletable y **atajos por regiones**: UE, Europa, Norteamérica, Sudamérica, Asia, África y Oceanía) y por **ASN**.
-* **Listas Blanca y Negra con soporte CIDR:** Admite IPs individuales y subredes IPv4/IPv6 (`192.168.1.0/24`, `2001:db8::/32`), con tooltip de metadatos al pasar el ratón por la lista negra.
-* **Simulador de IP en vivo:** Analiza cualquier IPv4/IPv6 y ruta URL para comprobar su país, ASN, riesgo AbuseIPDB, estado Tor/FireHOL y el veredicto exacto de las reglas de Admin y Web.
-* **Protección CAPTCHA Multi-Proveedor (8 estilos):** Soporta **CAPTCHA Local Matemático**, **ALTCHA Proof-of-Work Local (SHA-256 sin API)**, **Google reCAPTCHA v3** (por puntuación), **Google reCAPTCHA v2**, **Cloudflare Turnstile**, **hCaptcha**, **Friendly Captcha** y **MTCaptcha**, aplicable de forma independiente a **Inicio de sesión, Registro, Recuperar contraseña y Comentarios**.
-* **Autenticación en Dos Factores (2FA):** Soporte local para App Autenticadora (TOTP con código QR generado 100 % en el navegador), verificación por email, 8 códigos de respaldo de un solo uso, dispositivos de confianza (30 días) y obligatoriedad para Administradores.
-* **Política y Caducidad de Contraseñas:** Exige longitud mínima y complejidad, impide reutilizar las **últimas 5 contraseñas**, permite configurar **rotación obligatoria cada X días** y añade opción en el perfil de usuario para **forzar caducidad inmediata**.
-* **Protección contra contraseñas filtradas (Have I Been Pwned):** Comprueba contraseñas expuestas en brechas públicas mediante *k-Anonymity* al cambiar clave o iniciar sesión.
-* **Gestor de Sesiones Activas en Vivo y Alerta de Administrador:** Muestra todos los usuarios conectados actualmente (IP, país, ASN, navegador) con botón para **expulsar sesiones remotamente**, y alerta al instante por Email/Telegram si se crea o asciende un usuario a `administrator`.
-* **Defensa activa con caducidad (TTL) y Llave secreta URL:** Auto-baneo temporal tras X intentos fallidos, bloqueo instantáneo de usuarios inexistentes y acceso de respaldo mediante parámetro URL seguro.
+* **Simulador de IP en vivo:** Analiza cualquier IPv4/IPv6 y ruta URL para comprobar su país, ASN, riesgo AbuseIPDB, estado Tor/FireHOL y el veredicto exacto de las reglas de Backend y Frontend.
+* **Notificaciones y Avisos de Conexión:** Alertas instantáneas o resúmenes agrupados (1h a mensual) por **Telegram**, **Email** o **Ambos**, con rutas por usuario y detección de cambio de operador/ASN al iniciar sesión.
 
-### 3. Bloqueos Web (Frontend)
+#### Subpestaña `Backend`
+* **URL de Acceso Personalizada (*Hide Login*):** Oculta `/wp-login.php` y `/wp-admin` tras un *slug* secreto personalizable, reescribiendo enlaces de login/2FA/recuperación y bloqueando accesos directos.
+* **Modo Ausente por Horario (*Away Mode*):** Restringe el acceso al panel durante franjas horarias y días de la semana configurables (incluyendo franjas nocturnas que cruzan la medianoche).
+* **Rutas personalizables con comodines (`*`) y `.htaccess`:** Protege `/wp-admin/*`, `/wp-login.php`, `/xmlrpc.php`, `/wp-json/wp/v2/users*` y archivos sensibles (`*.log`, `.zip`, `.rar`, `.tar.gz`, `.sql`, `.env`, `.git*`), con bloqueo rápido a nivel de servidor en Apache/LiteSpeed.
+* **Blindaje de vectores alternativos:** Desactivación de `xmlrpc.php` y bloqueo de enumeración de usuarios (`/?author=N` y endpoint `/wp-json/wp/v2/users`).
+* **Filtros exclusivos (Permitidos o Bloqueados):** Control independiente por **País** (con buscador autocompletable y **atajos por regiones**: UE, Europa, Norteamérica, Sudamérica, Asia, África y Oceanía) y por **ASN**, además de listas Blanca y Negra CIDR con tooltip de metadatos.
+* **Protección CAPTCHA Multi-Proveedor (8 estilos):** Soporta **CAPTCHA Local Matemático**, **ALTCHA Proof-of-Work Local (SHA-256 sin API)**, **Google reCAPTCHA v3**, **Google reCAPTCHA v2**, **Cloudflare Turnstile**, **hCaptcha**, **Friendly Captcha** y **MTCaptcha** en **Login, Registro, Recuperar clave y Comentarios**.
+* **Autenticación en Dos Factores (2FA):** App Autenticadora (TOTP con QR generado 100 % en local), verificación por email, 8 códigos de respaldo, dispositivos de confianza (30 días) y obligatoriedad para Administradores.
+* **Política de Contraseñas, HIBP y Sesiones en Vivo:** Longitud mínima, complejidad, historial de **5 últimas contraseñas**, caducidad cada X días, bloqueo de claves filtradas (*Have I Been Pwned*), gestor de sesiones activas con expulsión remota y alerta inmediata si se crea o asciende un Administrador.
+
+#### Subpestaña `Frontend`
 * **Reglas por ámbito/URL con lógica Y/O:** Aplicable a toda la web pública (`Global`) o a rutas específicas (`/tienda/*`, `/formulario*`, etc.) encadenando condiciones arrastrables.
-* **Cortafuegos WAF (Inspección de Payload):** Analiza peticiones `GET`, `POST`, URLs y subidas de archivos (`FILES`) contra ataques **SQL Injection (SQLi), Cross-Site Scripting (XSS), Path Traversal / LFI, inyección PHP** y subida de ejecutables, con auto-baneo opcional.
+* **Cortafuegos WAF (Inspección de Payload y Cabeceras):** Analiza URLs (incluyendo longitud > 2048 caracteres, *null-bytes* y doble codificación), cabecera `HTTP_REFERER`, formularios `GET`/`POST` y subidas de archivos (`FILES`) contra **SQLi, XSS, Path Traversal / LFI, inyección PHP** y ejecutables, con auto-baneo opcional.
 * **Rate Limiting (Límite de peticiones y errores 404):** Controla el máximo de peticiones/minuto y errores 404/minuto por IP para frenar scrapers y escáneres de vulnerabilidades, con auto-baneo opcional.
-* **Bloqueo de User-Agents y peticiones vacías:** Lista personalizable de bots maliciosos, scrapers e IA (`sqlmap`, `nikto`, `python-requests`, `GPTBot`, `Bytespider`, etc.) y bloqueo opcional de peticiones sin cabecera `User-Agent`.
-* **Protección Honeypot (Anti-Spam):** Campo trampa invisible + firma HMAC temporal en **Comentarios, Registro, Recuperar contraseña, Contact Form 7 y WPForms**, con auto-baneo opcional.
-* **Redirección personalizada por país:** Redirige países concretos a URLs específicas (`PAÍS => URL`) con prevención automática de bucles.
-* **Exclusión de bots SEO verificados:** Doble verificación DNS inversa (`rDNS` + `FCrDNS`) para **Googlebot**, **Bingbot**, **Applebot** y **DuckDuckBot** con caché de 24 horas.
-* **Pantalla 403 personalizada:** Página de acceso denegado autónoma con iconos SVG o redirección a URL externa.
-### 4. Notificaciones Avanzadas (Telegram y Email) y Diseñadores Visuales
-* **Alertas instantáneas o resúmenes agrupados:** Configurable por canal (**Telegram**, **Email** o **Ambos**) y frecuencia (individual, cada 1h, 3h, 6h, 12h, 24h, 7d, 14d o mensual).
-* **Avisos de conexión exitosa con detección de cambio de ASN:** Notifica inicios de sesión por usuario o globalmente hacia destinos específicos de Telegram o Email, alertando si el operador/ASN difiere de la última sesión o de sesiones activas.
+* **Bloqueo de User-Agents y peticiones vacías:** Lista personalizable de bots maliciosos, scrapers e IA (`sqlmap`, `nikto`, `python-requests`, `GPTBot`, `Bytespider`, etc.) y bloqueo opcional sin cabecera `User-Agent`.
+* **Protección Honeypot (Anti-Spam):** Campo trampa invisible + firma HMAC temporal + validación de `HTTP_REFERER` local en **Comentarios, Registro, Recuperar contraseña, Contact Form 7 y WPForms**, con auto-baneo opcional.
+* **Redirección personalizada por país y Bots SEO:** Redirige países concretos (`PAÍS => URL`) sin bucles y verifica por doble DNS inverso (`rDNS` + `FCrDNS`) a **Googlebot**, **Bingbot**, **Applebot** y **DuckDuckBot**.
+### 3. Auditoría y Hardening
+* **Escáner de Integridad (Core + Plugins), Visor Diff y Restauración en 1 clic:** Compara los archivos del núcleo de WordPress y de los plugins oficiales de WordPress.org contra sus hashes MD5 oficiales, muestra el **Diff** línea a línea y permite **restaurar archivos modificados o faltantes en 1 clic** desde el SVN oficial de WordPress.org.
+* **Escáner de Malware y Backdoors (`wp-content`):** Analiza plugins, temas y `mu-plugins` buscando código ofuscado o webshells y detecta archivos `.php` ocultos dentro de `wp-content/uploads/`.
+* **Detector de Plugins Abandonados o Retirados:** Consulta `api.wordpress.org` para identificar plugins cerrados por seguridad o que llevan más de 1 o 2 años sin actualizaciones.
+* **Escáner de Inyecciones en Base de Datos y Auditoría Programada:** Analiza `wp_posts` y `wp_options` en busca de scripts ocultos (`<script>`, `eval`, redirecciones JS o PHP inyectado) y ejecuta auditorías automáticas periódicas (diarias o semanales) con alertas a Telegram y Email.
+* **Monitor de Certificado SSL y Vigilancia SHA-256:** Comprueba la fecha de caducidad del certificado HTTPS (alertando si quedan ≤ 15 días) y vigila cambios no autorizados en `wp-config.php` y `.htaccess`.
+* **Endurecimiento de WordPress (Hardening en 1 clic) y Auditoría de Permisos:** Desactiva el editor de archivos (`DISALLOW_FILE_EDIT`), oculta la versión de WordPress, bloquea PHP en `uploads/`, añade cabeceras HTTP de seguridad y audita permisos de archivos y carpetas críticas.
+* **Modo Emergencia Anti-Crash (`mu-plugins`):** Cargador ultraligero en `wp-content/mu-plugins/` que captura errores fatales en el backend (incluso dentro de este mismo plugin) y envía al instante un **enlace mágico firmado** por Telegram y Email para entrar aislando plugins.
+
+### 4. Plantillas (`Email` | `Telegram`)
 * **Constructor visual de plantillas Email (`.json`):** Editor modular *drag & drop* con anchos configurables (`100%`, `50%`, `33%`), vista previa en tiempo real y exportación/importación de plantillas.
 * **Diseñador Rich Text para Telegram:** Editor visual con soporte para **Rich Articles HTML**, citas desplegables (`expandable`), spoilers, tablas y variables dinámicas con vista previa en vivo.
 
-### 5. Widget del Escritorio, Estadísticas e Historial (MySQL)
-* **Módulo en el Escritorio principal de WordPress:** Muestra un resumen de los últimos 30 días con el **Top 5 de IPs bloqueadas**, **Top 5 de países**, **Top 5 de accesos fallidos** (indicando si el usuario existe) y el estado de actualizaciones pendientes.
-* **Tabla dedicada en MySQL (`bap_blocked_logs`) o MySQL Externo:** Almacenamiento local o centralizado multi-sitio con cifrado AES-256-CBC de credenciales y retención automática configurable.
-* **Migración desde Wordfence e IP2Location:** Importación en 1 clic desde las tablas MySQL de **Wordfence** (`wfHits` / `wfBlockedIPLog`, decodificando IPs binarias IPv4/IPv6) y de **IP2Location Country Blocker**.
-* **Panel gráfico e informes CSV:** Gráficas de evolución de 14 días, distribución horaria (`00h–23h`), barras por país y URLs atacadas, tabla interactiva ordenable con contador de intentos por IP y exportación en CSV.
+### 5. Estadísticas (`Bloqueos` | `Actividad Admin`) y Widget del Escritorio
+* **Filtro instantáneo (`Todo` | `Backend` | `Frontend`):** Filtra tarjetas resumen, gráficas de evolución de 14 días, distribución horaria (`00h–23h`), barras por país/URL y tabla de logs.
+* **Registro de Actividad Administrativa (*Activity Log*):** Audita activación/desactivación/borrado de plugins, cambios de tema, altas/bajas/cambios de rol de usuarios y modificaciones en opciones críticas de WordPress.
+* **Migración desde Wordfence e IP2Location:** Importación en 1 clic desde las tablas MySQL de **Wordfence** (`wfHits` / `wfBlockedIPLog`) y **IP2Location Country Blocker**, además de exportación CSV y widget resumen de 30 días en el Escritorio.
 
 ---
 
@@ -88,13 +88,13 @@ bloqueo-admin-pais/
 ├── common/                       # Motor compartido (MMDB, CIDR, evaluador, DBs, Email/Telegram, Updater)
 ├── frontend/                     # Cortafuegos público, WAF, Rate Limit, Honeypot, User-Agents y SEO bots
 └── backend/                      # Panel de administración dividido en 5 pestañas principales
-    ├── admindb/                  # 1. Bases de Datos (Locales, Personalizadas, MySQL Externo y Backup JSON)
-    ├── bloqueoa/                 # 2. Bloqueos [General | Backend | Frontend] (Firewall, Simulador IP y Ajustes)
+    ├── admindb/                  # 1. Bases de Datos [Acciones | Configuración] (Locales, Custom DBs, MySQL Externo, JSON)
+    ├── bloqueoa/                 # 2. Bloqueos [General | Backend] (Hide Login, Away Mode, Firewall, Simulador IP)
     ├── bloqueow/                 # 2. Bloqueos -> Subpestaña Frontend (Reglas Y/O por URL, WAF, Rate Limit y Bots)
-    ├── auditoria/                # 3. Auditoría y Hardening (Integridad, Diff/SVN, Malware, BD, Permisos y Emergencia)
+    ├── auditoria/                # 3. Auditoría y Hardening (Integridad, Diff/SVN, Malware, Abandonados, BD, SSL, Permisos, Emergencia)
     ├── plantillase/              # 4. Plantillas -> Subpestaña Email (Constructor visual modular)
     ├── plantillast/              # 4. Plantillas -> Subpestaña Telegram (Diseñador Rich Text)
-    ├── estadisticas/             # 5. Estadísticas (Filtro Todo/Backend/Frontend, Gráficas, Logs e Importadores)
+    ├── estadisticas/             # 5. Estadísticas [Bloqueos | Actividad Admin] (Gráficas, Logs, Activity Log e Importadores)
     ├── adminuser/                # Seguridad de cuentas: 2FA, HIBP, Política de Contraseñas y Sesiones
     ├── notificaciones/           # Canales de alerta y rutas de notificación (General)
     └── comun/                    # Widget del Escritorio y selector de países compartido
@@ -111,10 +111,10 @@ Este plugin sustituye en una sola herramienta ligera a **Wordfence Security**, *
 | **Geobloqueo por País y ASN** | **100 % incluido** (.mmdb local, regiones, ASN y reglas Y/O por URL) | País solo en Premium; sin bloqueo nativo por ASN | Sí (requiere cuenta/token externo) |
 | **Redirecciones por País y Bots SEO** | Redirección PAÍS => URL + doble verificación DNS (`rDNS` + `FCrDNS`) | No incluye redirecciones por país | Sí |
 | **Listas de Amenazas (IPs/CIDR)** | **Tiempo real gratis** (Tor, FireHOL, AbuseIPDB + listas propias ilimitadas) | Retraso de 30 días en Free; tiempo real solo en Premium | Solo proxies con API comercial |
-| **Cortafuegos WAF y Rate Limit** | Payload (SQLi, XSS, LFI, subidas PHP), Rate Limit, User-Agents y .htaccess | WAF avanzado con reglas *0-day* comerciales en Premium | No incluye WAF ni Rate Limit |
-| **CAPTCHA, 2FA, Sesiones y Anti-Crash** | **8 estilos CAPTCHA**, 2FA, HIBP, caducidad de claves, sesiones en vivo y **Modo Emergencia `mu-plugins`** | Solo reCAPTCHA v3, 2FA y HIBP; sin sesiones en vivo ni modo emergencia | No incluye CAPTCHA, 2FA ni sesiones |
-| **Escáner, Permisos y Restauración** | Checksums Core + Plugins, **Diff + Restauración 1 clic**, Malware, Inyecciones BD, Permisos y Cron | Escáner completo + reparación (base de CVEs comercial) | No incluye escáner de archivos |
-| **Alertas y Migración** | **Telegram (Rich Articles)** + Email con editor visual, cambio de ASN, widget e **importador Wordfence/IP2Location** | Solo alertas básicas por email | Resumen básico por email |
+| **Cortafuegos WAF y Rate Limit** | Payload (`GET`/`POST`/`FILES`/`Referer`), Rate Limit, User-Agents, Honeypot y `.htaccess` | WAF avanzado con reglas *0-day* comerciales en Premium | No incluye WAF ni Rate Limit |
+| **Acceso, 2FA, CAPTCHA y Anti-Crash** | **Hide Login**, **Away Mode**, **8 CAPTCHAs**, 2FA, HIBP, caducidad de claves, sesiones en vivo y **Modo Emergencia `mu-plugins`** | Solo reCAPTCHA v3, 2FA y HIBP; sin Hide Login, Away Mode ni modo emergencia | No incluye CAPTCHA, 2FA ni sesiones |
+| **Escáner, SSL, Permisos y Restauración** | Checksums Core + Plugins, **Diff + Restauración 1 clic**, Malware, **Plugins abandonados**, Inyecciones BD, **Monitor SSL/SHA-256**, Permisos y Cron | Escáner completo + reparación (base de CVEs comercial) | No incluye escáner de archivos |
+| **Alertas, Auditoría y Migración** | **Telegram (Rich Articles)** + Email visual, cambio ASN, **Activity Log**, widget e **importador Wordfence/IP2Location** | Solo alertas básicas por email | Resumen básico por email |
 | **Consumo y Privacidad** | **Muy ligero y 100 % autónomo** (1 tabla propia, cero telemetría) | Pesado (>25 tablas MySQL y conexión a servidores externos) | Moderado (dependiente de API/token) |
 
 ---

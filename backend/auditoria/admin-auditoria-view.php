@@ -18,6 +18,7 @@ function bap_render_auditoria_page() {
         <?php if ( function_exists( 'bap_render_db_injection_and_cron_box' ) ) { bap_render_db_injection_and_cron_box(); } ?>
         <?php if ( function_exists( 'bap_render_hardening_box' ) ) { bap_render_hardening_box(); } ?>
         <?php if ( function_exists( 'bap_render_file_permissions_box' ) ) { bap_render_file_permissions_box(); } ?>
+        <?php if ( function_exists( 'bap_render_ssl_and_config_monitor_box' ) ) { bap_render_ssl_and_config_monitor_box(); } ?>
         <?php if ( function_exists( 'bap_render_emergency_mode_box' ) ) { bap_render_emergency_mode_box(); } ?>
     </div>
     <?php
