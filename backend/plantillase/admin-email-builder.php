@@ -78,7 +78,7 @@ function bap_handle_email_builder_actions( &$editing_id ) {
     return '';
 }
 
-function bap_render_email_templates_page() {
+function bap_render_email_templates_subtab() {
     $editing_id = isset( $_GET['edit_tpl'] ) ? sanitize_key( $_GET['edit_tpl'] ) : '';
     $clone_key  = isset( $_GET['clone_preset'] ) ? sanitize_key( $_GET['clone_preset'] ) : '';
     $notice     = bap_handle_email_builder_actions( $editing_id );

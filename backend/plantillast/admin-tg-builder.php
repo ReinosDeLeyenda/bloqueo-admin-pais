@@ -32,7 +32,7 @@ function bap_get_tg_preview_sample_vars() {
     ];
 }
 
-function bap_render_tg_templates_page() {
+function bap_render_tg_templates_subtab() {
     $types       = bap_get_tg_template_types();
     $active_type = isset( $_GET['tpl_type'] ) ? sanitize_key( $_GET['tpl_type'] ) : 'single';
     if ( ! isset( $types[ $active_type ] ) ) {

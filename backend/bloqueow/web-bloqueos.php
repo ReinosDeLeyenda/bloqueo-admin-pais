@@ -109,7 +109,7 @@ function bap_handle_web_rule_actions() {
     ];
 }
 
-function bap_render_web_bloqueos_page() {
+function bap_render_web_bloqueos_subtab() {
     require_once plugin_dir_path( __FILE__ ) . 'web-bloqueos-helpers.php';
 
     $state    = bap_handle_web_rule_actions();

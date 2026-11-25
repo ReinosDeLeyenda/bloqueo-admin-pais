@@ -2,13 +2,11 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
-$base_page_url = admin_url( 'admin.php?page=bap-web-bloqueos' );
+$base_page_url = admin_url( 'admin.php?page=bap-bloqueos&subtab=frontend' );
 $order         = $current['order'];
 $ops           = $current['ops'];
 ?>
-<div class="wrap">
-    <h1>Control de Acceso al Panel</h1>
-    <?php bap_render_tabs( 'bap-web-bloqueos' ); ?>
+<div>
     <?php echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
     <div class="card" style="max-width:920px;margin-top:16px;padding:18px 22px;">

@@ -2,7 +2,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
-$base_url = admin_url( 'admin.php?page=bap-tg-templates' );
+$base_url = admin_url( 'admin.php?page=bap-plantillas&subtab=telegram' );
 $types    = bap_get_tg_template_types();
 
 $tokens_by_type = [
@@ -12,9 +12,7 @@ $tokens_by_type = [
 ];
 $tokens = $tokens_by_type[ $active_type ] ?? $tokens_by_type['single'];
 ?>
-<div class="wrap">
-    <h1>Control de Acceso al Panel</h1>
-    <?php bap_render_tabs( 'bap-tg-templates' ); ?>
+<div>
     <?php echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">

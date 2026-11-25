@@ -75,7 +75,7 @@ add_action( 'admin_init', function() {
         'default'           => function_exists( 'bap_get_default_protected_paths' ) ? bap_get_default_protected_paths() : "/wp-admin/*\n/wp-login.php",
     ] );
 
-    register_setting( 'bap_settings_group', 'bap_login_notify_channel', [
+    register_setting( 'bap_notify_settings_group', 'bap_login_notify_channel', [
         'sanitize_callback' => fn( $i ) => in_array( $i, [ 'none', 'email', 'telegram', 'both' ], true ) ? $i : 'none',
         'default'           => 'none',
     ] );
@@ -162,35 +162,35 @@ add_action( 'admin_init', function() {
     register_setting( 'bap_settings_group', 'bap_whitelist_ips', [ 'sanitize_callback' => fn( $i ) => implode( "\n", array_filter( bap_parse_list( $i ), 'bap_is_valid_ip_or_cidr' ) ), 'default' => '' ] );
     register_setting( 'bap_settings_group', 'bap_blacklist_ips', [ 'sanitize_callback' => fn( $i ) => implode( "\n", array_filter( bap_parse_list( $i ), 'bap_is_valid_ip_or_cidr' ) ), 'default' => '' ] );
     register_setting( 'bap_settings_group', 'bap_redirect_url', [ 'sanitize_callback' => fn( $i ) => '' === trim( (string) $i ) ? '' : esc_url_raw( trim( (string) $i ) ), 'default' => '' ] );
-    register_setting( 'bap_settings_group', 'bap_ip_source', [ 'sanitize_callback' => fn( $i ) => in_array( $i, [ 'remote_addr', 'cloudflare', 'x_forwarded_for', 'x_real_ip' ], true ) ? $i : 'remote_addr', 'default' => 'remote_addr' ] );
+    register_setting( 'bap_general_settings_group', 'bap_ip_source', [ 'sanitize_callback' => fn( $i ) => in_array( $i, [ 'remote_addr', 'cloudflare', 'x_forwarded_for', 'x_real_ip' ], true ) ? $i : 'remote_addr', 'default' => 'remote_addr' ] );
     register_setting( 'bap_settings_group', 'bap_secret_key', [ 'sanitize_callback' => 'bap_sanitize_secret_key', 'default' => '' ] );
 
     // Notificaciones unificadas (Canal + Frecuencia + Email + Telegram)
-    register_setting( 'bap_settings_group', 'bap_notify_channel', [
+    register_setting( 'bap_notify_settings_group', 'bap_notify_channel', [
         'sanitize_callback' => fn( $i ) => in_array( $i, [ 'none', 'email', 'telegram', 'both' ], true ) ? $i : 'none',
         'default'           => 'none',
     ] );
-    register_setting( 'bap_settings_group', 'bap_notify_freq', [
+    register_setting( 'bap_notify_settings_group', 'bap_notify_freq', [
         'sanitize_callback' => fn( $i ) => in_array( $i, [ 'instant', 'hourly', '3hours', '6hours', '12hours', 'daily', 'weekly', '2weeks', 'monthly' ], true ) ? $i : 'daily',
         'default'           => 'daily',
     ] );
-    register_setting( 'bap_settings_group', 'bap_notify_emails', [
+    register_setting( 'bap_notify_settings_group', 'bap_notify_emails', [
         'sanitize_callback' => 'bap_sanitize_notify_emails',
         'default'           => '',
     ] );
-    register_setting( 'bap_settings_group', 'bap_email_template', [
+    register_setting( 'bap_notify_settings_group', 'bap_email_template', [
         'sanitize_callback' => fn( $i ) => ( in_array( $i, [ 'full', 'top10', 'top5', 'text' ], true ) || 0 === strpos( (string) $i, 'custom_' ) ) ? (string) $i : 'full',
         'default'           => 'full',
     ] );
-    register_setting( 'bap_settings_group', 'bap_tg_bot_token', [
+    register_setting( 'bap_notify_settings_group', 'bap_tg_bot_token', [
         'sanitize_callback' => fn( $i ) => trim( sanitize_text_field( (string) $i ) ),
         'default'           => '',
     ] );
-    register_setting( 'bap_settings_group', 'bap_tg_chat_ids', [
+    register_setting( 'bap_notify_settings_group', 'bap_tg_chat_ids', [
         'sanitize_callback' => fn( $i ) => implode( ', ', array_unique( array_filter( array_map( 'trim', preg_split( '/[\r\n,;]+/', (string) $i ) ) ) ) ),
         'default'           => '',
     ] );
-    register_setting( 'bap_settings_group', 'bap_login_notify_routes', [
+    register_setting( 'bap_notify_settings_group', 'bap_login_notify_routes', [
         'sanitize_callback' => function( $ignored ) {
             $users   = (array) ( $_POST['bap_login_route_user'] ?? [] );
             $targets = (array) ( $_POST['bap_login_route_target'] ?? [] );

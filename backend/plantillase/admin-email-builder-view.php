@@ -4,13 +4,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 require_once plugin_dir_path( __FILE__ ) . 'admin-email-builder-sidebar.php';
 
-$base_url    = admin_url( 'admin.php?page=bap-email-templates' );
+$base_url    = admin_url( 'admin.php?page=bap-plantillas&subtab=email' );
 $active_mods = $current['modules'] ?? [];
 $mod_sizes   = $current['sizes'] ?? [];
 ?>
-<div class="wrap">
-    <h1>Control de Acceso al Panel</h1>
-    <?php bap_render_tabs( 'bap-email-templates' ); ?>
+<div>
     <?php echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
     <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">

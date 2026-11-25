@@ -22,7 +22,7 @@ require_once dirname( __DIR__ ) . '/notificaciones/admin-bloqueos-fields-notify.
             <?php settings_fields( 'bap_settings_group' ); ?>
             <table class="form-table">
                 <?php bap_render_bloqueos_rules_fields( $bl_raw ); ?>
-                <?php bap_render_bloqueos_notify_and_auth_fields(); ?>
+                <?php bap_render_bloqueos_auth_fields(); ?>
             </table>
             <?php submit_button( 'Guardar reglas de bloqueo' ); ?>
         </form>
