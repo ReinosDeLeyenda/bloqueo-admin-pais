@@ -3,6 +3,47 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+function bap_dispatch_admin_activity_alert( array $entry ) {
+    $channel = (string) get_option( 'bap_activity_notify_channel', 'none' );
+    if ( 'none' === $channel || '' === $channel ) {
+        return;
+    }
+
+    $site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+
+    if ( in_array( $channel, [ 'email', 'both' ], true ) ) {
+        $recipients = function_exists( 'bap_get_notify_recipients' ) ? bap_get_notify_recipients() : [ get_option( 'admin_email' ) ];
+        $subject    = "[{$site}] Actividad Admin: {$entry['category']} — {$entry['action']}";
+        $body       = "Se ha registrado un cambio administrativo en {$site}:\n\n"
+                    . "• Categoría: {$entry['category']}\n"
+                    . "• Acción: {$entry['action']}\n"
+                    . "• Elemento: {$entry['target']}\n"
+                    . "• Usuario: {$entry['actor']}\n"
+                    . "• IP / País: {$entry['ip']} ({$entry['country']})\n"
+                    . "• Fecha / Hora: {$entry['time']}\n";
+
+        if ( function_exists( 'bap_send_mail' ) ) {
+            bap_send_mail( $recipients, $subject, $body );
+        } else {
+            wp_mail( $recipients, $subject, $body );
+        }
+    }
+
+    if ( in_array( $channel, [ 'telegram', 'both' ], true ) && function_exists( 'bap_send_telegram_rich_article' ) ) {
+        $e    = fn( $v ) => htmlspecialchars( (string) $v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
+        $rich = "<h2>🛠️ Actividad Administrativa — {$e( $site )}</h2>"
+              . "<table><tr><th>Detalle</th><th>Valor</th></tr>"
+              . "<tr><td><b>Categoría</b></td><td><b>{$e( $entry['category'] )}</b></td></tr>"
+              . "<tr><td><b>Acción</b></td><td>{$e( $entry['action'] )}</td></tr>"
+              . "<tr><td><b>Elemento</b></td><td><code>{$e( $entry['target'] )}</code></td></tr>"
+              . "<tr><td><b>Usuario</b></td><td><b>{$e( $entry['actor'] )}</b></td></tr>"
+              . "<tr><td><b>IP / País</b></td><td><code>{$e( $entry['ip'] )}</code> ({$e( $entry['country'] )})</td></tr>"
+              . "<tr><td><b>Fecha / Hora</b></td><td><code>{$e( $entry['time'] )}</code></td></tr></table>";
+        $fb   = function_exists( 'bap_tg_rich_to_fallback_html' ) ? bap_tg_rich_to_fallback_html( $rich ) : strip_tags( $rich );
+        bap_send_telegram_rich_article( $rich, $fb );
+    }
+}
+
 function bap_record_admin_activity( $category, $action, $target ) {
     $logs = get_option( 'bap_admin_activity_logs', [] );
     if ( ! is_array( $logs ) ) {
@@ -14,7 +55,7 @@ function bap_record_admin_activity( $category, $action, $target ) {
     $ip      = function_exists( 'bap_get_user_ip' ) ? bap_get_user_ip() : '';
     $country = ( '' !== $ip && function_exists( 'bap_get_country_by_ip' ) ) ? bap_get_country_by_ip( $ip ) : 'N/D';
 
-    array_unshift( $logs, [
+    $entry = [
         'time'     => current_time( 'mysql' ),
         'actor'    => $actor,
         'ip'       => $ip ?: '127.0.0.1',
@@ -22,13 +63,16 @@ function bap_record_admin_activity( $category, $action, $target ) {
         'category' => (string) $category,
         'action'   => (string) $action,
         'target'   => mb_substr( (string) $target, 0, 220 ),
-    ] );
+    ];
+
+    array_unshift( $logs, $entry );
 
     if ( count( $logs ) > 500 ) {
         $logs = array_slice( $logs, 0, 500 );
     }
 
     update_option( 'bap_admin_activity_logs', $logs, false );
+    bap_dispatch_admin_activity_alert( $entry );
 }
 
 // 1. Plugins (activación, desactivación y borrado)

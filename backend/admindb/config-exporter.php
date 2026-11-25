@@ -28,7 +28,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
         // 3. Notificaciones y Plantillas Email/Telegram
         'bap_notify_channel', 'bap_notify_freq', 'bap_notify_emails', 'bap_tg_custom_templates',
         'bap_email_template', 'bap_custom_email_templates', 'bap_tg_chat_ids',
-        'bap_login_notify_channel', 'bap_login_notify_routes',
+        'bap_login_notify_channel', 'bap_login_notify_routes', 'bap_activity_notify_channel',
 
         // 4. Bloqueos Web (Frontend, Rate Limit y User-Agents)
         'bap_web_rules', 'bap_web_allow_seo_bots', 'bap_web_country_redirects',
