@@ -159,6 +159,96 @@ function bap_run_core_checksum_scan( $include_plugins = true ) {
         'extra'           => $extra,
     ];
 }
+function bap_download_official_svn_content( $source, $slug, $version, $rel_path ) {
+    $rel_clean = ltrim( str_replace( '\\', '/', (string) $rel_path ), '/' );
+    if ( '' === $rel_clean || false !== strpos( $rel_clean, '..' ) ) {
+        return new WP_Error( 'invalid_rel', 'Ruta relativa no válida.' );
+    }
+
+    if ( 'plugin' === $source ) {
+        $safe_slug = sanitize_key( $slug );
+        if ( '' === $safe_slug || '' === trim( (string) $version ) ) {
+            return new WP_Error( 'invalid_plugin', 'Plugin o versión no válidos.' );
+        }
+        $svn_host = 'plugins' . '.svn.wordpress.org';
+        $url      = sprintf( 'https://%s/%s/tags/%s/%s', $svn_host, rawurlencode( $safe_slug ), rawurlencode( $version ), $rel_clean );
+    } else {
+        $svn_host = 'core' . '.svn.wordpress.org';
+        $url      = sprintf( 'https://%s/tags/%s/%s', $svn_host, rawurlencode( (string) $version ), $rel_clean );
+    }
+
+    $res = wp_remote_get( $url, [ 'timeout' => 15 ] );
+    if ( is_wp_error( $res ) || 200 !== wp_remote_retrieve_response_code( $res ) ) {
+        return new WP_Error( 'svn_err', 'No se pudo descargar el archivo original desde WordPress.org SVN.' );
+    }
+
+    return (string) wp_remote_retrieve_body( $res );
+}
+
+function bap_restore_official_file_from_svn( $source, $slug, $version, $rel_path, $local_rel ) {
+    $root      = wp_normalize_path( ABSPATH );
+    $rel_local = ltrim( str_replace( '\\', '/', (string) $local_rel ), '/' );
+    $full_path = wp_normalize_path( $root . $rel_local );
+
+    if ( '' === $rel_local || false !== strpos( $rel_local, '..' ) || 0 !== strpos( $full_path, $root ) ) {
+        return new WP_Error( 'invalid_path', 'Ruta de destino fuera del directorio de WordPress.' );
+    }
+
+    if ( 'plugin' === $source ) {
+        $plugins_base = trailingslashit( wp_normalize_path( WP_PLUGIN_DIR ) );
+        if ( 0 !== strpos( $full_path, $plugins_base ) ) {
+            return new WP_Error( 'invalid_plugin_dir', 'El archivo de plugin debe residir dentro de wp-content/plugins/.' );
+        }
+    }
+
+    $orig_code = bap_download_official_svn_content( $source, $slug, $version, $rel_path );
+    if ( is_wp_error( $orig_code ) ) {
+        return $orig_code;
+    }
+
+    // Verificar hash MD5 contra la API oficial de checksums antes de escribir
+    $dl_md5 = md5( $orig_code );
+    if ( 'plugin' === $source ) {
+        $chk_host = 'downloads' . '.wordpress.org';
+        $chk_url  = sprintf( 'https://%s/plugin-checksums/%s/%s.json', $chk_host, rawurlencode( $slug ), rawurlencode( $version ) );
+        $chk_res  = wp_remote_get( $chk_url, [ 'timeout' => 12 ] );
+        if ( ! is_wp_error( $chk_res ) && 200 === wp_remote_retrieve_response_code( $chk_res ) ) {
+            $chk_data   = json_decode( wp_remote_retrieve_body( $chk_res ), true );
+            $expected   = $chk_data['files'][ ltrim( $rel_path, '/' ) ]['md5'] ?? null;
+            $valid_md5s = is_array( $expected ) ? array_map( 'strtolower', $expected ) : ( null !== $expected ? [ strtolower( (string) $expected ) ] : [] );
+            if ( ! empty( $valid_md5s ) && ! in_array( $dl_md5, $valid_md5s, true ) ) {
+                return new WP_Error( 'hash_mismatch', 'El archivo descargado de SVN no coincide con el hash oficial del plugin.' );
+            }
+        }
+    } else {
+        $locale   = get_locale();
+        $chk_host = 'api' . '.wordpress.org';
+        $chk_url  = sprintf( 'https://%s/core/checksums/1.0/?version=%s&locale=%s', $chk_host, rawurlencode( (string) $version ), rawurlencode( (string) $locale ) );
+        $chk_res  = wp_remote_get( $chk_url, [ 'timeout' => 15 ] );
+        if ( ! is_wp_error( $chk_res ) && 200 === wp_remote_retrieve_response_code( $chk_res ) ) {
+            $chk_data = json_decode( wp_remote_retrieve_body( $chk_res ), true );
+            $expected = $chk_data['checksums'][ ltrim( $rel_path, '/' ) ] ?? null;
+            if ( is_string( $expected ) && '' !== $expected && ! hash_equals( strtolower( $expected ), $dl_md5 ) ) {
+                return new WP_Error( 'hash_mismatch', 'El archivo descargado de SVN no coincide con el hash oficial de WordPress.' );
+            }
+        }
+    }
+
+    $parent_dir = dirname( $full_path );
+    if ( ! is_dir( $parent_dir ) && ! wp_mkdir_p( $parent_dir ) ) {
+        return new WP_Error( 'mkdir_fail', 'No se pudo crear el directorio padre en el servidor.' );
+    }
+
+    if ( file_exists( $full_path ) && ! is_writable( $full_path ) ) {
+        return new WP_Error( 'not_writable', 'El archivo local no tiene permisos de escritura en el servidor.' );
+    }
+
+    if ( false === @file_put_contents( $full_path, $orig_code, LOCK_EX ) ) {
+        return new WP_Error( 'write_fail', 'Error al escribir el archivo restaurado en disco.' );
+    }
+
+    return true;
+}
 
 function bap_fetch_official_file_diff( $source, $slug, $version, $rel_path, $local_rel ) {
     $root      = wp_normalize_path( ABSPATH );
@@ -168,22 +258,13 @@ function bap_fetch_official_file_diff( $source, $slug, $version, $rel_path, $loc
         return new WP_Error( 'invalid_local', 'No se pudo leer el archivo local.' );
     }
 
+    $orig_code = bap_download_official_svn_content( $source, $slug, $version, $rel_path );
+    if ( is_wp_error( $orig_code ) ) {
+        return $orig_code;
+    }
+
     $local_code = (string) file_get_contents( $full_path );
-    if ( 'plugin' === $source ) {
-        $svn_host = 'plugins' . '.svn.wordpress.org';
-        $url      = sprintf( 'https://%s/%s/tags/%s/%s', $svn_host, rawurlencode( $slug ), rawurlencode( $version ), ltrim( $rel_path, '/' ) );
-    } else {
-        $svn_host = 'core' . '.svn.wordpress.org';
-        $url      = sprintf( 'https://%s/tags/%s/%s', $svn_host, rawurlencode( $version ), ltrim( $rel_path, '/' ) );
-    }
-
-    $res = wp_remote_get( $url, [ 'timeout' => 15 ] );
-    if ( is_wp_error( $res ) || 200 !== wp_remote_retrieve_response_code( $res ) ) {
-        return new WP_Error( 'svn_err', 'No se pudo descargar el archivo original desde WordPress.org SVN.' );
-    }
-
-    $orig_code = wp_remote_retrieve_body( $res );
-    $diff_html = wp_text_diff( $orig_code, $local_code, [
+    $diff_html  = wp_text_diff( $orig_code, $local_code, [
         'title'       => 'Comparación línea a línea: ' . $local_rel,
         'title_left'  => 'Original Oficial (WordPress.org)',
         'title_right' => 'Archivo Actual en tu Servidor',
@@ -193,13 +274,28 @@ function bap_fetch_official_file_diff( $source, $slug, $version, $rel_path, $loc
         ? $diff_html
         : '<p>Los archivos son idénticos en texto (posible diferencia de codificación o fin de línea).</p>';
 }
-
 function bap_render_core_integrity_box() {
-    $scan_res  = null;
-    $diff_html = '';
-    $diff_err  = '';
+    $scan_res       = null;
+    $diff_html      = '';
+    $diff_err       = '';
+    $diff_meta      = null;
+    $restore_notice = '';
 
-    if ( isset( $_POST['bap_view_file_diff'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_core_scan_action', 'bap_core_scan_nonce' ) ) {
+    if ( isset( $_POST['bap_restore_official_file'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_core_scan_action', 'bap_core_scan_nonce' ) ) {
+        $src  = sanitize_key( $_POST['bap_diff_source'] ?? 'core' );
+        $slug = sanitize_text_field( wp_unslash( $_POST['bap_diff_slug'] ?? '' ) );
+        $ver  = sanitize_text_field( wp_unslash( $_POST['bap_diff_version'] ?? '' ) );
+        $rel  = sanitize_text_field( wp_unslash( $_POST['bap_diff_rel'] ?? '' ) );
+        $loc  = sanitize_text_field( wp_unslash( $_POST['bap_diff_local'] ?? '' ) );
+
+        $restored = bap_restore_official_file_from_svn( $src, $slug, $ver, $rel, $loc );
+        if ( is_wp_error( $restored ) ) {
+            $restore_notice = '<div class="notice notice-error inline" style="margin:12px 0;"><p><strong>Error al restaurar:</strong> ' . esc_html( $restored->get_error_message() ) . '</p></div>';
+        } else {
+            $restore_notice = '<div class="notice notice-success inline" style="margin:12px 0;"><p><strong>¡Archivo restaurado!</strong> Se ha reemplazado <code>' . esc_html( $loc ) . '</code> con la copia original verificada de WordPress.org.</p></div>';
+        }
+        $scan_res = bap_run_core_checksum_scan( true );
+    } elseif ( isset( $_POST['bap_view_file_diff'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_core_scan_action', 'bap_core_scan_nonce' ) ) {
         $src  = sanitize_key( $_POST['bap_diff_source'] ?? 'core' );
         $slug = sanitize_text_field( wp_unslash( $_POST['bap_diff_slug'] ?? '' ) );
         $ver  = sanitize_text_field( wp_unslash( $_POST['bap_diff_version'] ?? '' ) );
@@ -211,6 +307,13 @@ function bap_render_core_integrity_box() {
             $diff_err = $diff_res->get_error_message();
         } else {
             $diff_html = $diff_res;
+            $diff_meta = [
+                'source'  => $src,
+                'slug'    => $slug,
+                'version' => $ver,
+                'rel'     => $rel,
+                'local'   => $loc,
+            ];
         }
         $scan_res = bap_run_core_checksum_scan( true );
     } elseif ( isset( $_POST['bap_run_core_scan'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_core_scan_action', 'bap_core_scan_nonce' ) ) {
@@ -221,8 +324,8 @@ function bap_render_core_integrity_box() {
     global $wp_version;
     ?>
     <div class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
-        <h2 style="margin-top:0;">Escáner de Integridad del Núcleo y Plugins (Checksums + Diff)</h2>
-        <p class="description">Compara los archivos de WordPress <strong><?php echo esc_html( $wp_version ); ?></strong> y de tus <strong>plugins oficiales de WordPress.org</strong> contra sus hashes MD5 oficiales, permitiendo inspeccionar las diferencias línea a línea (<strong>Diff</strong>) si alguno ha sido alterado.</p>
+        <h2 style="margin-top:0;">Escáner de Integridad del Núcleo y Plugins (Checksums + Diff + Restauración)</h2>
+        <p class="description">Compara los archivos de WordPress <strong><?php echo esc_html( $wp_version ); ?></strong> y de tus <strong>plugins oficiales de WordPress.org</strong> contra sus hashes MD5 oficiales, permitiendo inspeccionar diferencias (<strong>Diff</strong>) y restaurar el archivo original en 1 clic.</p>
 
         <form method="post" style="margin:14px 0;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
             <?php wp_nonce_field( 'bap_core_scan_action', 'bap_core_scan_nonce' ); ?>
@@ -233,12 +336,28 @@ function bap_render_core_integrity_box() {
             </label>
         </form>
 
+        <?php echo wp_kses_post( $restore_notice ); ?>
+
         <?php if ( '' !== $diff_err ) : ?>
             <div class="notice notice-error inline" style="margin:12px 0;"><p><strong>Error Diff:</strong> <?php echo esc_html( $diff_err ); ?></p></div>
         <?php endif; ?>
 
         <?php if ( '' !== $diff_html ) : ?>
             <div style="margin:16px 0;padding:14px;background:#fff;color:#1d2327;border:2px solid #2271b1;border-radius:6px;overflow-x:auto;">
+                <?php if ( is_array( $diff_meta ) ) : ?>
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #dcdcde;">
+                        <span style="font-size:12px;color:#50575e;">Archivo inspeccionado: <code><?php echo esc_html( $diff_meta['local'] ); ?></code></span>
+                        <form method="post" style="margin:0;" onsubmit="return confirm('¿Sobrescribir el archivo local con el original oficial de WordPress.org?');">
+                            <?php wp_nonce_field( 'bap_core_scan_action', 'bap_core_scan_nonce' ); ?>
+                            <input type="hidden" name="bap_diff_source" value="<?php echo esc_attr( $diff_meta['source'] ); ?>" />
+                            <input type="hidden" name="bap_diff_slug" value="<?php echo esc_attr( $diff_meta['slug'] ); ?>" />
+                            <input type="hidden" name="bap_diff_version" value="<?php echo esc_attr( $diff_meta['version'] ); ?>" />
+                            <input type="hidden" name="bap_diff_rel" value="<?php echo esc_attr( $diff_meta['rel'] ); ?>" />
+                            <input type="hidden" name="bap_diff_local" value="<?php echo esc_attr( $diff_meta['local'] ); ?>" />
+                            <button type="submit" name="bap_restore_official_file" class="button button-primary">Restaurar archivo original en 1 clic</button>
+                        </form>
+                    </div>
+                <?php endif; ?>
                 <style>
                     table.diff { width:100%; border-collapse:collapse; font-family:monospace; font-size:12px; }
                     table.diff td, table.diff th { padding:3px 6px; border:1px solid #dcdcde; vertical-align:top; white-space:pre-wrap; word-break:break-all; }
@@ -250,7 +369,6 @@ function bap_render_core_integrity_box() {
                 <?php echo $diff_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
             </div>
         <?php endif; ?>
-
         <?php if ( is_wp_error( $scan_res ) ) : ?>
             <div class="notice notice-error inline"><p><strong>Error al escanear:</strong> <?php echo esc_html( $scan_res->get_error_message() ); ?></p></div>
         <?php elseif ( is_array( $scan_res ) ) :
@@ -270,7 +388,7 @@ function bap_render_core_integrity_box() {
                         <tr>
                             <th style="width:185px;">Estado</th>
                             <th>Archivo afectado</th>
-                            <th style="width:120px;">Acción</th>
+                            <th style="width:200px;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -279,15 +397,26 @@ function bap_render_core_integrity_box() {
                                 <td><span style="background:#d63638;color:#fff;padding:2px 7px;border-radius:3px;font-weight:600;font-size:11px;">MODIFICADO (HASH)</span></td>
                                 <td><code><?php echo esc_html( $item['file'] ); ?></code></td>
                                 <td>
-                                    <form method="post" style="display:inline;">
-                                        <?php wp_nonce_field( 'bap_core_scan_action', 'bap_core_scan_nonce' ); ?>
-                                        <input type="hidden" name="bap_diff_source" value="<?php echo esc_attr( $item['source'] ); ?>" />
-                                        <input type="hidden" name="bap_diff_slug" value="<?php echo esc_attr( $item['slug'] ); ?>" />
-                                        <input type="hidden" name="bap_diff_version" value="<?php echo esc_attr( $item['version'] ); ?>" />
-                                        <input type="hidden" name="bap_diff_rel" value="<?php echo esc_attr( $item['rel'] ); ?>" />
-                                        <input type="hidden" name="bap_diff_local" value="<?php echo esc_attr( $item['file'] ); ?>" />
-                                        <button type="submit" name="bap_view_file_diff" class="button button-small button-primary">Ver Diff</button>
-                                    </form>
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                        <form method="post" style="display:inline;">
+                                            <?php wp_nonce_field( 'bap_core_scan_action', 'bap_core_scan_nonce' ); ?>
+                                            <input type="hidden" name="bap_diff_source" value="<?php echo esc_attr( $item['source'] ); ?>" />
+                                            <input type="hidden" name="bap_diff_slug" value="<?php echo esc_attr( $item['slug'] ); ?>" />
+                                            <input type="hidden" name="bap_diff_version" value="<?php echo esc_attr( $item['version'] ); ?>" />
+                                            <input type="hidden" name="bap_diff_rel" value="<?php echo esc_attr( $item['rel'] ); ?>" />
+                                            <input type="hidden" name="bap_diff_local" value="<?php echo esc_attr( $item['file'] ); ?>" />
+                                            <button type="submit" name="bap_view_file_diff" class="button button-small button-primary">Ver Diff</button>
+                                        </form>
+                                        <form method="post" style="display:inline;" onsubmit="return confirm('¿Restaurar el archivo original desde WordPress.org?');">
+                                            <?php wp_nonce_field( 'bap_core_scan_action', 'bap_core_scan_nonce' ); ?>
+                                            <input type="hidden" name="bap_diff_source" value="<?php echo esc_attr( $item['source'] ); ?>" />
+                                            <input type="hidden" name="bap_diff_slug" value="<?php echo esc_attr( $item['slug'] ); ?>" />
+                                            <input type="hidden" name="bap_diff_version" value="<?php echo esc_attr( $item['version'] ); ?>" />
+                                            <input type="hidden" name="bap_diff_rel" value="<?php echo esc_attr( $item['rel'] ); ?>" />
+                                            <input type="hidden" name="bap_diff_local" value="<?php echo esc_attr( $item['file'] ); ?>" />
+                                            <button type="submit" name="bap_restore_official_file" class="button button-small">Restaurar</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -302,7 +431,17 @@ function bap_render_core_integrity_box() {
                             <tr>
                                 <td><span style="background:#646970;color:#fff;padding:2px 7px;border-radius:3px;font-weight:600;font-size:11px;">FALTANTE</span></td>
                                 <td><code><?php echo esc_html( $item['file'] ); ?></code></td>
-                                <td>—</td>
+                                <td>
+                                    <form method="post" style="display:inline;" onsubmit="return confirm('¿Descargar y restaurar este archivo faltante desde WordPress.org?');">
+                                        <?php wp_nonce_field( 'bap_core_scan_action', 'bap_core_scan_nonce' ); ?>
+                                        <input type="hidden" name="bap_diff_source" value="<?php echo esc_attr( $item['source'] ); ?>" />
+                                        <input type="hidden" name="bap_diff_slug" value="<?php echo esc_attr( $item['slug'] ); ?>" />
+                                        <input type="hidden" name="bap_diff_version" value="<?php echo esc_attr( $item['version'] ); ?>" />
+                                        <input type="hidden" name="bap_diff_rel" value="<?php echo esc_attr( $item['rel'] ); ?>" />
+                                        <input type="hidden" name="bap_diff_local" value="<?php echo esc_attr( $item['file'] ); ?>" />
+                                        <button type="submit" name="bap_restore_official_file" class="button button-small button-primary">Restaurar archivo</button>
+                                    </form>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
