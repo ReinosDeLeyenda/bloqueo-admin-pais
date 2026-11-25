@@ -60,6 +60,7 @@ function bap_scan_database_injections() {
 function bap_run_scheduled_security_audit() {
     $alerts = [];
 
+    if ( function_exists( 'bap_run_cve_vulnerability_scan' ) ) { $cve_res = bap_run_cve_vulnerability_scan( true ); if ( ! empty( $cve_res['findings'] ) ) { $alerts[] = 'Vulnerabilidades CVE: ' . count( $cve_res['findings'] ) . ' fallo(s) detectado(s).'; } }
     if ( function_exists( 'bap_run_core_checksum_scan' ) ) {
         $core = bap_run_core_checksum_scan( true );
         if ( is_array( $core ) ) {
