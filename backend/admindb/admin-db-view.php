@@ -97,6 +97,8 @@ if ( $all_missing ) {
         <div class="card" style="max-width:1180px;padding:14px 20px;margin-bottom:20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
             <strong>Acciones masivas:</strong>
             <form method="post" style="display:inline;"><?php wp_nonce_field( 'bap_db_action' ); ?><input type="submit" name="bap_update_all_dbs" class="button button-primary" value="Descargar / Actualizar TODAS las bases de datos" /></form>
+            <form method="post" style="display:inline;"><?php wp_nonce_field( 'bap_db_action' ); ?><input type="submit" name="bap_update_missing_dbs" class="button button-secondary" style="<?php echo $missing_count > 0 ? 'border-color:#d63638;color:#d63638;font-weight:600;' : ''; ?>" value="Descargar faltantes (<?php echo (int) $missing_count; ?>)" <?php disabled( 0 === $missing_count ); ?> /></form>
+            <form method="post" style="display:inline;"><?php wp_nonce_field( 'bap_db_action' ); ?><input type="submit" name="bap_update_outdated_dbs" class="button button-secondary" style="<?php echo $outdated_count > 0 ? 'border-color:#dba617;color:#996800;font-weight:600;' : ''; ?>" value="Actualizar obsoletas (<?php echo (int) $outdated_count; ?>)" <?php disabled( 0 === $outdated_count ); ?> /></form>
             <form method="post" style="display:inline;" onsubmit="return confirm('¿Seguro que quieres borrar TODAS las bases de datos locales?');"><?php wp_nonce_field( 'bap_db_action' ); ?><input type="submit" name="bap_delete_all_dbs" class="button button-secondary" style="color:#d63638;border-color:#d63638;" value="Borrar TODAS las bases de datos" /></form>
         </div>
 

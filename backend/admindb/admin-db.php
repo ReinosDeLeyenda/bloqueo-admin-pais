@@ -54,6 +54,70 @@ function bap_delete_single_db( $key ) {
     }
 }
 
+function bap_run_db_updates_by_state( $target_state ) {
+    $freq  = (string) get_option( 'bap_db_auto_update_freq', 'none' );
+    $mmdb  = bap_get_mmdb_path();
+    $asn   = bap_get_asn_mmdb_path();
+    $c_upd = get_option( 'bap_mmdb_last_updated', '' );
+    if ( '' === $c_upd && file_exists( $mmdb ) ) {
+        $c_upd = wp_date( 'Y-m-d H:i:s', filemtime( $mmdb ) );
+    }
+    $a_upd = get_option( 'bap_asn_mmdb_last_updated', '' );
+    if ( '' === $a_upd && file_exists( $asn ) ) {
+        $a_upd = wp_date( 'Y-m-d H:i:s', filemtime( $asn ) );
+    }
+
+    $checks = [
+        'Países'    => [ file_exists( $mmdb ), $c_upd, fn() => bap_download_mmdb_database( 'country' ) ],
+        'ASN'       => [ file_exists( $asn ), $a_upd, fn() => bap_download_mmdb_database( 'asn' ) ],
+        'AbuseIPDB' => [ file_exists( bap_get_abuseipdb_path() ), (string) get_option( 'bap_abuseipdb_last_updated', '' ), fn() => bap_download_abuseipdb_database() ],
+        'Tor'       => [ file_exists( bap_get_tor_list_path() ), (string) get_option( 'bap_tor_last_updated', '' ), fn() => bap_download_tor_database() ],
+        'FireHOL'   => [ file_exists( bap_get_firehol_list_path() ), (string) get_option( 'bap_firehol_last_updated', '' ), fn() => bap_download_firehol_database() ],
+    ];
+
+    $updated = [];
+    $errs    = [];
+
+    foreach ( $checks as $name => $cfg ) {
+        if ( $target_state === bap_get_db_status_state( $cfg, $cfg, $freq ) ) {
+            $res = $cfg();
+            if ( is_wp_error( $res ) ) {
+                $errs[] = $name . ': ' . $res->get_error_message();
+            } else {
+                $updated[] = $name;
+            }
+        }
+    }
+
+    if ( function_exists( 'bap_get_custom_dbs' ) && function_exists( 'bap_download_custom_db' ) ) {
+        foreach ( bap_get_custom_dbs() as $cid => $cdb ) {
+            if ( empty( $cdb['url'] ) || '1' !== (string) ( $cdb['enabled'] ?? '1' ) ) {
+                continue;
+            }
+            $cfile  = bap_get_custom_db_file_path( $cid );
+            $cstate = bap_get_db_status_state( file_exists( $cfile ), (string) ( $cdb['last_updated'] ?? '' ), $freq );
+            if ( $target_state === $cstate ) {
+                $res = bap_download_custom_db( $cid );
+                if ( is_wp_error( $res ) ) {
+                    $errs[] = ( $cdb['name'] ?? $cid ) . ': ' . $res->get_error_message();
+                } else {
+                    $updated[] = (string) ( $cdb['name'] ?? $cid );
+                }
+            }
+        }
+    }
+
+    return [ 'updated' => $updated, 'errors' => $errs ];
+}
+
+function bap_run_outdated_db_updates() {
+    return bap_run_db_updates_by_state( 'outdated' );
+}
+
+function bap_run_missing_db_updates() {
+    return bap_run_db_updates_by_state( 'missing' );
+}
+
 function bap_run_all_db_updates() {
     $tasks = [
         'Países'    => bap_download_mmdb_database( 'country' ),
@@ -100,6 +164,34 @@ function bap_handle_db_actions() {
         if ( '' !== $cdb_msg ) {
             return $cdb_msg;
         }
+    }
+    if ( isset( $_POST['bap_update_missing_dbs'] ) ) {
+        $res = bap_run_missing_db_updates();
+        if ( empty( $res['updated'] ) && empty( $res['errors'] ) ) {
+            return '<div class="notice notice-info is-dismissible"><p>No falta ninguna base de datos por descargar en este momento.</p></div>';
+        }
+        $msg = ! empty( $res['updated'] )
+            ? '<strong>Bases de datos faltantes descargadas (' . count( $res['updated'] ) . '):</strong> ' . esc_html( implode( ', ', $res['updated'] ) ) . '.'
+            : '';
+        if ( ! empty( $res['errors'] ) ) {
+            $msg .= ( '' !== $msg ? ' ' : '' ) . '<strong>Avisos:</strong> ' . esc_html( implode( ' | ', $res['errors'] ) );
+            return '<div class="notice notice-warning is-dismissible"><p>' . $msg . '</p></div>';
+        }
+        return '<div class="notice notice-success is-dismissible"><p>' . $msg . '</p></div>';
+    }
+    if ( isset( $_POST['bap_update_outdated_dbs'] ) ) {
+        $res = bap_run_outdated_db_updates();
+        if ( empty( $res['updated'] ) && empty( $res['errors'] ) ) {
+            return '<div class="notice notice-info is-dismissible"><p>No hay ninguna base de datos obsoleta que requiera actualización en este momento.</p></div>';
+        }
+        $msg = ! empty( $res['updated'] )
+            ? '<strong>Bases de datos obsoletas actualizadas (' . count( $res['updated'] ) . '):</strong> ' . esc_html( implode( ', ', $res['updated'] ) ) . '.'
+            : '';
+        if ( ! empty( $res['errors'] ) ) {
+            $msg .= ( '' !== $msg ? ' ' : '' ) . '<strong>Avisos:</strong> ' . esc_html( implode( ' | ', $res['errors'] ) );
+            return '<div class="notice notice-warning is-dismissible"><p>' . $msg . '</p></div>';
+        }
+        return '<div class="notice notice-success is-dismissible"><p>' . $msg . '</p></div>';
     }
     if ( isset( $_POST['bap_update_all_dbs'] ) ) {
         $errs = bap_run_all_db_updates();
