@@ -77,7 +77,7 @@ if ( $all_missing ) {
 
     <?php if ( 'configuracion' === $sub ) : ?>
         <?php bap_render_db_settings_card( $db_freq ); ?>
-        <?php bap_render_json_backup_card(); ?>
+        <?php bap_render_json_backup_card(); if ( function_exists( 'bap_render_db_backup_telegram_card' ) ) { bap_render_db_backup_telegram_card(); } ?>
     <?php else : ?>
         <?php if ( $missing_count > 0 || $outdated_count > 0 ) : ?>
             <div class="notice <?php echo $missing_count > 0 ? 'notice-error' : 'notice-warning'; ?>" style="max-width:1180px;margin:14px 0;">
