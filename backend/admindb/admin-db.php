@@ -245,6 +245,15 @@ function bap_render_db_page() {
     require plugin_dir_path( __FILE__ ) . 'admin-db-view.php';
 }
 
+function bap_render_subtabs( $base_url, array $valid, $active_sub ) {
+    echo '<div style="display:flex;gap:8px;margin:0 0 18px 0;flex-wrap:wrap;">';
+    foreach ( $valid as $s_key => $s_lbl ) {
+        $url = add_query_arg( 'subtab', $s_key, $base_url );
+        $cls = ( $active_sub === $s_key ) ? 'button button-primary' : 'button button-secondary';
+        echo '<a href="' . esc_url( $url ) . '" class="' . esc_attr( $cls ) . '">' . esc_html( $s_lbl ) . '</a>';
+    }
+    echo '</div>';
+}
 function bap_render_status_badge( $label, $bg = '#00a32a' ) {
     return '<span style="background:' . esc_attr( $bg ) . ';color:#fff;padding:2px 7px;border-radius:3px;font-weight:700;font-size:11px;">' . esc_html( $label ) . '</span>';
 }
