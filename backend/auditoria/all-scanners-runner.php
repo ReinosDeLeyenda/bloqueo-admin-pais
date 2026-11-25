@@ -94,5 +94,14 @@ function bap_execute_all_security_scans() {
         ];
     }
 
+    if ( function_exists( 'bap_scan_privileged_admins' ) ) {
+        $adm      = bap_scan_privileged_admins();
+        $report[] = [
+            'name'   => 'Auditoría de Administradores',
+            'status' => $adm['suspicious'] > 0 ? 'error' : 'ok',
+            'detail' => $adm['suspicious'] > 0 ? "{$adm['suspicious']} cuenta(s) con privilegios sospechosos." : "{$adm['total']} administrador(es) verificado(s) sin anomalías.",
+        ];
+    }
+
     return $report;
 }
