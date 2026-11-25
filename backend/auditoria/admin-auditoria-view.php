@@ -13,6 +13,7 @@ function bap_render_auditoria_page() {
         <?php bap_render_tabs( 'bap-auditoria' ); ?>
 
         <?php if ( function_exists( 'bap_render_core_integrity_box' ) ) { bap_render_core_integrity_box(); } ?>
+        <?php if ( function_exists( 'bap_render_custom_integrity_box' ) ) { bap_render_custom_integrity_box(); } ?>
         <?php if ( function_exists( 'bap_render_malware_scanner_box' ) ) { bap_render_malware_scanner_box(); } ?>
         <?php if ( function_exists( 'bap_render_abandoned_plugins_box' ) ) { bap_render_cve_scanner_box(); } ?>
         <?php if ( function_exists( 'bap_render_abandoned_plugins_box' ) ) { bap_render_abandoned_plugins_box(); } ?>

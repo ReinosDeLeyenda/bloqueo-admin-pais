@@ -61,6 +61,7 @@ function bap_run_scheduled_security_audit() {
     $alerts = [];
 
     if ( function_exists( 'bap_run_cve_vulnerability_scan' ) ) { $cve_res = bap_run_cve_vulnerability_scan( true ); if ( ! empty( $cve_res['findings'] ) ) { $alerts[] = 'Vulnerabilidades CVE: ' . count( $cve_res['findings'] ) . ' fallo(s) detectado(s).'; } }
+    if ( function_exists( 'bap_verify_custom_integrity_baseline' ) && is_array( $cb = bap_verify_custom_integrity_baseline() ) ) { $cdiff = count( $cb['modified'] ) + count( $cb['added'] ) + count( $cb['deleted'] ); if ( $cdiff > 0 ) { $alerts[] = 'Temas/Plugins Privados: ' . $cdiff . ' archivo(s) alterado(s) respecto a la huella SHA-256.'; } }
     if ( function_exists( 'bap_run_core_checksum_scan' ) ) {
         $core = bap_run_core_checksum_scan( true );
         if ( is_array( $core ) ) {

@@ -3,7 +3,7 @@
  * Plugin Name: Bloqueo Admin por País e IP
  * Plugin URI: https://github.com/ReinosDeLeyenda/bloqueo-admin-pais
  * Description: Bloquea wp-admin, wp-login.php y el frontend por país, ASN, AbuseIPDB, Tor, FireHOL e IP usando bases de datos locales.
- * Version: 1.3.31
+ * Version: 1.3.32
  * Author: ReinosDeLeyenda
  * License: GPLv2 or later
  */
@@ -50,6 +50,8 @@ $bap_files = [
     // Backend - 4. Auditoría y Hardening
     'backend/auditoria/admin-auditoria-view.php',
     'backend/auditoria/core-integrity-scanner.php',
+    'backend/auditoria/custom-integrity-baseline.php',
+    'backend/auditoria/custom-integrity-view.php',
     'backend/auditoria/malware-scanner.php',
     'backend/auditoria/abandoned-plugins-scanner.php',
     'backend/auditoria/cve-vulnerability-scanner.php',
