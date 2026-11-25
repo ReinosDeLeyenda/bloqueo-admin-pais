@@ -84,37 +84,16 @@ function bap_download_firehol_database() {
 }
 
 function bap_is_tor_exit_node( $ip ) {
-    static $tor_db = null;
-    if ( null === $tor_db ) {
-        $f      = bap_get_tor_list_path();
-        $tor_db = file_exists( $f ) ? json_decode( (string) file_get_contents( $f ), true ) : [];
-        if ( ! is_array( $tor_db ) ) {
-            $tor_db = [];
-        }
-    }
+    $tor_db = bap_load_cached_json_list( 'tor-exits.json' );
     return isset( $tor_db[ $ip ] );
 }
 
 function bap_is_in_firehol( $ip ) {
-    if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+    if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
         return false;
     }
-    static $cidrs = null;
-    if ( null === $cidrs ) {
-        $f     = bap_get_firehol_list_path();
-        $cidrs = file_exists( $f ) ? json_decode( (string) file_get_contents( $f ), true ) : [];
-        if ( ! is_array( $cidrs ) ) {
-            $cidrs = [];
-        }
-    }
-    if ( empty( $cidrs ) ) {
-        return false;
-    }
-    $ip_long = ip2long( $ip );
-    foreach ( $cidrs as $cidr ) {
-        list( $subnet, $bits ) = explode( '/', $cidr );
-        $mask = -1 << ( 32 - (int) $bits );
-        if ( ( $ip_long & $mask ) === ( ip2long( $subnet ) & $mask ) ) {
+    foreach ( bap_load_cached_json_list( 'firehol-l1.json' ) as $cidr ) {
+        if ( bap_ip_matches_cidr( $ip, (string) $cidr ) ) {
             return $cidr;
         }
     }

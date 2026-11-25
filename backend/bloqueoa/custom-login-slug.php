@@ -59,17 +59,12 @@ add_action( 'init', function() {
         return;
     }
 
-    $secret = trim( (string) get_option( 'bap_secret_key', '' ) );
-    if ( '' !== $secret ) {
-        $cname = 'bap_bypass_' . md5( $secret );
-        $token = hash( 'sha256', $secret . AUTH_SALT );
-        if ( array_key_exists( $secret, $_GET ) || ( isset( $_COOKIE[ $cname ] ) && hash_equals( $token, $_COOKIE[ $cname ] ) ) ) {
-            return;
-        }
+    if ( bap_has_valid_secret_bypass( false ) ) {
+        return;
     }
 
     $ip = function_exists( 'bap_get_user_ip' ) ? bap_get_user_ip() : '';
-    if ( '' !== $ip && ( bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) ) {
+    if ( '' !== $ip && ( bap_is_ip_whitelisted_or_server( $ip ) ) ) {
         return;
     }
 

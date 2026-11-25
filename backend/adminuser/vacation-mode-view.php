@@ -20,9 +20,7 @@ function bap_render_vacation_mode_box() {
         } else {
             update_user_meta( $uid, '_bap_vacation_start', $s_dt->getTimestamp() );
             update_user_meta( $uid, '_bap_vacation_end', $e_dt->getTimestamp() );
-            if ( class_exists( 'WP_Session_Tokens' ) && get_current_user_id() !== $uid ) {
-                WP_Session_Tokens::get_instance( $uid )->destroy_all();
-            }
+            bap_destroy_user_sessions_except_current( $uid );
             $u_obj  = get_user_by( 'id', $uid );
             $notice = '<div class="notice notice-success inline"><p><strong>Modo Vacaciones programado</strong> para <code>' . esc_html( $u_obj->user_login ) . '</code>.</p></div>';
         }

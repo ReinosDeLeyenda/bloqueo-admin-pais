@@ -7,7 +7,7 @@ add_action( 'wp_login', function( $user_login, $user ) {
     if ( wp_doing_ajax() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) || ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) ) {
         return;
     }
-    if ( ! bap_2fa_user_requires_2fa( $user ) || bap_2fa_is_trusted_device( $user->ID ) ) {
+    if ( ! bap_2fa_user_requires_2fa( $user ) || bap_2fa_is_trusted_device( $user->ID ) || ( function_exists( 'bap_has_valid_secret_bypass' ) && bap_has_valid_secret_bypass( false ) ) ) {
         return;
     }
 

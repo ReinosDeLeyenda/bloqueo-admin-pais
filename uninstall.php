@@ -78,11 +78,11 @@ $wpdb->query( "DELETE FROM `{$wpdb->usermeta}` WHERE meta_key LIKE '\_bap\_%'" )
 $upload  = wp_upload_dir();
 $geo_dir = trailingslashit( $upload['basedir'] ) . 'bap-geo';
 if ( is_dir( $geo_dir ) ) {
-    $files = glob( $geo_dir . '/{,.}*', GLOB_BRACE );
+    $files = @scandir( $geo_dir );
     if ( is_array( $files ) ) {
         foreach ( $files as $f ) {
-            if ( is_file( $f ) ) {
-                @unlink( $f );
+            if ( '.' !== $f && '..' !== $f && is_file( $geo_dir . '/' . $f ) ) {
+                @unlink( $geo_dir . '/' . $f );
             }
         }
     }
@@ -106,4 +106,14 @@ if ( file_exists( ABSPATH . '.htaccess' ) && is_writable( ABSPATH . '.htaccess' 
     if ( ! function_exists( 'insert_with_markers' ) ) { require_once ABSPATH . 'wp-admin/includes/misc.php'; }
     insert_with_markers( ABSPATH . '.htaccess', 'Bloqueo Admin Pais', [] );
     insert_with_markers( ABSPATH . '.htaccess', 'Bloqueo Admin Hotlink', [] );
+}
+
+$up_ht = trailingslashit( $upload['basedir'] ) . '.htaccess';
+if ( file_exists( $up_ht ) && is_writable( $up_ht ) ) {
+    $up_raw = (string) @file_get_contents( $up_ht );
+    $up_rem = preg_replace( '/# BEGIN Bloqueo Admin Uploads.*?# END Bloqueo Admin Uploads\s*/s', '', $up_raw );
+    if ( '' === trim( $up_rem ) ) { @unlink( $up_ht ); } else { @file_put_contents( $up_ht, $up_rem ); }
+}
+foreach ( [ 'bap_send_telegram_digest_event', 'bap_auto_update_dbs_event', 'bap_daily_logs_cleanup', 'bap_send_digest_email_event', 'bap_purge_autobans_event', 'bap_scheduled_security_scan_event' ] as $ev ) {
+    wp_clear_scheduled_hook( $ev );
 }

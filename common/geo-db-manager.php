@@ -197,3 +197,23 @@ function bap_get_asn_by_ip( $ip, &$asn_number = '' ) {
 
     return 'Sin base de datos ASN';
 }
+
+function bap_get_mmdb_last_updated( $type = 'country' ) {
+    $opt  = ( 'asn' === $type ) ? 'bap_asn_mmdb_last_updated' : 'bap_mmdb_last_updated';
+    $path = ( 'asn' === $type ) ? bap_get_asn_mmdb_path() : bap_get_mmdb_path();
+    $upd  = (string) get_option( $opt, '' );
+    if ( '' === $upd && file_exists( $path ) ) {
+        $upd = wp_date( 'Y-m-d H:i:s', filemtime( $path ) );
+    }
+    return $upd;
+}
+
+function bap_load_cached_json_list( $filename ) {
+    static $cache = [];
+    if ( ! isset( $cache[ $filename ] ) ) {
+        $path = bap_get_geo_storage_path( $filename );
+        $data = file_exists( $path ) ? json_decode( (string) file_get_contents( $path ), true ) : [];
+        $cache[ $filename ] = is_array( $data ) ? $data : [];
+    }
+    return $cache[ $filename ];
+}

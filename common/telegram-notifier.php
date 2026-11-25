@@ -17,11 +17,11 @@ function bap_get_telegram_intervals() {
 }
 
 function bap_reschedule_telegram_cron( $freq ) {
-    wp_clear_scheduled_hook( 'bap_send_telegram_digest_event' );
-    $map = bap_get_telegram_intervals();
-    if ( isset( $map[ $freq ] ) ) {
-        wp_schedule_event( time() + $map[ $freq ]['seconds'], $map[ $freq ]['recurrence'], 'bap_send_telegram_digest_event' );
+    $map = [];
+    foreach ( bap_get_telegram_intervals() as $k => $cfg ) {
+        $map[ $k ] = [ $cfg['recurrence'], $cfg['seconds'] ];
     }
+    bap_reschedule_cron_hook( 'bap_send_telegram_digest_event', $freq, $map );
 }
 
 add_action( 'update_option_bap_notify_freq', function( $old_val, $new_val ) {
@@ -207,4 +207,17 @@ function bap_flush_telegram_digest() {
 
     $msg = bap_build_telegram_digest_article( $queue, $site_name, $period, false );
     bap_send_telegram_rich_article( $msg['rich'], $msg['fallback'] );
+}
+
+function bap_send_security_alert_both_channels( $subject, $plain_body, $rich_html ) {
+    $recipients = function_exists( 'bap_get_notify_recipients' ) ? bap_get_notify_recipients() : [ get_option( 'admin_email' ) ];
+    if ( function_exists( 'bap_send_mail' ) ) {
+        bap_send_mail( $recipients, $subject, $plain_body );
+    } else {
+        wp_mail( $recipients, $subject, $plain_body );
+    }
+    if ( function_exists( 'bap_send_telegram_rich_article' ) ) {
+        $fb = function_exists( 'bap_tg_rich_to_fallback_html' ) ? bap_tg_rich_to_fallback_html( $rich_html ) : strip_tags( $rich_html );
+        bap_send_telegram_rich_article( $rich_html, $fb );
+    }
 }

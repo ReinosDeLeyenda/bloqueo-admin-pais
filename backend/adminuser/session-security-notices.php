@@ -7,26 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * 1. Detectar si el acceso actual usa la Llave Secreta URL y marcar la sesión
  */
 add_action( 'init', function() {
-    $secret = trim( (string) get_option( 'bap_secret_key', '' ) );
-    if ( '' === $secret ) {
-        return;
-    }
-
-    $cname = 'bap_bypass_' . md5( $secret );
-    $token = hash( 'sha256', $secret . AUTH_SALT );
-
-    $has_param = array_key_exists( $secret, $_GET );
-    if ( ! $has_param && ! empty( $_GET['redirect_to'] ) ) {
-        $redir_query = (string) wp_parse_url( wp_unslash( $_GET['redirect_to'] ), PHP_URL_QUERY );
-        if ( '' !== $redir_query ) {
-            parse_str( $redir_query, $redir_params );
-            $has_param = array_key_exists( $secret, $redir_params );
-        }
-    }
-
-    $has_cookie = ( isset( $_COOKIE[ $cname ] ) && hash_equals( $token, (string) $_COOKIE[ $cname ] ) );
-
-    if ( $has_param || $has_cookie ) {
+    if ( bap_has_valid_secret_bypass( false ) ) {
         if ( ! defined( 'BAP_USED_SECRET_KEY' ) ) {
             define( 'BAP_USED_SECRET_KEY', true );
         }

@@ -10,9 +10,7 @@ function bap_render_rogue_admin_box() {
         $uid = (int) $_POST['bap_demote_admin_uid'];
         if ( $uid > 0 && $uid !== $cur_id && ( $u = get_user_by( 'id', $uid ) ) ) {
             $u->set_role( 'subscriber' );
-            if ( class_exists( 'WP_Session_Tokens' ) ) {
-                WP_Session_Tokens::get_instance( $uid )->destroy_all();
-            }
+            bap_destroy_user_sessions_except_current( $uid );
             $notice = '<div class="notice notice-warning inline"><p>El usuario <code>' . esc_html( $u->user_login ) . '</code> ha sido degradado a Suscriptor y sus sesiones cerradas.</p></div>';
         }
     }
@@ -55,7 +53,7 @@ function bap_render_rogue_admin_box() {
                         </td>
                         <td>
                             <?php if ( $a['suspicious'] ) : ?>
-                                <span style="background:#d63638;color:#fff;padding:2px 7px;border-radius:3px;font-size:11px;font-weight:700;"><?php echo esc_html( $a['flag'] ); ?></span>
+                                <?php echo bap_render_status_badge( $a['flag'], '#d63638' ); ?>
                             <?php else : ?>
                                 <span style="color:#008a20;"><?php echo esc_html( $a['flag'] ); ?></span>
                             <?php endif; ?>

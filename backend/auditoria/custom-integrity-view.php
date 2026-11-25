@@ -39,13 +39,13 @@ function bap_render_custom_integrity_box() {
                     <thead><tr><th style="width:140px;">Estado</th><th>Archivo</th></tr></thead>
                     <tbody>
                         <?php foreach ( $res['modified'] as $f ) : ?>
-                            <tr><td><span style="background:#d63638;color:#fff;padding:2px 7px;border-radius:3px;font-weight:700;font-size:11px;">MODIFICADO</span></td><td><code><?php echo esc_html( $f ); ?></code></td></tr>
+                            <tr><td><?php echo bap_render_status_badge( 'MODIFICADO', '#d63638' ); ?></td><td><code><?php echo esc_html( $f ); ?></code></td></tr>
                         <?php endforeach; ?>
                         <?php foreach ( $res['added'] as $f ) : ?>
-                            <tr><td><span style="background:#d97706;color:#fff;padding:2px 7px;border-radius:3px;font-weight:700;font-size:11px;">AÑADIDO</span></td><td><code><?php echo esc_html( $f ); ?></code></td></tr>
+                            <tr><td><?php echo bap_render_status_badge( 'AÑADIDO', '#d97706' ); ?></td><td><code><?php echo esc_html( $f ); ?></code></td></tr>
                         <?php endforeach; ?>
                         <?php foreach ( $res['deleted'] as $f ) : ?>
-                            <tr><td><span style="background:#646970;color:#fff;padding:2px 7px;border-radius:3px;font-weight:700;font-size:11px;">ELIMINADO</span></td><td><code><?php echo esc_html( $f ); ?></code></td></tr>
+                            <tr><td><?php echo bap_render_status_badge( 'ELIMINADO', '#646970' ); ?></td><td><code><?php echo esc_html( $f ); ?></code></td></tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>

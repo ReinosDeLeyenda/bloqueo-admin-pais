@@ -15,14 +15,8 @@ function bap_get_pending_security_alerts_breakdown() {
     $freq    = (string) get_option( 'bap_db_auto_update_freq', 'none' );
     $mmdb    = bap_get_mmdb_path();
     $asn     = bap_get_asn_mmdb_path();
-    $c_upd   = get_option( 'bap_mmdb_last_updated', '' );
-    if ( '' === $c_upd && file_exists( $mmdb ) ) {
-        $c_upd = wp_date( 'Y-m-d H:i:s', filemtime( $mmdb ) );
-    }
-    $a_upd = get_option( 'bap_asn_mmdb_last_updated', '' );
-    if ( '' === $a_upd && file_exists( $asn ) ) {
-        $a_upd = wp_date( 'Y-m-d H:i:s', filemtime( $asn ) );
-    }
+    $c_upd = bap_get_mmdb_last_updated( 'country' );
+    $a_upd = bap_get_mmdb_last_updated( 'asn' );
 
     $dbs = [
         [ file_exists( $mmdb ), $c_upd ],
@@ -106,6 +100,7 @@ foreach ( [
     'update_option_bap_db_auto_update_freq',
     'update_option_bap_last_auto_scan_alerts',
     'update_option_bap_critical_config_hashes',
+    'update_option_bap_custom_dbs',
 ] as $hook_name ) {
     add_action( $hook_name, fn() => delete_transient( 'bap_menu_alerts_counts' ) );
 }

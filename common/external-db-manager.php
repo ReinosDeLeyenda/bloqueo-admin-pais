@@ -137,3 +137,15 @@ function bap_log_to_external_db( $ip, $country, $asn, $type, $reason, $uri, $now
 
     return ( false !== $inserted );
 }
+
+function bap_get_active_logs_destination() {
+    global $wpdb;
+    $err    = '';
+    $ext_db = bap_get_external_wpdb( $err );
+    if ( null !== $ext_db ) {
+        $tbl = preg_replace( '/[^a-zA-Z0-9_]/', '', (string) get_option( 'bap_ext_db_table', 'bap_global_blocked_logs' ) ) ?: 'bap_global_blocked_logs';
+        bap_ensure_external_logs_table( $ext_db, $tbl );
+        return [ 'use_ext' => true, 'db' => $ext_db, 'table' => $tbl ];
+    }
+    return [ 'use_ext' => false, 'db' => $wpdb, 'table' => bap_get_logs_table_name() ];
+}

@@ -71,13 +71,7 @@ add_action( 'init', function() {
     }
 
     $ip = bap_get_user_ip();
-    if ( '' === $ip || bap_is_server_ip( $ip ) ) {
-        return;
-    }
-    if ( bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
-        return;
-    }
-    if ( '1' === (string) get_option( 'bap_web_allow_seo_bots', '1' ) && function_exists( 'bap_is_verified_seo_bot' ) && bap_is_verified_seo_bot( $ip ) ) {
+    if ( bap_is_frontend_request_exempt( $ip ) ) {
         return;
     }
 

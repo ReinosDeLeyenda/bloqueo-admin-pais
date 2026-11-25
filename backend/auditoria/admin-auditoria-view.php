@@ -29,16 +29,7 @@ function bap_render_auditoria_page() {
         <h1>Control de Acceso al Panel</h1>
         <?php bap_render_tabs( 'bap-auditoria' ); ?>
 
-        <div style="display:flex;gap:8px;margin:0 0 18px 0;flex-wrap:wrap;">
-            <?php foreach ( $valid as $s_key => $s_lbl ) :
-                $url = add_query_arg( 'subtab', $s_key, $base_url );
-                $cls = ( $sub === $s_key ) ? 'button button-primary' : 'button button-secondary';
-            ?>
-                <a href="<?php echo esc_url( $url ); ?>" class="<?php echo esc_attr( $cls ); ?>">
-                    <?php echo esc_html( $s_lbl ); ?>
-                </a>
-            <?php endforeach; ?>
-        </div>
+        <?php bap_render_subtabs( $base_url, $valid, $sub ); ?>
 
         <?php if ( 'hardening' === $sub ) : ?>
             <?php if ( function_exists( 'bap_render_ssl_and_config_monitor_box' ) ) { bap_render_ssl_and_config_monitor_box(); } ?>

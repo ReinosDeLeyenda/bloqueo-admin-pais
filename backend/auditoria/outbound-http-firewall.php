@@ -122,7 +122,7 @@ function bap_render_outbound_firewall_box() {
                 <tbody>
                     <?php foreach ( array_slice( $logs, 0, 30 ) as $r ) :
                         $is_b  = ! empty( $r['blocked'] );
-                        $badge = $is_b ? '<span style="background:#d63638;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;font-weight:700;">BLOQUEADA</span>' : '<span style="background:#00a32a;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;font-weight:700;">PERMITIDA</span>';
+                        $badge = $is_b ? bap_render_status_badge( 'BLOQUEADA', '#d63638' ) : bap_render_status_badge( 'PERMITIDA', '#00a32a' );
                     ?>
                         <tr>
                             <td><code><?php echo esc_html( $r['time'] ); ?></code></td>

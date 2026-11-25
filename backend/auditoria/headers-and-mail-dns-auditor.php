@@ -1,16 +1,10 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-function bap_get_root_mail_domain() {
-    $host = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
-    if ( 0 === strpos( $host, 'www.' ) ) {
-        $host = substr( $host, 4 );
-    }
-    return $host;
-}
+
 
 function bap_audit_mail_dns_records() {
-    $domain = bap_get_root_mail_domain();
+    $domain = bap_get_site_root_domain();
     if ( '' === $domain || in_array( $domain, [ 'localhost', '127.0.0.1' ], true ) ) {
         return new WP_Error( 'local_dom', 'Entorno local: no se pueden consultar registros DNS públicos.' );
     }

@@ -134,12 +134,8 @@ function bap_run_scheduled_security_audit() {
 add_action( 'bap_scheduled_security_scan_event', 'bap_run_scheduled_security_audit' );
 
 function bap_reschedule_security_scan_cron( $freq ) {
-    wp_clear_scheduled_hook( 'bap_scheduled_security_scan_event' );
-    $map = [
+    bap_reschedule_cron_hook( 'bap_scheduled_security_scan_event', $freq, [
         'daily'  => [ 'daily', DAY_IN_SECONDS ],
         'weekly' => [ 'weekly', WEEK_IN_SECONDS ],
-    ];
-    if ( isset( $map[ $freq ] ) ) {
-        wp_schedule_event( time() + $map[ $freq ][1], $map[ $freq ][0], 'bap_scheduled_security_scan_event' );
-    }
+    ] );
 }

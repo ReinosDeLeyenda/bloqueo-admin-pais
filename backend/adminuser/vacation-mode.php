@@ -32,16 +32,7 @@ function bap_vacation_has_secret_bypass( $user_id = 0 ) {
     if ( $user_id > 0 && '1' === (string) get_user_meta( $user_id, '_bap_secret_key_session', true ) ) {
         return true;
     }
-    $secret = trim( (string) get_option( 'bap_secret_key', '' ) );
-    if ( '' === $secret ) {
-        return false;
-    }
-    if ( array_key_exists( $secret, $_GET ) ) {
-        return true;
-    }
-    $cname = 'bap_bypass_' . md5( $secret );
-    $token = hash( 'sha256', $secret . AUTH_SALT );
-    return ( isset( $_COOKIE[ $cname ] ) && hash_equals( $token, (string) $_COOKIE[ $cname ] ) );
+    return function_exists( 'bap_has_valid_secret_bypass' ) && bap_has_valid_secret_bypass( false );
 }
 
 // Limitar cookie de WordPress a 30 minutos (1800s) si entra en vacaciones con Llave Secreta

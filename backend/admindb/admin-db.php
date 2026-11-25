@@ -63,14 +63,8 @@ function bap_run_db_updates_by_state( $target_state ) {
     $freq  = (string) get_option( 'bap_db_auto_update_freq', 'none' );
     $mmdb  = bap_get_mmdb_path();
     $asn   = bap_get_asn_mmdb_path();
-    $c_upd = get_option( 'bap_mmdb_last_updated', '' );
-    if ( '' === $c_upd && file_exists( $mmdb ) ) {
-        $c_upd = wp_date( 'Y-m-d H:i:s', filemtime( $mmdb ) );
-    }
-    $a_upd = get_option( 'bap_asn_mmdb_last_updated', '' );
-    if ( '' === $a_upd && file_exists( $asn ) ) {
-        $a_upd = wp_date( 'Y-m-d H:i:s', filemtime( $asn ) );
-    }
+    $c_upd = bap_get_mmdb_last_updated( 'country' );
+    $a_upd = bap_get_mmdb_last_updated( 'asn' );
 
     $checks = [
         'Países'    => [ file_exists( $mmdb ), $c_upd, fn() => bap_download_mmdb_database( 'country' ) ],
@@ -144,17 +138,12 @@ function bap_run_all_db_updates() {
 }
 
 function bap_reschedule_db_cron( $freq ) {
-    wp_clear_scheduled_hook( 'bap_auto_update_dbs_event' );
-    $map = [
+    bap_reschedule_cron_hook( 'bap_auto_update_dbs_event', $freq, [
         'daily'   => [ 'daily', DAY_IN_SECONDS ],
         'weekly'  => [ 'weekly', WEEK_IN_SECONDS ],
         '2weeks'  => [ 'bap_2weeks', 14 * DAY_IN_SECONDS ],
         'monthly' => [ 'bap_monthly', 30 * DAY_IN_SECONDS ],
-    ];
-    if ( isset( $map[ $freq ] ) ) {
-        list( $recurrence, $offset ) = $map[ $freq ];
-        wp_schedule_event( time() + $offset, $recurrence, 'bap_auto_update_dbs_event' );
-    }
+    ] );
 }
 
 function bap_handle_db_actions() {
@@ -250,14 +239,12 @@ function bap_render_db_page() {
     $tor_file     = bap_get_tor_list_path();
     $firehol_file = bap_get_firehol_list_path();
 
-    $country_updated = get_option( 'bap_mmdb_last_updated', '' );
-    if ( '' === $country_updated && file_exists( $mmdb ) ) {
-        $country_updated = wp_date( 'Y-m-d H:i:s', filemtime( $mmdb ) );
-    }
-    $asn_updated = get_option( 'bap_asn_mmdb_last_updated', '' );
-    if ( '' === $asn_updated && file_exists( $asn_mmdb ) ) {
-        $asn_updated = wp_date( 'Y-m-d H:i:s', filemtime( $asn_mmdb ) );
-    }
+    $country_updated = bap_get_mmdb_last_updated( 'country' );
+    $asn_updated     = bap_get_mmdb_last_updated( 'asn' );
 
     require plugin_dir_path( __FILE__ ) . 'admin-db-view.php';
+}
+
+function bap_render_status_badge( $label, $bg = '#00a32a' ) {
+    return '<span style="background:' . esc_attr( $bg ) . ';color:#fff;padding:2px 7px;border-radius:3px;font-weight:700;font-size:11px;">' . esc_html( $label ) . '</span>';
 }

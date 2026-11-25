@@ -1,14 +1,10 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-function bap_dns_mon_get_domain() {
-    $host = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
-    if ( 0 === strpos( $host, 'www.' ) ) { $host = substr( $host, 4 ); }
-    return $host;
-}
+
 
 function bap_dns_mon_fetch_records() {
-    $domain = bap_dns_mon_get_domain();
+    $domain = bap_get_site_root_domain();
     if ( '' === $domain || in_array( $domain, [ 'localhost', '127.0.0.1', '::1' ], true ) || filter_var( $domain, FILTER_VALIDATE_IP ) ) {
         return new WP_Error( 'local_dom', 'Entorno local o IP directa: no aplica monitorizacion DNS publica.' );
     }
@@ -138,7 +134,7 @@ function bap_render_dns_hijack_monitor_box() {
                             </td>
                             <td>
                                 <?php if ( $is_diff ) : ?>
-                                    <span style="background:#d63638;color:#fff;padding:2px 7px;border-radius:3px;font-size:11px;font-weight:700;">ALTERADO</span>
+                                    <?php echo bap_render_status_badge( 'ALTERADO', '#d63638' ); ?>
                                 <?php else : ?>
                                     <span style="color:#008a20;font-weight:600;">Verificado</span>
                                 <?php endif; ?>

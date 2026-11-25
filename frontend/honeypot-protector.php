@@ -46,7 +46,7 @@ function bap_hp_detect_bot_reason() {
     }
 
     $ip = bap_get_user_ip();
-    if ( '' === $ip || bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
+    if ( bap_is_frontend_request_exempt( $ip ) ) {
         return '';
     }
 
@@ -85,18 +85,7 @@ function bap_hp_block_and_log( $reason ) {
     bap_log_blocked_attempt( $ip, $country, $reason );
 
     if ( '1' === (string) get_option( 'bap_hp_autoban', '0' ) ) {
-        $blacklist = bap_parse_list( get_option( 'bap_blacklist_ips', '' ), false );
-        if ( ! in_array( $ip, $blacklist, true ) ) {
-            $blacklist[] = $ip;
-            update_option( 'bap_blacklist_ips', implode( "\n", $blacklist ) );
-
-            $duration_hours = (int) get_option( 'bap_auto_ban_duration', 24 );
-            if ( $duration_hours > 0 ) {
-                $expirations        = get_option( 'bap_auto_ban_expirations', [] );
-                $expirations[ $ip ] = time() + ( $duration_hours * HOUR_IN_SECONDS );
-                update_option( 'bap_auto_ban_expirations', $expirations, false );
-            }
-        }
+        bap_add_ip_to_blacklist( $ip, true );
     }
 }
 
@@ -115,7 +104,7 @@ add_action( 'comment_form_after_fields', 'bap_hp_render_fields' );
 add_filter( 'preprocess_comment', function( $commentdata ) {
     if ( bap_hp_is_enabled() && ! is_user_logged_in() ) {
         $ip        = bap_get_user_ip();
-        $is_exempt = ( '' === $ip || bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) );
+        $is_exempt = bap_is_frontend_request_exempt( $ip );
         if ( ! $is_exempt ) {
             if ( ! bap_hp_has_valid_local_referer() ) {
                 bap_hp_block_and_log( 'Web: Comentario directo sin Referer local válido' );

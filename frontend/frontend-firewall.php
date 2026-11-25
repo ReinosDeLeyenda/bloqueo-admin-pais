@@ -7,9 +7,6 @@ function bap_check_frontend_rules() {
     if ( is_user_logged_in() || wp_doing_ajax() || wp_doing_cron() ) {
         return;
     }
-    if ( '1' === (string) get_option( 'bap_web_allow_seo_bots', '1' ) && function_exists( 'bap_is_verified_seo_bot' ) && bap_is_verified_seo_bot() ) {
-        return;
-    }
 
     $uri     = isset( $_SERVER['REQUEST_URI'] ) ? rawurldecode( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
     $matched = bap_match_web_rule_for_uri( $uri );
@@ -20,7 +17,7 @@ function bap_check_frontend_rules() {
     }
 
     $ip = bap_get_user_ip();
-    if ( bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
+    if ( bap_is_frontend_request_exempt( $ip ) ) {
         return;
     }
 

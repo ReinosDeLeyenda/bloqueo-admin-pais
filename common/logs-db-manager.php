@@ -83,18 +83,7 @@ function bap_log_blocked_attempt( $ip, $country, $reason ) {
         set_transient( $key, $attempts, HOUR_IN_SECONDS );
 
         if ( $attempts >= $max_attempts ) {
-            $blacklist = bap_parse_list( get_option( 'bap_blacklist_ips', '' ), false );
-            if ( ! in_array( $ip, $blacklist, true ) ) {
-                $blacklist[] = $ip;
-                update_option( 'bap_blacklist_ips', implode( "\n", $blacklist ) );
-
-                $duration_hours = (int) get_option( 'bap_auto_ban_duration', 24 );
-                if ( $duration_hours > 0 ) {
-                    $expirations        = get_option( 'bap_auto_ban_expirations', [] );
-                    $expirations[ $ip ] = time() + ( $duration_hours * HOUR_IN_SECONDS );
-                    update_option( 'bap_auto_ban_expirations', $expirations, false );
-                }
-            }
+            bap_add_ip_to_blacklist( $ip, true );
             delete_transient( $key );
         }
     }

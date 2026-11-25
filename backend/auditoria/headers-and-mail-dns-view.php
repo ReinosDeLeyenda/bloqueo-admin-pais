@@ -51,9 +51,9 @@ function bap_render_headers_and_mail_dns_box() {
                             <td><strong><?php echo esc_html( $h['label'] ); ?></strong></td>
                             <td>
                                 <?php if ( $h['present'] ) : ?>
-                                    <span style="background:#00a32a;color:#fff;padding:2px 7px;border-radius:3px;font-weight:700;font-size:11px;">ACTIVA</span>
+                                    <?php echo bap_render_status_badge( 'ACTIVA', '#00a32a' ); ?>
                                 <?php else : ?>
-                                    <span style="background:#646970;color:#fff;padding:2px 7px;border-radius:3px;font-weight:700;font-size:11px;">AUSENTE</span>
+                                    <?php echo bap_render_status_badge( 'AUSENTE', '#646970' ); ?>
                                 <?php endif; ?>
                             </td>
                             <td><code><?php echo esc_html( $h['value'] ); ?></code></td>

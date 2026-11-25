@@ -43,17 +43,6 @@ function bap_track_and_autoban_subnet( $ip ) {
 
     if ( count( $seen ) >= $threshold ) {
         delete_transient( $key );
-        $blacklist = bap_parse_list( get_option( 'bap_blacklist_ips', '' ), false );
-        if ( ! in_array( $cidr, $blacklist, true ) ) {
-            $blacklist[] = $cidr;
-            update_option( 'bap_blacklist_ips', implode( "\n", $blacklist ) );
-
-            $duration_hours = (int) get_option( 'bap_auto_ban_duration', 24 );
-            if ( $duration_hours > 0 ) {
-                $expirations          = get_option( 'bap_auto_ban_expirations', [] );
-                $expirations[ $cidr ] = time() + ( $duration_hours * HOUR_IN_SECONDS );
-                update_option( 'bap_auto_ban_expirations', $expirations, false );
-            }
-        }
+        bap_add_ip_to_blacklist( $cidr, true );
     }
 }

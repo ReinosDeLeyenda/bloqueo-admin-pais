@@ -64,14 +64,7 @@ function bap_get_abuseipdb_score( $ip ) {
         return null;
     }
 
-    static $db = null;
-    if ( null === $db ) {
-        $file = bap_get_abuseipdb_path();
-        $db   = file_exists( $file ) ? json_decode( (string) file_get_contents( $file ), true ) : [];
-        if ( ! is_array( $db ) ) {
-            $db = [];
-        }
-    }
+    $db = bap_load_cached_json_list( 'abuseipdb-list.json' );
     if ( isset( $db[ $ip ] ) ) {
         return (int) $db[ $ip ];
     }

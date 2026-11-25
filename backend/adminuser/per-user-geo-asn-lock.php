@@ -65,7 +65,7 @@ add_filter( 'authenticate', function( $user, $username, $password ) {
     }
 
     $ip = function_exists( 'bap_get_user_ip' ) ? bap_get_user_ip() : '';
-    if ( '' === $ip || bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
+    if ( '' === $ip || bap_is_ip_whitelisted_or_server( $ip ) ) {
         return $user;
     }
 

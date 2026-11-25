@@ -181,57 +181,14 @@ function bap_stream_file_matches_ip( $file_path, $ip ) {
     if ( ! $fh ) {
         return false;
     }
-
-    $ip_bin = @inet_pton( $ip );
-    if ( false === $ip_bin ) {
-        fclose( $fh );
-        return false;
-    }
-    $ip_len  = strlen( $ip_bin );
     $matched = false;
-
     while ( ( $line = fgets( $fh ) ) !== false ) {
         $entry = trim( $line );
-        if ( '' === $entry ) {
-            continue;
-        }
-        if ( false === strpos( $entry, '/' ) ) {
-            if ( $entry === $ip ) {
-                $matched = true;
-                break;
-            }
-            continue;
-        }
-
-        list( $subnet, $mask ) = explode( '/', $entry, 2 );
-        $sub_bin = @inet_pton( $subnet );
-        if ( false === $sub_bin || strlen( $sub_bin ) !== $ip_len ) {
-            continue;
-        }
-
-        $bits = (int) $mask;
-        if ( 0 === $bits ) {
-            $matched = true;
-            break;
-        }
-
-        $bytes = intdiv( $bits, 8 );
-        $rem   = $bits % 8;
-
-        if ( $bytes > 0 && substr( $ip_bin, 0, $bytes ) !== substr( $sub_bin, 0, $bytes ) ) {
-            continue;
-        }
-        if ( 0 === $rem ) {
-            $matched = true;
-            break;
-        }
-        $byte_mask = ( 0xFF << ( 8 - $rem ) ) & 0xFF;
-        if ( ( ord( $ip_bin[ $bytes ] ) & $byte_mask ) === ( ord( $sub_bin[ $bytes ] ) & $byte_mask ) ) {
+        if ( '' !== $entry && bap_ip_matches_cidr( $ip, $entry ) ) {
             $matched = true;
             break;
         }
     }
-
     fclose( $fh );
     return $matched;
 }

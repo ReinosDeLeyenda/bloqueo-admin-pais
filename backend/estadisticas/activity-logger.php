@@ -9,37 +9,40 @@ function bap_dispatch_admin_activity_alert( array $entry ) {
         return;
     }
 
-    $site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+    $site    = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+    $subject = "[{$site}] Actividad Admin: {$entry['category']} — {$entry['action']}";
+    $body    = "Se ha registrado un cambio administrativo en {$site}:\n\n"
+             . "• Categoría: {$entry['category']}\n"
+             . "• Acción: {$entry['action']}\n"
+             . "• Elemento: {$entry['target']}\n"
+             . "• Usuario: {$entry['actor']}\n"
+             . "• IP / País: {$entry['ip']} ({$entry['country']})\n"
+             . "• Fecha / Hora: {$entry['time']}\n";
 
-    if ( in_array( $channel, [ 'email', 'both' ], true ) ) {
+    $e    = fn( $v ) => htmlspecialchars( (string) $v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
+    $rich = "<h2>🛠️ Actividad Administrativa — {$e( $site )}</h2>"
+          . "<table><tr><th>Detalle</th><th>Valor</th></tr>"
+          . "<tr><td><b>Categoría</b></td><td><b>{$e( $entry['category'] )}</b></td></tr>"
+          . "<tr><td><b>Acción</b></td><td>{$e( $entry['action'] )}</td></tr>"
+          . "<tr><td><b>Elemento</b></td><td><code>{$e( $entry['target'] )}</code></td></tr>"
+          . "<tr><td><b>Usuario</b></td><td><b>{$e( $entry['actor'] )}</b></td></tr>"
+          . "<tr><td><b>IP / País</b></td><td><code>{$e( $entry['ip'] )}</code> ({$e( $entry['country'] )})</td></tr>"
+          . "<tr><td><b>Fecha / Hora</b></td><td><code>{$e( $entry['time'] )}</code></td></tr></table>";
+
+    if ( 'both' === $channel && function_exists( 'bap_send_security_alert_both_channels' ) ) {
+        bap_send_security_alert_both_channels( $subject, $body, $rich );
+        return;
+    }
+
+    if ( 'email' === $channel ) {
         $recipients = function_exists( 'bap_get_notify_recipients' ) ? bap_get_notify_recipients() : [ get_option( 'admin_email' ) ];
-        $subject    = "[{$site}] Actividad Admin: {$entry['category']} — {$entry['action']}";
-        $body       = "Se ha registrado un cambio administrativo en {$site}:\n\n"
-                    . "• Categoría: {$entry['category']}\n"
-                    . "• Acción: {$entry['action']}\n"
-                    . "• Elemento: {$entry['target']}\n"
-                    . "• Usuario: {$entry['actor']}\n"
-                    . "• IP / País: {$entry['ip']} ({$entry['country']})\n"
-                    . "• Fecha / Hora: {$entry['time']}\n";
-
         if ( function_exists( 'bap_send_mail' ) ) {
             bap_send_mail( $recipients, $subject, $body );
         } else {
             wp_mail( $recipients, $subject, $body );
         }
-    }
-
-    if ( in_array( $channel, [ 'telegram', 'both' ], true ) && function_exists( 'bap_send_telegram_rich_article' ) ) {
-        $e    = fn( $v ) => htmlspecialchars( (string) $v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
-        $rich = "<h2>🛠️ Actividad Administrativa — {$e( $site )}</h2>"
-              . "<table><tr><th>Detalle</th><th>Valor</th></tr>"
-              . "<tr><td><b>Categoría</b></td><td><b>{$e( $entry['category'] )}</b></td></tr>"
-              . "<tr><td><b>Acción</b></td><td>{$e( $entry['action'] )}</td></tr>"
-              . "<tr><td><b>Elemento</b></td><td><code>{$e( $entry['target'] )}</code></td></tr>"
-              . "<tr><td><b>Usuario</b></td><td><b>{$e( $entry['actor'] )}</b></td></tr>"
-              . "<tr><td><b>IP / País</b></td><td><code>{$e( $entry['ip'] )}</code> ({$e( $entry['country'] )})</td></tr>"
-              . "<tr><td><b>Fecha / Hora</b></td><td><code>{$e( $entry['time'] )}</code></td></tr></table>";
-        $fb   = function_exists( 'bap_tg_rich_to_fallback_html' ) ? bap_tg_rich_to_fallback_html( $rich ) : strip_tags( $rich );
+    } elseif ( 'telegram' === $channel && function_exists( 'bap_send_telegram_rich_article' ) ) {
+        $fb = function_exists( 'bap_tg_rich_to_fallback_html' ) ? bap_tg_rich_to_fallback_html( $rich ) : strip_tags( $rich );
         bap_send_telegram_rich_article( $rich, $fb );
     }
 }

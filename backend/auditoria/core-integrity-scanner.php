@@ -394,7 +394,7 @@ function bap_render_core_integrity_box() {
                     <tbody>
                         <?php foreach ( $scan_res['modified'] as $item ) : ?>
                             <tr>
-                                <td><span style="background:#d63638;color:#fff;padding:2px 7px;border-radius:3px;font-weight:600;font-size:11px;">MODIFICADO (HASH)</span></td>
+                                <td><?php echo bap_render_status_badge( 'MODIFICADO (HASH)', '#d63638' ); ?></td>
                                 <td><code><?php echo esc_html( $item['file'] ); ?></code></td>
                                 <td>
                                     <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -422,14 +422,14 @@ function bap_render_core_integrity_box() {
                         <?php endforeach; ?>
                         <?php foreach ( $scan_res['extra'] as $item ) : ?>
                             <tr>
-                                <td><span style="background:#d97706;color:#fff;padding:2px 7px;border-radius:3px;font-weight:600;font-size:11px;">ARCHIVO EXTRA</span></td>
+                                <td><?php echo bap_render_status_badge( 'ARCHIVO EXTRA', '#d97706' ); ?></td>
                                 <td><code><?php echo esc_html( $item['file'] ); ?></code></td>
                                 <td><small style="color:#646970;">No oficial</small></td>
                             </tr>
                         <?php endforeach; ?>
                         <?php foreach ( $scan_res['missing'] as $item ) : ?>
                             <tr>
-                                <td><span style="background:#646970;color:#fff;padding:2px 7px;border-radius:3px;font-weight:600;font-size:11px;">FALTANTE</span></td>
+                                <td><?php echo bap_render_status_badge( 'FALTANTE', '#646970' ); ?></td>
                                 <td><code><?php echo esc_html( $item['file'] ); ?></code></td>
                                 <td>
                                     <form method="post" style="display:inline;" onsubmit="return confirm('¿Descargar y restaurar este archivo faltante desde WordPress.org?');">

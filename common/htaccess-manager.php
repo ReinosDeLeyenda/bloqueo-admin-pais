@@ -109,3 +109,12 @@ function bap_sync_htaccess_rules() {
     if ( $res && function_exists( 'bap_refresh_critical_config_hashes' ) ) { bap_refresh_critical_config_hashes(); }
     return $res;
 }
+
+function bap_get_wp_config_path() {
+    $root = wp_normalize_path( ABSPATH );
+    if ( file_exists( $root . 'wp-config.php' ) ) {
+        return $root . 'wp-config.php';
+    }
+    $parent = dirname( rtrim( $root, '/' ) ) . '/wp-config.php';
+    return file_exists( $parent ) ? $parent : '';
+}

@@ -63,7 +63,7 @@ function bap_render_seo_spam_scanner_box() {
         } else {
             echo '<div class="notice notice-error inline"><p><strong>Atencion: Se han detectado ' . count( $scan['findings'] ) . ' enlace(s) sospechoso(s):</strong></p></div><ul>';
             foreach ( $scan['findings'] as $f ) {
-                echo '<li><code>' . esc_html( $f['source'] ) . '</code> - b>' . esc_html( $f['type'] ) . '</b>: <code>' . esc_html( $f['url'] ) . '</code></li>';
+                echo '<li><code>' . esc_html( $f['source'] ) . '</code> - <b>' . esc_html( $f['type'] ) . '</b>: <code>' . esc_html( $f['url'] ) . '</code></li>';
             }
             echo '</ul>';
         }

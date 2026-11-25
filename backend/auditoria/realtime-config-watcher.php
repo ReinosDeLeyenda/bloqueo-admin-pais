@@ -18,25 +18,10 @@ function bap_dispatch_critical_file_tamper_alert( array $changed_labels ) {
              . "Revisa el contenido de estos archivos y aprueba la nueva huella SHA-256 en:\n"
              . admin_url( 'admin.php?page=bap-auditoria&subtab=hardening' ) . "\n";
 
-    $recipients = function_exists( 'bap_get_notify_recipients' ) ? bap_get_notify_recipients() : [ get_option( 'admin_email' ) ];
-    if ( function_exists( 'bap_send_mail' ) ) {
-        bap_send_mail( $recipients, $subject, $body );
-    } else {
-        wp_mail( $recipients, $subject, $body );
-    }
-
-    if ( function_exists( 'bap_send_telegram_rich_article' ) ) {
         $e    = fn( $v ) => htmlspecialchars( (string) $v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
-        $rich = "<h2>🚨 Archivo Crítico Alterado — {$e( $site )}</h2>"
-              . "<p>Se ha modificado <b><code>{$e( $files_s )}</code></b> fuera de la referencia aprobada.</p>"
-              . "<table><tr><th>Detalle</th><th>Valor</th></tr>"
-              . "<tr><td><b>Archivo(s)</b></td><td><code>{$e( $files_s )}</code></td></tr>"
-              . "<tr><td><b>Usuario</b></td><td>{$e( $actor )}</td></tr>"
-              . "<tr><td><b>IP</b></td><td><code>{$e( $ip )}</code></td></tr>"
-              . "<tr><td><b>Fecha / Hora</b></td><td><code>{$e( $time )}</code></td></tr></table>";
-        $fb   = function_exists( 'bap_tg_rich_to_fallback_html' ) ? bap_tg_rich_to_fallback_html( $rich ) : strip_tags( $rich );
-        bap_send_telegram_rich_article( $rich, $fb );
-    }
+    $rich = "<h2>Alerta Critica: Archivo Alterado &mdash; {$e( $site )}</h2><p><b>Archivos:</b> <code>{$e( $files_s )}</code></p><p><b>Usuario:</b> {$e( $actor )} | <b>IP:</b> <code>{$e( $ip )}</code> | <b>Hora:</b> <code>{$e( $time )}</code></p>";
+
+    bap_send_security_alert_both_channels( $subject, $body, $rich );
 }
 
 add_action( 'admin_init', function() {

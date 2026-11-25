@@ -102,9 +102,9 @@ function bap_render_dnsbl_reputation_box() {
                             <td><code><?php echo esc_html( $row['zone'] ); ?></code></td>
                             <td>
                                 <?php if ( $row['listed'] ) : ?>
-                                    <span style="background:#d63638;color:#fff;padding:2px 7px;border-radius:3px;font-weight:700;font-size:11px;">LISTADA</span>
+                                    <?php echo bap_render_status_badge( 'LISTADA', '#d63638' ); ?>
                                 <?php else : ?>
-                                    <span style="background:#00a32a;color:#fff;padding:2px 7px;border-radius:3px;font-weight:700;font-size:11px;">LIMPIA</span>
+                                    <?php echo bap_render_status_badge( 'LIMPIA', '#00a32a' ); ?>
                                 <?php endif; ?>
                             </td>
                         </tr>

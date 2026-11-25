@@ -126,5 +126,25 @@ function bap_execute_all_security_scans() {
         }
     }
 
+    if ( function_exists( 'bap_audit_privileged_users_weak_passwords' ) ) {
+        $wp_res   = bap_audit_privileged_users_weak_passwords();
+        $w_cnt    = count( $wp_res['weak'] ?? [] );
+        $report[] = [
+            'name'   => 'Contraseñas Debiles en Usuarios',
+            'status' => $w_cnt > 0 ? 'error' : 'ok',
+            'detail' => $w_cnt > 0 ? "{$w_cnt} cuenta(s) con clave debil o predecible." : "Verificadas {$wp_res['checked']} cuentas privilegiadas sin claves debiles.",
+        ];
+    }
+
+    if ( function_exists( 'bap_get_scheduled_cron_events_list' ) ) {
+        $evs      = bap_get_scheduled_cron_events_list();
+        $susp     = count( array_filter( $evs, fn( $e ) => ! empty( $e['suspicious'] ) ) );
+        $report[] = [
+            'name'   => 'Tareas Programadas (WP-Cron)',
+            'status' => $susp > 0 ? 'warning' : 'ok',
+            'detail' => $susp > 0 ? "{$susp} tarea(s) cron huerfana(s) o sospechosa(s)." : count( $evs ) . ' tareas programadas verificadas.',
+        ];
+    }
+
     return $report;
 }

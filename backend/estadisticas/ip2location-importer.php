@@ -51,17 +51,10 @@ function bap_import_ip2location_stats() {
     $sel_uri     = $uri_col ? "`{$uri_col}`" : "''";
     $sel_ua      = $ua_col ? "`{$ua_col}`" : "''";
 
-    $ext_err   = '';
-    $ext_db    = function_exists( 'bap_get_external_wpdb' ) ? bap_get_external_wpdb( $ext_err ) : null;
-    $use_ext   = ( null !== $ext_db );
-    $dst_db    = $use_ext ? $ext_db : $wpdb;
-    $dst_table = $use_ext
-        ? ( preg_replace( '/[^a-zA-Z0-9_]/', '', (string) get_option( 'bap_ext_db_table', 'bap_global_blocked_logs' ) ) ?: 'bap_global_blocked_logs' )
-        : bap_get_logs_table_name();
-
-    if ( $use_ext && function_exists( 'bap_ensure_external_logs_table' ) ) {
-        bap_ensure_external_logs_table( $ext_db, $dst_table );
-    }
+    $dst       = bap_get_active_logs_destination();
+    $use_ext   = $dst['use_ext'];
+    $dst_db    = $dst['db'];
+    $dst_table = $dst['table'];
 
     $site_domain = (string) wp_parse_url( home_url(), PHP_URL_HOST );
     $batch       = 1000;

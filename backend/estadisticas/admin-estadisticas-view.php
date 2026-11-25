@@ -28,16 +28,7 @@ $stats_base_url = add_query_arg(
     <h1>Control de Acceso al Panel</h1>
     <?php bap_render_tabs( 'bap-admin-estadisticas' ); ?>
 
-    <div style="display:flex;gap:8px;margin:0 0 18px 0;flex-wrap:wrap;">
-        <?php foreach ( $valid as $s_key => $s_lbl ) :
-            $url = add_query_arg( 'subtab', $s_key, $tab_base_url );
-            $cls = ( $sub === $s_key ) ? 'button button-primary' : 'button button-secondary';
-        ?>
-            <a href="<?php echo esc_url( $url ); ?>" class="<?php echo esc_attr( $cls ); ?>">
-                <?php echo esc_html( $s_lbl ); ?>
-            </a>
-        <?php endforeach; ?>
-    </div>
+    <?php bap_render_subtabs( $tab_base_url, $valid, $sub ); ?>
 
     <?php if ( 'actividad' === $sub ) : ?>
         <?php if ( function_exists( 'bap_render_activity_logs_subtab' ) ) { bap_render_activity_logs_subtab(); } ?>

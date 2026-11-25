@@ -9,9 +9,7 @@ function bap_audit_critical_file_permissions() {
     $uploads = wp_normalize_path( wp_upload_dir()['basedir'] ?? ( $content . '/uploads' ) );
     $is_win  = ( 'WIN' === strtoupper( substr( PHP_OS, 0, 3 ) ) );
 
-    $wp_cfg = file_exists( $root . 'wp-config.php' )
-        ? $root . 'wp-config.php'
-        : ( file_exists( dirname( rtrim( $root, '/' ) ) . '/wp-config.php' ) ? dirname( rtrim( $root, '/' ) ) . '/wp-config.php' : '' );
+    $wp_cfg = bap_get_wp_config_path();
 
     $targets = [
         [

@@ -3,7 +3,7 @@
  * Plugin Name: Bloqueo Admin por País e IP
  * Plugin URI: https://github.com/ReinosDeLeyenda/bloqueo-admin-pais
  * Description: Bloquea wp-admin, wp-login.php y el frontend por país, ASN, AbuseIPDB, Tor, FireHOL e IP usando bases de datos locales.
- * Version: 1.3.51
+ * Version: 1.3.52
  * Author: ReinosDeLeyenda
  * License: GPLv2 or later
  */
@@ -176,6 +176,43 @@ function bap_parse_list( $raw, $upper = false ) {
         }
     }
     return array_unique( $clean );
+}
+
+function bap_is_ip_whitelisted_or_server( $ip ) {
+    if ( '' === (string) $ip ) { return false; }
+    return bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) );
+}
+
+function bap_has_valid_secret_bypass( $set_cookie = false ) {
+    $secret = trim( (string) get_option( 'bap_secret_key', '' ) );
+    if ( '' === $secret ) {
+        return false;
+    }
+    $cname = 'bap_bypass_' . md5( $secret );
+    $token = hash( 'sha256', $secret . AUTH_SALT );
+
+    $has_param = array_key_exists( $secret, $_GET );
+    if ( ! $has_param && ! empty( $_GET['redirect_to'] ) ) {
+        $redir_query = (string) wp_parse_url( wp_unslash( $_GET['redirect_to'] ), PHP_URL_QUERY );
+        if ( '' !== $redir_query ) {
+            parse_str( $redir_query, $redir_params );
+            $has_param = array_key_exists( $secret, $redir_params );
+        }
+    }
+
+    if ( $has_param ) {
+        if ( $set_cookie && ! headers_sent() ) {
+            setcookie( $cname, $token, time() + DAY_IN_SECONDS, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+        }
+        return true;
+    }
+
+    return ( isset( $_COOKIE[ $cname ] ) && hash_equals( $token, (string) $_COOKIE[ $cname ] ) );
+}
+function bap_destroy_user_sessions_except_current( $user_id ) {
+    if ( $user_id > 0 && get_current_user_id() !== (int) $user_id && class_exists( 'WP_Session_Tokens' ) ) {
+        WP_Session_Tokens::get_instance( (int) $user_id )->destroy_all();
+    }
 }
 
 function bap_deny_access( $ip, $country, $reason ) {

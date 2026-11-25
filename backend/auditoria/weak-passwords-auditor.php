@@ -52,9 +52,7 @@ function bap_render_weak_passwords_auditor_box() {
         $uid = (int) $_POST['bap_force_reset_weak_uid'];
         if ( $uid > 0 && ( $u = get_user_by( 'id', $uid ) ) ) {
             update_user_meta( $uid, '_bap_pwd_force_expire', '1' );
-            if ( class_exists( 'WP_Session_Tokens' ) && get_current_user_id() !== $uid ) {
-                WP_Session_Tokens::get_instance( $uid )->destroy_all();
-            }
+            bap_destroy_user_sessions_except_current( $uid );
             $notice = '<div class="notice notice-warning inline"><p>Cambio de clave obligatorio activado para <code>' . esc_html( $u->user_login ) . '</code>.</p></div>';
         }
     }
@@ -83,7 +81,7 @@ function bap_render_weak_passwords_auditor_box() {
                             <tr>
                                 <td><strong><?php echo esc_html( $w['login'] ); ?></strong><br><small><?php echo esc_html( $w['email'] ); ?></small></td>
                                 <td><code><?php echo esc_html( $w['roles'] ); ?></code></td>
-                                <td><span style="background:#d63638;color:#fff;padding:2px 7px;border-radius:3px;font-size:11px;font-weight:700;"><?php echo esc_html( $w['reason'] ); ?></span></td>
+                                <td><?php echo bap_render_status_badge( $w['reason'], '#d63638' ); ?></td>
                                 <td>
                                     <form method="post" style="display:inline;">
                                         <?php wp_nonce_field( 'bap_weak_pwd_action', 'bap_weak_pwd_nonce' ); ?>

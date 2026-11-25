@@ -4,19 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 function bap_rl_is_exempt( $ip ) {
-    if ( is_user_logged_in() || wp_doing_ajax() || wp_doing_cron() ) {
-        return true;
-    }
-    if ( '' === $ip || bap_is_server_ip( $ip ) ) {
-        return true;
-    }
-    if ( bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
-        return true;
-    }
-    if ( '1' === (string) get_option( 'bap_web_allow_seo_bots', '1' ) && function_exists( 'bap_is_verified_seo_bot' ) && bap_is_verified_seo_bot( $ip ) ) {
-        return true;
-    }
-    return false;
+    return bap_is_frontend_request_exempt( $ip );
 }
 
 function bap_rl_increment_window( $bucket, $ip ) {
@@ -41,18 +29,7 @@ function bap_rl_trigger_block( $ip, $reason ) {
     bap_log_blocked_attempt( $ip, $country, $reason );
 
     if ( '1' === (string) get_option( 'bap_rl_autoban', '0' ) ) {
-        $blacklist = bap_parse_list( get_option( 'bap_blacklist_ips', '' ), false );
-        if ( ! in_array( $ip, $blacklist, true ) ) {
-            $blacklist[] = $ip;
-            update_option( 'bap_blacklist_ips', implode( "\n", $blacklist ) );
-
-            $duration_hours = (int) get_option( 'bap_auto_ban_duration', 24 );
-            if ( $duration_hours > 0 ) {
-                $expirations        = get_option( 'bap_auto_ban_expirations', [] );
-                $expirations[ $ip ] = time() + ( $duration_hours * HOUR_IN_SECONDS );
-                update_option( 'bap_auto_ban_expirations', $expirations, false );
-            }
-        }
+        bap_add_ip_to_blacklist( $ip, true );
     }
 
     $msg = (string) get_option( 'bap_web_block_message', 'Demasiadas peticiones en poco tiempo. Acceso temporalmente restringido.' );

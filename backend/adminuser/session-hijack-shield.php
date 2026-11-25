@@ -41,3 +41,9 @@ add_action( 'init', function() {
         exit;
     }
 }, 4 );
+add_filter( 'login_message', function( $msg ) {
+    if ( ! empty( $_GET['bap_session_hijack'] ) ) {
+        $msg .= '<div id="login_error"><strong>Seguridad:</strong> Tu sesion se ha cerrado automaticamente porque cambio tu red IP o navegador.</div>';
+    }
+    return $msg;
+} );

@@ -33,18 +33,7 @@ function bap_build_single_condition_check( $key, $ip, $country, array $profile, 
         $score = bap_get_abuseipdb_score( $ip );
         $fail  = ( null !== $score && $score >= $min_risk );
         if ( $fail && $auto_ban_abuse ) {
-            $blacklist = bap_parse_list( get_option( 'bap_blacklist_ips', '' ), false );
-            if ( ! in_array( $ip, $blacklist, true ) ) {
-                $blacklist[] = $ip;
-                update_option( 'bap_blacklist_ips', implode( "\n", $blacklist ) );
-
-                $duration_hours = (int) get_option( 'bap_auto_ban_duration', 24 );
-                if ( $duration_hours > 0 ) {
-                    $expirations        = get_option( 'bap_auto_ban_expirations', [] );
-                    $expirations[ $ip ] = time() + ( $duration_hours * HOUR_IN_SECONDS );
-                    update_option( 'bap_auto_ban_expirations', $expirations, false );
-                }
-            }
+            bap_add_ip_to_blacklist( $ip, true );
         }
         return [
             'pass'   => ! $fail,

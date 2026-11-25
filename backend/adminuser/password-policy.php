@@ -236,9 +236,7 @@ function bap_pwd_save_user_expiry_field( $user_id ) {
     }
     if ( ! empty( $_POST['bap_pwd_force_expire_user'] ) ) {
         update_user_meta( $user_id, '_bap_pwd_force_expire', '1' );
-        if ( class_exists( 'WP_Session_Tokens' ) && get_current_user_id() !== (int) $user_id ) {
-            WP_Session_Tokens::get_instance( $user_id )->destroy_all();
-        }
+        bap_destroy_user_sessions_except_current( $user_id );
     } else {
         delete_user_meta( $user_id, '_bap_pwd_force_expire' );
     }

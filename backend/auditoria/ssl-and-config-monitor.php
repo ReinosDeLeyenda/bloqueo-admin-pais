@@ -59,9 +59,7 @@ function bap_check_site_ssl_certificate() {
 
 function bap_get_critical_config_paths() {
     $root   = wp_normalize_path( ABSPATH );
-    $wp_cfg = file_exists( $root . 'wp-config.php' )
-        ? $root . 'wp-config.php'
-        : ( file_exists( dirname( rtrim( $root, '/' ) ) . '/wp-config.php' ) ? dirname( rtrim( $root, '/' ) ) . '/wp-config.php' : '' );
+    $wp_cfg = bap_get_wp_config_path();
 
     $list = [];
     if ( '' !== $wp_cfg ) {
@@ -177,9 +175,9 @@ function bap_render_ssl_and_config_monitor_box() {
                         <td><code><?php echo esc_html( $r['baseline'] ); ?></code></td>
                         <td>
                             <?php if ( $r['changed'] ) : ?>
-                                <span style="background:#d63638;color:#fff;padding:2px 7px;border-radius:3px;font-weight:700;font-size:11px;">MODIFICADO</span>
+                                <?php echo bap_render_status_badge( 'MODIFICADO', '#d63638' ); ?>
                             <?php else : ?>
-                                <span style="background:#00a32a;color:#fff;padding:2px 7px;border-radius:3px;font-weight:700;font-size:11px;">INTACTO</span>
+                                <?php echo bap_render_status_badge( 'INTACTO', '#00a32a' ); ?>
                             <?php endif; ?>
                         </td>
                     </tr>

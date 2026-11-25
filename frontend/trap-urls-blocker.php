@@ -34,13 +34,7 @@ add_action( 'init', function() {
     }
 
     $ip = function_exists( 'bap_get_user_ip' ) ? bap_get_user_ip() : '';
-    if ( '' === $ip || bap_is_server_ip( $ip ) ) {
-        return;
-    }
-    if ( bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
-        return;
-    }
-    if ( '1' === (string) get_option( 'bap_web_allow_seo_bots', '1' ) && function_exists( 'bap_is_verified_seo_bot' ) && bap_is_verified_seo_bot( $ip ) ) {
+    if ( bap_is_frontend_request_exempt( $ip ) ) {
         return;
     }
 
@@ -74,19 +68,7 @@ add_action( 'init', function() {
     $country = function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'DESCONOCIDO';
     bap_log_blocked_attempt( $ip, $country, $reason );
 
-    // Auto-baneo instantáneo en Lista Negra
-    $blacklist = bap_parse_list( get_option( 'bap_blacklist_ips', '' ), false );
-    if ( ! in_array( $ip, $blacklist, true ) ) {
-        $blacklist[] = $ip;
-        update_option( 'bap_blacklist_ips', implode( "\n", $blacklist ) );
-
-        $duration_hours = (int) get_option( 'bap_auto_ban_duration', 24 );
-        if ( $duration_hours > 0 ) {
-            $expirations        = get_option( 'bap_auto_ban_expirations', [] );
-            $expirations[ $ip ] = time() + ( $duration_hours * HOUR_IN_SECONDS );
-            update_option( 'bap_auto_ban_expirations', $expirations, false );
-        }
-    }
+    bap_add_ip_to_blacklist( $ip, true );
 
     $msg = (string) get_option( 'bap_web_block_message', 'Acceso bloqueado por seguridad.' );
     if ( function_exists( 'bap_render_custom_403_page' ) ) {

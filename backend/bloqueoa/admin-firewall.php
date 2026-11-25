@@ -86,7 +86,7 @@ if ( '1' === (string) get_option( 'bap_block_xmlrpc', '1' ) ) {
 
         if ( 'xmlrpc.php' === $script || false !== stripos( $uri, 'xmlrpc.php' ) ) {
             $ip = bap_get_user_ip();
-            if ( bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
+            if ( bap_is_ip_whitelisted_or_server( $ip ) ) {
                 return;
             }
             $country = function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'DESCONOCIDO';
@@ -99,7 +99,7 @@ if ( '1' === (string) get_option( 'bap_block_user_enum', '1' ) ) {
     add_action( 'template_redirect', function() {
         if ( ! is_user_logged_in() && ( is_author() || isset( $_GET['author'] ) ) ) {
             $ip = bap_get_user_ip();
-            if ( bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
+            if ( bap_is_ip_whitelisted_or_server( $ip ) ) {
                 return;
             }
             $country = function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'DESCONOCIDO';
@@ -117,7 +117,7 @@ if ( '1' === (string) get_option( 'bap_block_user_enum', '1' ) ) {
 
 add_action( 'wp_login_failed', function( $username ) {
     $ip = bap_get_user_ip();
-    if ( bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
+    if ( bap_is_ip_whitelisted_or_server( $ip ) ) {
         return;
     }
     $country = function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'DESCONOCIDO';
@@ -130,7 +130,7 @@ add_filter( 'authenticate', function( $user, $username, $password ) {
     }
 
     $ip = bap_get_user_ip();
-    if ( bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
+    if ( bap_is_ip_whitelisted_or_server( $ip ) ) {
         return $user;
     }
 
@@ -181,7 +181,7 @@ add_action( 'init', function() {
     }
 
     $ip = bap_get_user_ip();
-    if ( bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
+    if ( bap_is_ip_whitelisted_or_server( $ip ) ) {
         return;
     }
 
