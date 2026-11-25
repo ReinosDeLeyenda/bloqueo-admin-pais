@@ -12,6 +12,7 @@ function bap_render_auditoria_page() {
     $valid = [
         'escaneres' => 'Escáneres',
         'hardening' => 'Hardening y Protección',
+        'cron'      => 'Tareas Cron',
     ];
     if ( ! isset( $valid[ $sub ] ) ) {
         $sub = 'escaneres';
@@ -31,7 +32,9 @@ function bap_render_auditoria_page() {
 
         <?php bap_render_subtabs( $base_url, $valid, $sub ); ?>
 
-        <?php if ( 'hardening' === $sub ) : ?>
+        <?php if ( 'cron' === $sub ) : ?>
+            <?php if ( function_exists( 'bap_render_wp_cron_inspector_box' ) ) { bap_render_wp_cron_inspector_box(); } ?>
+        <?php elseif ( 'hardening' === $sub ) : ?>
             <?php if ( function_exists( 'bap_render_ssl_and_config_monitor_box' ) ) { bap_render_ssl_and_config_monitor_box(); } ?>
             <?php if ( function_exists( 'bap_render_headers_and_mail_dns_box' ) ) { bap_render_headers_and_mail_dns_box(); } ?>
             <?php if ( function_exists( 'bap_render_dnsbl_reputation_box' ) ) { bap_render_dnsbl_reputation_box(); } ?>
@@ -90,7 +93,7 @@ function bap_render_auditoria_page() {
             <?php if ( function_exists( 'bap_render_rogue_admin_box' ) ) { bap_render_rogue_admin_box(); } ?>
             <?php if ( function_exists( 'bap_render_roles_integrity_box' ) ) { bap_render_roles_integrity_box(); } ?>
             <?php if ( function_exists( 'bap_render_weak_passwords_auditor_box' ) ) { bap_render_weak_passwords_auditor_box(); } ?>
-            <?php if ( function_exists( 'bap_render_wp_cron_inspector_box' ) ) { bap_render_wp_cron_inspector_box(); } ?>
+            
         <?php endif; ?>
     </div>
     <?php

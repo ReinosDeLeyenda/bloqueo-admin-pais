@@ -75,6 +75,17 @@ function bap_render_wp_cron_inspector_box() {
             $notice = '<div class="notice notice-warning inline"><p>Tarea cron <code>' . esc_html( $hook ) . '</code> eliminada.</p></div>';
         }
     }
+        if ( isset( $_POST['bap_run_all_crons_now'] ) && check_admin_referer( 'bap_cron_insp_action', 'bap_cron_insp_nonce' ) ) {
+        $all_evs = bap_get_scheduled_cron_events_list();
+        $ran     = 0;
+        foreach ( $all_evs as $ev_item ) {
+            if ( '' !== $ev_item['hook'] && is_array( $ev_item['args'] ) ) {
+                do_action_ref_array( $ev_item['hook'], $ev_item['args'] );
+                $ran++;
+            }
+        }
+        $notice = '<div class="notice notice-success inline"><p><strong>Se han ejecutado ' . (int) $ran . ' tarea(s) programada(s) correctamente.</strong></p></div>';
+    }
     if ( isset( $_POST['bap_run_cron_now'] ) && check_admin_referer( 'bap_cron_insp_action', 'bap_cron_insp_nonce' ) ) {
         $hook = sanitize_text_field( wp_unslash( $_POST['bap_cron_hook'] ?? '' ) );
         $args = json_decode( (string) wp_unslash( $_POST['bap_cron_args'] ?? '[]' ), true );
