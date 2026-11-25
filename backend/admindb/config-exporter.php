@@ -33,7 +33,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
         // 4. Bloqueos Web (Frontend, Rate Limit y User-Agents)
         'bap_web_rules', 'bap_web_allow_seo_bots', 'bap_web_country_redirects',
         'bap_web_redirect_url', 'bap_web_block_message',
-        'bap_waf_enabled', 'bap_waf_autoban',
+        'bap_waf_enabled', 'bap_waf_autoban', 'bap_trap_urls',
         'bap_rl_max_req_min', 'bap_rl_max_404_min', 'bap_rl_autoban',
         'bap_blocked_user_agents', 'bap_block_empty_ua', 'bap_honeypot_enabled', 'bap_hp_autoban', 'bap_hp_max_comment_links',
     ];

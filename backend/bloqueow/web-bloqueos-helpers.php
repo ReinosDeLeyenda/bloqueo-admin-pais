@@ -172,7 +172,18 @@ function bap_render_web_response_and_general_fields( array $current ) {
                 </td>
             </tr>
             <tr>
-                <th scope="row">Cortafuegos WAF (Payload)</th>
+            <tr>
+                <th scope="row">Rutas Trampa (Auto-Baneo)</th>
+                <td>
+                    <?php $default_traps = function_exists( 'bap_get_default_trap_urls' ) ? bap_get_default_trap_urls() : ''; ?>
+                    <div style="display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+                        <textarea id="bap_trap_urls" name="bap_trap_urls" rows="5" class="large-text code" style="max-width:460px;" placeholder="Ej. /.env, /wp-config.php.bak, /phpmyadmin/* (vacío = desactivado)"><?php echo esc_textarea( get_option( 'bap_trap_urls', '' ) ); ?></textarea>
+                        <button type="button" class="button button-secondary" onclick="document.getElementById('bap_trap_urls').value=this.dataset.defaults;" data-defaults="<?php echo esc_attr( $default_traps ); ?>">Cargar rutas trampa recomendadas</button>
+                    </div>
+                    <p class="description">Cualquier IP no autorizada que solicite estas rutas (admite comodín <code>*</code>) será <strong>añadida al instante a la Lista Negra temporal</strong>.</p>
+                </td>
+            </tr>
+
                 <td>
                     <label style="display:block;margin-bottom:6px;">
                         <input type="checkbox" name="bap_waf_enabled" value="1" <?php checked( get_option( 'bap_waf_enabled', '0' ), '1' ); ?> />
