@@ -107,6 +107,27 @@ if ( '1' === (string) get_option( 'bap_harden_clean_head_headers', '0' ) ) {
     }, 99 );
 }
 
+// Bloqueo de creación de nuevos usuarios (User Lockdown)
+if ( '1' === (string) get_option( 'bap_harden_user_lockdown', '0' ) ) {
+    add_filter( 'pre_option_users_can_register', '__return_zero', 999 );
+
+    add_filter( 'wp_pre_insert_user_data', function( $data, $update ) {
+        if ( $update ) {
+            return $data;
+        }
+        if ( is_admin() && current_user_can( 'create_users' ) && current_user_can( 'manage_options' ) ) {
+            return $data;
+        }
+        $ip      = function_exists( 'bap_get_user_ip' ) ? bap_get_user_ip() : '127.0.0.1';
+        $country = function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'DESCONOCIDO';
+        $login   = sanitize_user( (string) ( $data['user_login'] ?? 'desconocido' ) );
+        if ( function_exists( 'bap_log_blocked_attempt' ) ) {
+            bap_log_blocked_attempt( $ip, $country, 'User Lockdown: Alta bloqueada (' . $login . ')' );
+        }
+        wp_die( '<strong>Seguridad (User Lockdown):</strong> La creación de nuevas cuentas de usuario está bloqueada por política del administrador.', 'Registro Bloqueado', [ 'response' => 403 ] );
+    }, 1, 2 );
+}
+
 function bap_sync_hotlink_protection( $enable ) {
     if ( ! function_exists( 'insert_with_markers' ) ) {
         require_once ABSPATH . 'wp-admin/includes/misc.php';
@@ -148,6 +169,7 @@ function bap_render_hardening_box() {
         $no_rss   = ! empty( $_POST['bap_harden_disable_rss'] ) ? '1' : '0';
         $hotlink  = ! empty( $_POST['bap_harden_anti_hotlink'] ) ? '1' : '0';
         $clean_hd = ! empty( $_POST['bap_harden_clean_head_headers'] ) ? '1' : '0';
+        $usr_lock = ! empty( $_POST['bap_harden_user_lockdown'] ) ? '1' : '0';
 
         update_option( 'bap_harden_disable_file_edit', $no_edit );
         update_option( 'bap_harden_hide_wp_version', $hide_ver );
@@ -157,6 +179,7 @@ function bap_render_hardening_box() {
         update_option( 'bap_harden_disable_rss', $no_rss );
         update_option( 'bap_harden_anti_hotlink', $hotlink );
         update_option( 'bap_harden_clean_head_headers', $clean_hd );
+        update_option( 'bap_harden_user_lockdown', $usr_lock );
 
         $ok_up  = bap_sync_uploads_php_protection( '1' === $no_php );
         $ok_hl  = bap_sync_hotlink_protection( '1' === $hotlink );
@@ -201,9 +224,13 @@ function bap_render_hardening_box() {
                 <input type="checkbox" name="bap_harden_anti_hotlink" value="1" <?php checked( get_option( 'bap_harden_anti_hotlink', '0' ), '1' ); ?> />
                 <strong>Protección Anti-Hotlinking de imágenes (<code>.htaccess</code>)</strong> (impide que webs externas incrusten tus imágenes robando ancho de banda)
             </label>
-            <label style="display:block;margin-bottom:14px;">
+            <label style="display:block;margin-bottom:8px;">
                 <input type="checkbox" name="bap_harden_clean_head_headers" value="1" <?php checked( get_option( 'bap_harden_clean_head_headers', '0' ), '1' ); ?> />
                 <strong>Ocultar cabecera <code>X-Powered-By</code> y metadatos RSD / WLWManifest / Shortlink</strong> (reduce la exposición de versión PHP y enlaces heredados en el <code>&lt;head&gt;</code>)
+            </label>
+            <label style="display:block;margin-bottom:14px;">
+                <input type="checkbox" name="bap_harden_user_lockdown" value="1" <?php checked( get_option( 'bap_harden_user_lockdown', '0' ), '1' ); ?> />
+                <strong>Bloqueo de creación de nuevos usuarios (User Lockdown)</strong> (impide cualquier alta pública o por código/API; solo un administrador puede crear usuarios desde el panel)
             </label>
 
             <button type="submit" name="bap_save_hardening" class="button button-primary">Guardar endurecimiento</button>
