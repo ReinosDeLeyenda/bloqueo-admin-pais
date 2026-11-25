@@ -91,3 +91,14 @@ if ( is_dir( $geo_dir ) ) {
 
 $mu_loader = ( defined( 'WPMU_PLUGIN_DIR' ) ? WPMU_PLUGIN_DIR : ( WP_CONTENT_DIR . '/mu-plugins' ) ) . '/bap-emergency-loader.php';
 if ( file_exists( $mu_loader ) ) { @unlink( $mu_loader ); }
+
+$user_ini_file = ABSPATH . '.user.ini';
+if ( file_exists( $user_ini_file ) && is_writable( $user_ini_file ) ) {
+    $ini_raw   = (string) @file_get_contents( $user_ini_file );
+    $ini_clean = preg_replace( '/; BEGIN Bloqueo Admin Early WAF.*?; END Bloqueo Admin Early WAF\s*/s', '', $ini_raw );
+    if ( '' === trim( $ini_clean ) ) {
+        @unlink( $user_ini_file );
+    } else {
+        @file_put_contents( $user_ini_file, $ini_clean, LOCK_EX );
+    }
+}
