@@ -81,6 +81,7 @@ function bap_run_scheduled_security_audit() {
 
     if ( function_exists( 'bap_scan_seo_spam_and_malicious_links' ) ) { $seo_res = bap_scan_seo_spam_and_malicious_links(); if ( ! empty( $seo_res['findings'] ) ) { $alerts[] = 'SEO Spam: ' . count( $seo_res['findings'] ) . ' enlace(s) malicioso(s) u oculto(s) en contenido.'; } }
     if ( function_exists( 'bap_roles_verify_integrity' ) ) { $r_chk = bap_roles_verify_integrity(); if ( $r_chk['changed'] || ! empty( $r_chk['escalations'] ) ) { $alerts[] = 'Roles WP: Alteracion detectada en permisos/capacidades de usuario.'; } }
+    if ( function_exists( 'bap_dns_mon_verify' ) ) { $d_chk = bap_dns_mon_verify(); if ( is_array( $d_chk ) && ! empty( $d_chk['changed'] ) ) { $alerts[] = 'DNS Hijack: Cambios detectados en registros (' . implode( ', ', array_keys( $d_chk['diffs'] ) ) . ').'; } }
     $db_hits = bap_scan_database_injections();
     if ( ! empty( $db_hits ) ) {
         $alerts[] = 'Base de Datos: ' . count( $db_hits ) . ' posible(s) inyección(es) en posts u opciones.';
