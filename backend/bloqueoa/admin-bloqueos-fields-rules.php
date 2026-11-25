@@ -54,6 +54,20 @@ function bap_render_bloqueos_rules_fields( $bl_raw ) {
         </td>
     </tr>
     <tr>
+        <th><label for="bap_custom_login_slug">URL de Acceso Personalizada (Hide Login)</label></th>
+        <td>
+            <?php $cur_slug = (string) get_option( 'bap_custom_login_slug', '' ); ?>
+            <code><?php echo esc_html( trailingslashit( home_url() ) ); ?></code>
+            <input type="text" id="bap_custom_login_slug" name="bap_custom_login_slug" value="<?php echo esc_attr( $cur_slug ); ?>" class="regular-text code" style="width:210px;" placeholder="ej. acceso-privado" />
+            <p class="description">
+                Oculta <code>/wp-login.php</code> y <code>/wp-admin</code> tras una ruta secreta (déjalo vacío para desactivar).
+                <?php if ( '' !== $cur_slug ) : ?>
+                    <br /><strong>Tu URL actual de acceso es:</strong> <code><?php echo esc_html( home_url( '/' . $cur_slug ) ); ?></code>
+                <?php endif; ?>
+            </p>
+        </td>
+    </tr>
+    <tr>
         <th>Modo Ausente por Horario (Away Mode)</th>
         <td>
             <?php

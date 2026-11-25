@@ -150,6 +150,18 @@ add_action( 'admin_init', function() {
         'default'           => 0,
     ] );
 
+    register_setting( 'bap_settings_group', 'bap_custom_login_slug', [
+        'sanitize_callback' => function( $i ) {
+            $slug     = sanitize_title( trim( (string) $i, " \t\n\r\0\x0B/" ) );
+            $reserved = [ 'wp-admin', 'wp-login', 'wp-login.php', 'wp-content', 'wp-includes', 'wp-json', 'feed', 'xmlrpc.php' ];
+            if ( in_array( $slug, $reserved, true ) ) {
+                add_settings_error( 'bap_custom_login_slug', 'bap_slug_reserved', 'El slug elegido está reservado por WordPress. Usa otro distinto.' );
+                return get_option( 'bap_custom_login_slug', '' );
+            }
+            return $slug;
+        },
+        'default'           => '',
+    ] );
     register_setting( 'bap_settings_group', 'bap_away_mode_enabled', [
         'sanitize_callback' => $bool_cb,
         'default'           => '0',

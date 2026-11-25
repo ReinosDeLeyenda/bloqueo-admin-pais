@@ -12,7 +12,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
         'bap_ext_db_name', 'bap_ext_db_user', 'bap_ext_db_table',
 
         // 2. Bloqueos Admin (Reglas, Red, HIBP, Política Contraseñas y 2FA)
-        'bap_ip_source', 'bap_protected_paths', 'bap_enable_htaccess', 'bap_redirect_url',
+        'bap_ip_source', 'bap_custom_login_slug', 'bap_away_mode_enabled', 'bap_away_mode_start', 'bap_away_mode_end', 'bap_away_mode_days', 'bap_protected_paths', 'bap_enable_htaccess', 'bap_redirect_url',
         'bap_country_mode', 'bap_allowed_countries', 'bap_blocked_countries',
         'bap_asn_mode', 'bap_allowed_asns', 'bap_blocked_asns',
         'bap_abuseipdb_min_risk', 'bap_auto_ban_attempts', 'bap_auto_ban_duration',
