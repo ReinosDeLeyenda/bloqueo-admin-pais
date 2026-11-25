@@ -81,6 +81,7 @@ add_action( 'admin_init', function() {
     ] );
 
     $booleans = [
+        'bap_magic_login_enabled'     => '0',
         'bap_2fa_enabled'             => '0',
         'bap_2fa_enforce_admins'      => '0',
         'bap_2fa_remember_device'     => '1',
