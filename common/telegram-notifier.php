@@ -159,7 +159,7 @@ function bap_build_telegram_digest_article( array $queue, $site_name, $period_la
         ] );
     }
 
-    $rich = "<h1>📊 {$badge}Informe de Seguridad ({$e( $period_label )})</h1><p><b>Sitio:</b> {$e( $site_name )} · <b>Total:</b> {$data['total_hits']}</p>{$table_html}";
+    $rich = "<h1>📊 {$badge}Informe de Seguridad ({$e( $period_label )})</h1><p><b>Sitio:</b> {$e( $site_name )} · <b>Total:</b> {$data['total_hits']}</p><blockquote expandable><b>🚨 Eventos Bloqueados:</b>\n{$table_html}</blockquote>";
     $fb   = function_exists( 'bap_tg_rich_to_fallback_html' ) ? bap_tg_rich_to_fallback_html( $rich ) : strip_tags( $rich );
     return [ 'rich' => $rich, 'fallback' => $fb ];
 }
