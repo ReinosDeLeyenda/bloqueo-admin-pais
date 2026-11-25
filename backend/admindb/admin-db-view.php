@@ -4,6 +4,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 require_once plugin_dir_path( __FILE__ ) . 'admin-db-cards.php';
 
+$sub   = isset( $_GET['subtab'] ) ? sanitize_key( wp_unslash( $_GET['subtab'] ) ) : 'acciones';
+$valid = [
+    'acciones'      => 'Acciones',
+    'configuracion' => 'Configuración',
+];
+if ( ! isset( $valid[ $sub ] ) ) {
+    $sub = 'acciones';
+}
+$base_url = admin_url( 'admin.php?page=bap-admin-db' );
+
 $ext_test_notice = '';
 if ( isset( $_POST['bap_test_ext_db'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_ext_db_test_action', 'bap_ext_db_nonce' ) ) {
     $err    = '';
@@ -49,37 +59,53 @@ if ( $all_missing ) {
 <div class="wrap">
     <h1>Control de Acceso al Panel</h1>
     <?php bap_render_tabs( 'bap-admin-db' ); ?>
-    <?php echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-    <?php echo $ext_test_notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
-    <?php if ( $missing_count > 0 || $outdated_count > 0 ) : ?>
-        <div class="notice <?php echo $missing_count > 0 ? 'notice-error' : 'notice-warning'; ?>" style="max-width:1180px;margin:14px 0;">
-            <p>
-                <strong>Atención — Seguridad degradada:</strong>
-                <?php if ( $all_missing ) : ?>
-                    No hay <strong>ninguna base de datos cargada</strong>. Los filtros por País, ASN, AbuseIPDB, Tor y FireHOL no podrán bloquear amenazas hasta que las descargues.
-                <?php else : ?>
-                    <?php if ( $missing_count > 0 ) : ?>Hay <strong><?php echo (int) $missing_count; ?></strong> base(s) de datos sin cargar. <?php endif; ?>
-                    <?php if ( $outdated_count > 0 ) : ?>Hay <strong><?php echo (int) $outdated_count; ?></strong> base(s) de datos obsoletas respecto a la frecuencia de actualización. <?php endif; ?>
-                    La protección del sitio se verá degradada hasta que las descargues o actualices.
-                <?php endif; ?>
-            </p>
-        </div>
-    <?php endif; ?>
-
-    <div class="card" style="max-width:1180px;padding:14px 20px;margin-bottom:20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-        <strong>Acciones masivas:</strong>
-        <form method="post" style="display:inline;"><?php wp_nonce_field( 'bap_db_action' ); ?><input type="submit" name="bap_update_all_dbs" class="button button-primary" value="Descargar / Actualizar TODAS las bases de datos" /></form>
-        <form method="post" style="display:inline;" onsubmit="return confirm('¿Seguro que quieres borrar TODAS las bases de datos locales?');"><?php wp_nonce_field( 'bap_db_action' ); ?><input type="submit" name="bap_delete_all_dbs" class="button button-secondary" style="color:#d63638;border-color:#d63638;" value="Borrar TODAS las bases de datos" /></form>
-    </div>
-
-    <div style="<?php echo esc_attr( $container_style ); ?>">
-        <?php foreach ( $db_items as $db ) : ?>
-            <?php bap_render_single_db_card( $db['title'], $db['active'], $db['info'], $db['updated'], $db['up_btn'], $db['up_lbl'], $db['form_id'], $db['f_input'], $db['accept'], $db['ul_btn'], $db['del_t'], $db['del_c'], $db['state'] ); ?>
+    <div style="display:flex;gap:8px;margin:0 0 18px 0;flex-wrap:wrap;">
+        <?php foreach ( $valid as $s_key => $s_lbl ) :
+            $url = add_query_arg( 'subtab', $s_key, $base_url );
+            $cls = ( $sub === $s_key ) ? 'button button-primary' : 'button button-secondary';
+        ?>
+            <a href="<?php echo esc_url( $url ); ?>" class="<?php echo esc_attr( $cls ); ?>">
+                <?php echo esc_html( $s_lbl ); ?>
+            </a>
         <?php endforeach; ?>
     </div>
 
-    <?php if ( function_exists( 'bap_render_custom_dbs_section' ) ) { bap_render_custom_dbs_section(); } ?>
-    <?php bap_render_db_settings_card( $db_freq ); ?>
-    <?php bap_render_json_backup_card(); ?>
+    <?php settings_errors(); ?>
+    <?php echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+    <?php echo $ext_test_notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+
+    <?php if ( 'configuracion' === $sub ) : ?>
+        <?php bap_render_db_settings_card( $db_freq ); ?>
+        <?php bap_render_json_backup_card(); ?>
+    <?php else : ?>
+        <?php if ( $missing_count > 0 || $outdated_count > 0 ) : ?>
+            <div class="notice <?php echo $missing_count > 0 ? 'notice-error' : 'notice-warning'; ?>" style="max-width:1180px;margin:14px 0;">
+                <p>
+                    <strong>Atención — Seguridad degradada:</strong>
+                    <?php if ( $all_missing ) : ?>
+                        No hay <strong>ninguna base de datos cargada</strong>. Los filtros por País, ASN, AbuseIPDB, Tor y FireHOL no podrán bloquear amenazas hasta que las descargues.
+                    <?php else : ?>
+                        <?php if ( $missing_count > 0 ) : ?>Hay <strong><?php echo (int) $missing_count; ?></strong> base(s) de datos sin cargar. <?php endif; ?>
+                        <?php if ( $outdated_count > 0 ) : ?>Hay <strong><?php echo (int) $outdated_count; ?></strong> base(s) de datos obsoletas respecto a la frecuencia de actualización. <?php endif; ?>
+                        La protección del sitio se verá degradada hasta que las descargues o actualices.
+                    <?php endif; ?>
+                </p>
+            </div>
+        <?php endif; ?>
+
+        <div class="card" style="max-width:1180px;padding:14px 20px;margin-bottom:20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <strong>Acciones masivas:</strong>
+            <form method="post" style="display:inline;"><?php wp_nonce_field( 'bap_db_action' ); ?><input type="submit" name="bap_update_all_dbs" class="button button-primary" value="Descargar / Actualizar TODAS las bases de datos" /></form>
+            <form method="post" style="display:inline;" onsubmit="return confirm('¿Seguro que quieres borrar TODAS las bases de datos locales?');"><?php wp_nonce_field( 'bap_db_action' ); ?><input type="submit" name="bap_delete_all_dbs" class="button button-secondary" style="color:#d63638;border-color:#d63638;" value="Borrar TODAS las bases de datos" /></form>
+        </div>
+
+        <div style="<?php echo esc_attr( $container_style ); ?>">
+            <?php foreach ( $db_items as $db ) : ?>
+                <?php bap_render_single_db_card( $db['title'], $db['active'], $db['info'], $db['updated'], $db['up_btn'], $db['up_lbl'], $db['form_id'], $db['f_input'], $db['accept'], $db['ul_btn'], $db['del_t'], $db['del_c'], $db['state'] ); ?>
+            <?php endforeach; ?>
+        </div>
+
+        <?php if ( function_exists( 'bap_render_custom_dbs_section' ) ) { bap_render_custom_dbs_section(); } ?>
+    <?php endif; ?>
 </div>

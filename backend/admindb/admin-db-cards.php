@@ -137,7 +137,7 @@ function bap_render_db_settings_card( $db_freq ) {
                 <button type="submit" form="bap_test_ext_db_form" name="bap_test_ext_db" class="button button-secondary">Probar conexión MySQL</button>
             </p>
         </form>
-        <form id="bap_test_ext_db_form" method="post" style="display:none;"><?php wp_nonce_field( 'bap_ext_db_test_action', 'bap_ext_db_nonce' ); ?></form>
+        <form id="bap_test_ext_db_form" method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-db&subtab=configuracion' ) ); ?>" style="display:none;"><?php wp_nonce_field( 'bap_ext_db_test_action', 'bap_ext_db_nonce' ); ?></form>
     </div>
     <?php
 }
