@@ -242,6 +242,16 @@ function bap_stream_file_matches_ip( $file_path, $ip ) {
     return $matched;
 }
 
+function bap_get_custom_dbs_cache_version() {
+    return (string) get_option( 'bap_custom_dbs_ver', '1' );
+}
+
+function bap_bump_custom_dbs_cache_version() {
+    update_option( 'bap_custom_dbs_ver', (string) microtime( true ), false );
+}
+
+add_action( 'update_option_bap_custom_dbs', 'bap_bump_custom_dbs_cache_version' );
+
 function bap_match_ip_in_custom_dbs( $ip, $context = 'admin' ) {
     if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
         return null;
@@ -252,6 +262,22 @@ function bap_match_ip_in_custom_dbs( $ip, $context = 'admin' ) {
         return null;
     }
 
+    static $mem_cache = [];
+    $ver       = bap_get_custom_dbs_cache_version();
+    $cache_key = 'bap_cdb_' . md5( $ver . '|' . $context . '|' . $ip );
+
+    if ( array_key_exists( $cache_key, $mem_cache ) ) {
+        return $mem_cache[ $cache_key ];
+    }
+
+    $cached = get_transient( $cache_key );
+    if ( false !== $cached ) {
+        $result                  = ( '__none__' === $cached ) ? null : $cached;
+        $mem_cache[ $cache_key ] = $result;
+        return $result;
+    }
+
+    $result = null;
     foreach ( $dbs as $id => $meta ) {
         if ( '1' !== (string) ( $meta['enabled'] ?? '1' ) ) {
             continue;
@@ -267,13 +293,17 @@ function bap_match_ip_in_custom_dbs( $ip, $context = 'admin' ) {
         }
 
         if ( bap_stream_file_matches_ip( $file, $ip ) ) {
-            return [
+            $result = [
                 'id'     => $id,
                 'name'   => (string) ( $meta['name'] ?? $id ),
                 'action' => ( 'allow' === ( $meta['action'] ?? 'block' ) ) ? 'allow' : 'block',
             ];
+            break;
         }
     }
 
-    return null;
+    set_transient( $cache_key, null === $result ? '__none__' : $result, 15 * MINUTE_IN_SECONDS );
+    $mem_cache[ $cache_key ] = $result;
+
+    return $result;
 }

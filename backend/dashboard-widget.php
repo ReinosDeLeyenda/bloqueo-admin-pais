@@ -102,8 +102,9 @@ function bap_render_dashboard_widget() {
         }
     }
     if ( function_exists( 'bap_get_github_latest_release' ) ) {
-        $rel = bap_get_github_latest_release();
-        if ( $rel && ! empty( $rel['version'] ) && version_compare( $rel['version'], '1.2.34', '>' ) ) {
+        $rel     = bap_get_github_latest_release();
+        $cur_ver = get_file_data( dirname( __DIR__ ) . '/bloqueo-admin-pais.php', [ 'Version' => 'Version' ] )['Version'] ?? '1.2.37';
+        if ( $rel && ! empty( $rel['version'] ) && version_compare( $rel['version'], $cur_ver, '>' ) ) {
             $updates_needed[] = 'Nueva versión disponible: v' . $rel['version'];
         }
     }

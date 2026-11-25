@@ -150,6 +150,19 @@ function bap_evaluate_ip_access( $ip, $country, $context = 'admin', $auto_ban_ab
         }
     }
 
+    if ( 'web' === $context && function_exists( 'bap_match_web_rule_for_uri' ) ) {
+        $matched = bap_match_web_rule_for_uri( '' !== $uri ? $uri : '/' );
+        $rule    = $matched['rule'];
+        if ( '1' !== (string) ( $rule['enabled'] ?? '0' ) ) {
+            return [
+                'status' => 'allow',
+                'reason' => 'Regla web desactivada en este ámbito',
+            ];
+        }
+        $scope_lbl = ( '__all__' === $matched['scope'] ) ? 'Web Global' : 'Web (' . $matched['scope'] . ')';
+        return bap_evaluate_rule_profile( $ip, $country, $rule, $auto_ban_abuse, 'Cumple las reglas de ' . $scope_lbl );
+    }
+
     $c_mode  = (string) get_option( 'bap_country_mode', 'allow' );
     $a_mode  = (string) get_option( 'bap_asn_mode', 'allow' );
     $profile = [
