@@ -3,14 +3,12 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// 1. Desactivar el editor de temas y plugins en el panel
 if ( '1' === (string) get_option( 'bap_harden_disable_file_edit', '0' ) ) {
     if ( ! defined( 'DISALLOW_FILE_EDIT' ) ) {
         define( 'DISALLOW_FILE_EDIT', true );
     }
 }
 
-// 2. Ocultar versión de WordPress en HTML, RSS y assets
 if ( '1' === (string) get_option( 'bap_harden_hide_wp_version', '0' ) ) {
     remove_action( 'wp_head', 'wp_generator' );
     add_filter( 'the_generator', '__return_empty_string' );
@@ -25,7 +23,6 @@ if ( '1' === (string) get_option( 'bap_harden_hide_wp_version', '0' ) ) {
     add_filter( 'script_loader_src', $strip_ver, 9999 );
 }
 
-// 3. Cabeceras HTTP de seguridad en respuestas públicas y admin
 add_action( 'send_headers', function() {
     if ( '1' !== (string) get_option( 'bap_harden_security_headers', '0' ) || headers_sent() ) {
         return;
@@ -36,7 +33,23 @@ add_action( 'send_headers', function() {
     header( 'Permissions-Policy: geolocation=(), microphone=(), camera=()' );
 } );
 
-// 4. Proteger wp-content/uploads/ contra ejecución de PHP
+if ( '1' === (string) get_option( 'bap_harden_disable_app_passwords', '0' ) ) {
+    add_filter( 'wp_is_application_passwords_available', '__return_false', 999 );
+}
+
+if ( '1' === (string) get_option( 'bap_harden_disable_rss', '0' ) ) {
+    $disable_feed = function() {
+        wp_die( 'Los feeds RSS están deshabilitados por política de seguridad.', 'Feed deshabilitado', [ 'response' => 403 ] );
+    };
+    add_action( 'do_feed', $disable_feed, 1 );
+    add_action( 'do_feed_rdf', $disable_feed, 1 );
+    add_action( 'do_feed_rss', $disable_feed, 1 );
+    add_action( 'do_feed_rss2', $disable_feed, 1 );
+    add_action( 'do_feed_atom', $disable_feed, 1 );
+    remove_action( 'wp_head', 'feed_links', 2 );
+    remove_action( 'wp_head', 'feed_links_extra', 3 );
+}
+
 function bap_sync_uploads_php_protection( $enable ) {
     $upload  = wp_upload_dir();
     $basedir = $upload['basedir'] ?? '';
@@ -81,6 +94,35 @@ function bap_sync_uploads_php_protection( $enable ) {
 
     return ( false !== @file_put_contents( $ht_file, $updated ) );
 }
+function bap_sync_hotlink_protection( $enable ) {
+    if ( ! function_exists( 'insert_with_markers' ) ) {
+        require_once ABSPATH . 'wp-admin/includes/misc.php';
+    }
+    $ht_file = ABSPATH . '.htaccess';
+    if ( ! file_exists( $ht_file ) || ! is_writable( $ht_file ) ) {
+        return false;
+    }
+    if ( ! $enable ) {
+        return insert_with_markers( $ht_file, 'Bloqueo Admin Hotlink', [] );
+    }
+
+    $host = preg_quote( (string) wp_parse_url( home_url(), PHP_URL_HOST ), '/' );
+    if ( '' === $host ) {
+        return false;
+    }
+
+    $rules = [
+        '<IfModule mod_rewrite.c>',
+        'RewriteEngine On',
+        'RewriteCond %{HTTP_REFERER} !^$',
+        'RewriteCond %{HTTP_REFERER} !^https?://(www\.)?' . $host . ' [NC]',
+        'RewriteCond %{HTTP_REFERER} !^https?://(.*\.)?(google|bing|duckduckgo|yahoo)\. [NC]',
+        'RewriteRule \.(jpg|jpeg|png|gif|webp|avif)$ - [F,NC,L]',
+        '</IfModule>',
+    ];
+
+    return insert_with_markers( $ht_file, 'Bloqueo Admin Hotlink', $rules );
+}
 
 function bap_render_hardening_box() {
     $notice = '';
@@ -89,23 +131,30 @@ function bap_render_hardening_box() {
         $hide_ver = ! empty( $_POST['bap_harden_hide_wp_version'] ) ? '1' : '0';
         $sec_hdrs = ! empty( $_POST['bap_harden_security_headers'] ) ? '1' : '0';
         $no_php   = ! empty( $_POST['bap_harden_block_uploads_php'] ) ? '1' : '0';
+        $no_app   = ! empty( $_POST['bap_harden_disable_app_passwords'] ) ? '1' : '0';
+        $no_rss   = ! empty( $_POST['bap_harden_disable_rss'] ) ? '1' : '0';
+        $hotlink  = ! empty( $_POST['bap_harden_anti_hotlink'] ) ? '1' : '0';
 
         update_option( 'bap_harden_disable_file_edit', $no_edit );
         update_option( 'bap_harden_hide_wp_version', $hide_ver );
         update_option( 'bap_harden_security_headers', $sec_hdrs );
         update_option( 'bap_harden_block_uploads_php', $no_php );
+        update_option( 'bap_harden_disable_app_passwords', $no_app );
+        update_option( 'bap_harden_disable_rss', $no_rss );
+        update_option( 'bap_harden_anti_hotlink', $hotlink );
 
         $ok_up  = bap_sync_uploads_php_protection( '1' === $no_php );
-        $notice = $ok_up
+        $ok_hl  = bap_sync_hotlink_protection( '1' === $hotlink );
+        $notice = ( $ok_up && $ok_hl )
             ? '<div class="notice notice-success inline"><p><strong>Endurecimiento guardado y aplicado correctamente.</strong></p></div>'
-            : '<div class="notice notice-warning inline"><p>Ajustes guardados, pero no se pudo escribir <code>.htaccess</code> en <code>wp-content/uploads/</code> (si usas Nginx, bloquéalo en la configuración del servidor).</p></div>';
+            : '<div class="notice notice-warning inline"><p>Ajustes guardados, pero alguna regla <code>.htaccess</code> no se pudo escribir (revisa permisos o configuración Nginx).</p></div>';
     }
     ?>
     <div class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Endurecimiento de WordPress (Hardening en 1 Clic)</h2>
         <p class="description">Aplica medidas preventivas recomendadas para reducir la superficie de ataque de tu instalación WordPress.</p>
 
-        <?php echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+        <?php echo wp_kses_post( $notice ); ?>
 
         <form method="post" style="margin-top:12px;">
             <?php wp_nonce_field( 'bap_hardening_action', 'bap_hardening_nonce' ); ?>
@@ -121,9 +170,21 @@ function bap_render_hardening_box() {
                 <input type="checkbox" name="bap_harden_block_uploads_php" value="1" <?php checked( get_option( 'bap_harden_block_uploads_php', '0' ), '1' ); ?> />
                 <strong>Bloquear ejecución de PHP en <code>wp-content/uploads/</code></strong> (genera regla <code>.htaccess</code> para impedir ejecutar scripts subidos)
             </label>
-            <label style="display:block;margin-bottom:14px;">
+            <label style="display:block;margin-bottom:8px;">
                 <input type="checkbox" name="bap_harden_security_headers" value="1" <?php checked( get_option( 'bap_harden_security_headers', '0' ), '1' ); ?> />
                 <strong>Activar cabeceras HTTP de seguridad</strong> (<code>X-Frame-Options</code>, <code>X-Content-Type-Options</code>, <code>Referrer-Policy</code> y <code>Permissions-Policy</code>)
+            </label>
+            <label style="display:block;margin-bottom:8px;">
+                <input type="checkbox" name="bap_harden_disable_app_passwords" value="1" <?php checked( get_option( 'bap_harden_disable_app_passwords', '0' ), '1' ); ?> />
+                <strong>Desactivar Contraseñas de Aplicación (Application Passwords)</strong> (cierra el acceso por API REST mediante claves de aplicación)
+            </label>
+            <label style="display:block;margin-bottom:8px;">
+                <input type="checkbox" name="bap_harden_disable_rss" value="1" <?php checked( get_option( 'bap_harden_disable_rss', '0' ), '1' ); ?> />
+                <strong>Desactivar Feeds RSS públicos</strong> (impide el raspado automático de entradas y comentarios vía <code>/feed/</code>)
+            </label>
+            <label style="display:block;margin-bottom:14px;">
+                <input type="checkbox" name="bap_harden_anti_hotlink" value="1" <?php checked( get_option( 'bap_harden_anti_hotlink', '0' ), '1' ); ?> />
+                <strong>Protección Anti-Hotlinking de imágenes (<code>.htaccess</code>)</strong> (impide que webs externas incrusten tus imágenes robando ancho de banda)
             </label>
 
             <button type="submit" name="bap_save_hardening" class="button button-primary">Guardar endurecimiento</button>
