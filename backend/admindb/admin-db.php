@@ -9,6 +9,7 @@ add_action( 'admin_menu', function() {
     add_submenu_page( 'bap-admin-db', 'Bloqueos', 'Bloqueos', 'manage_options', 'bap-bloqueos', 'bap_render_bloqueos_hub_page' );
     add_submenu_page( 'bap-admin-db', 'Auditoría y Hardening', 'Auditoría y Hardening', 'manage_options', 'bap-auditoria', 'bap_render_auditoria_page' );
     add_submenu_page( 'bap-admin-db', 'Plantillas', 'Plantillas', 'manage_options', 'bap-plantillas', 'bap_render_plantillas_hub_page' );
+    add_submenu_page( 'bap-admin-db', 'Notificaciones', 'Notificaciones', 'manage_options', 'bap-notificaciones', 'bap_render_notificaciones_page' );
     add_submenu_page( 'bap-admin-db', 'Estadísticas', 'Estadísticas', 'manage_options', 'bap-admin-estadisticas', 'bap_render_estadisticas_page' );
 });
 

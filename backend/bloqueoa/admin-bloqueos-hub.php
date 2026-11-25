@@ -69,6 +69,7 @@ function bap_render_bloqueos_hub_page() {
             </div>
 
             <?php if ( function_exists( 'bap_render_active_sessions_box' ) ) { bap_render_active_sessions_box(); } ?>
+            <?php if ( function_exists( 'bap_render_vacation_mode_box' ) ) { bap_render_vacation_mode_box(); } ?>
 
         <?php elseif ( 'frontend' === $sub ) :
             if ( function_exists( 'bap_render_web_bloqueos_subtab' ) ) {
@@ -76,12 +77,8 @@ function bap_render_bloqueos_hub_page() {
             }
         ?>
 
-        <?php else :
-            $test_notice = function_exists( 'bap_handle_test_email_post' ) ? bap_handle_test_email_post() : '';
-            wp_enqueue_script( 'bap-admin-bloqueos', plugin_dir_url( __FILE__ ) . 'admin-bloqueos.js', [], '12.4', true );
-        ?>
+        <?php else : ?>
             <?php settings_errors(); ?>
-            <?php echo wp_kses_post( $test_notice ); ?>
 
             <div class="card" style="max-width:960px;padding:16px 24px;margin-top:8px;">
                 <h2 style="margin-top:0;">Detección de IP del Visitante</h2>
@@ -95,21 +92,6 @@ function bap_render_bloqueos_hub_page() {
             </div>
 
             <?php if ( function_exists( 'bap_render_ip_simulator_box' ) ) { bap_render_ip_simulator_box(); } ?>
-
-            <div class="card" style="max-width:960px;padding:16px 24px;margin-top:20px;">
-                <h2 style="margin-top:0;">Notificaciones y Avisos de Conexión</h2>
-                <form method="post" action="options.php">
-                    <?php settings_fields( 'bap_notify_settings_group' ); ?>
-                    <table class="form-table">
-                        <?php bap_render_only_notify_fields(); ?>
-                    </table>
-                    <?php submit_button( 'Guardar notificaciones' ); ?>
-                </form>
-            </div>
-
-            <form id="bap_test_email_form" method="post" style="display:none;">
-                <?php wp_nonce_field( 'bap_test_email_action' ); ?>
-            </form>
         <?php endif; ?>
     </div>
     <?php
