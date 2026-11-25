@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 function bap_handle_stats_actions() {
-        if ( ! current_user_can( 'manage_options' ) ) {
+    if ( ! current_user_can( 'manage_options' ) ) {
         return '';
     }
 
@@ -39,19 +39,32 @@ function bap_render_estadisticas_page() {
     global $wpdb;
     bap_maybe_create_logs_table();
 
-    $notice     = bap_handle_stats_actions();
-    $table      = bap_get_logs_table_name();
-    $filter_uri = isset( $_GET['filter_uri'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_uri'] ) ) : '';
-    $filter_q   = isset( $_GET['filter_q'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_q'] ) ) : '';
+    $notice      = bap_handle_stats_actions();
+    $table       = bap_get_logs_table_name();
+    $filter_uri  = isset( $_GET['filter_uri'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_uri'] ) ) : '';
+    $filter_q    = isset( $_GET['filter_q'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_q'] ) ) : '';
+    $raw_type    = isset( $_GET['filter_type'] ) ? sanitize_key( wp_unslash( $_GET['filter_type'] ) ) : 'all';
+    $filter_type = in_array( $raw_type, [ 'all', 'admin', 'web' ], true ) ? $raw_type : 'all';
 
-    $total_blocks  = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$table}`" );
-    $top_countries = $wpdb->get_results( "SELECT country_code, COUNT(*) as total FROM `{$table}` GROUP BY country_code ORDER BY total DESC LIMIT 5" );
-    $top_asns      = $wpdb->get_results( "SELECT asn, COUNT(*) as total FROM `{$table}` WHERE asn != '' GROUP BY asn ORDER BY total DESC LIMIT 5" );
-    $top_uris      = $wpdb->get_results( "SELECT request_uri, COUNT(*) as total FROM `{$table}` WHERE request_uri != '' GROUP BY request_uri ORDER BY total DESC LIMIT 5" );
+    $type_where_sql = '';
+    if ( 'admin' === $filter_type ) {
+        $type_where_sql = " AND block_type = 'admin'";
+    } elseif ( 'web' === $filter_type ) {
+        $type_where_sql = " AND block_type = 'web'";
+    }
+
+    $total_blocks  = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$table}` WHERE 1=1{$type_where_sql}" );
+    $top_countries = $wpdb->get_results( "SELECT country_code, COUNT(*) as total FROM `{$table}` WHERE 1=1{$type_where_sql} GROUP BY country_code ORDER BY total DESC LIMIT 5" );
+    $top_asns      = $wpdb->get_results( "SELECT asn, COUNT(*) as total FROM `{$table}` WHERE asn != ''{$type_where_sql} GROUP BY asn ORDER BY total DESC LIMIT 5" );
+    $top_uris      = $wpdb->get_results( "SELECT request_uri, COUNT(*) as total FROM `{$table}` WHERE request_uri != ''{$type_where_sql} GROUP BY request_uri ORDER BY total DESC LIMIT 5" );
 
     $where  = [];
     $params = [];
 
+    if ( 'admin' === $filter_type || 'web' === $filter_type ) {
+        $where[]  = 'block_type = %s';
+        $params[] = $filter_type;
+    }
     if ( '' !== $filter_uri ) {
         $where[]  = 'request_uri LIKE %s';
         $params[] = '%' . $wpdb->esc_like( $filter_uri ) . '%';
@@ -66,7 +79,6 @@ function bap_render_estadisticas_page() {
     $sql       = "SELECT * FROM `{$table}` {$where_sql} ORDER BY id DESC LIMIT 100";
     $logs      = ! empty( $params ) ? $wpdb->get_results( $wpdb->prepare( $sql, $params ) ) : $wpdb->get_results( $sql );
 
-    // Obtener primera vez, última vez y total de ataques de las IPs visibles
     $ip_history = [];
     if ( ! empty( $logs ) ) {
         $unique_ips = array_values( array_unique( array_filter( array_map( fn( $l ) => trim( (string) $l->ip_address ), $logs ) ) ) );
@@ -74,7 +86,7 @@ function bap_render_estadisticas_page() {
             $placeholders = implode( ', ', array_fill( 0, count( $unique_ips ), '%s' ) );
             $agg_sql      = "SELECT ip_address, MIN(created_at) AS first_seen, MAX(created_at) AS last_seen, COUNT(*) AS total_hits
                              FROM `{$table}`
-                             WHERE ip_address IN ({$placeholders})
+                             WHERE ip_address IN ({$placeholders}){$type_where_sql}
                              GROUP BY ip_address";
             $agg_rows     = $wpdb->get_results( $wpdb->prepare( $agg_sql, $unique_ips ), ARRAY_A );
             foreach ( (array) $agg_rows as $r ) {

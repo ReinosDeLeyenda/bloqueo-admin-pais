@@ -6,13 +6,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once plugin_dir_path( __FILE__ ) . 'admin-estadisticas-chart-hourly.php';
 require_once plugin_dir_path( __FILE__ ) . 'admin-estadisticas-chart-bars.php';
 
-function bap_render_estadisticas_charts( $table, $total_blocks, $top_countries, $top_uris = [], $stats_base_url = '' ) {
+function bap_render_estadisticas_charts( $table, $total_blocks, $top_countries, $top_uris = [], $stats_base_url = '', $type_where_sql = '' ) {
     global $wpdb;
 
     $since = gmdate( 'Y-m-d 00:00:00', strtotime( '-13 days' ) );
     $rows  = $wpdb->get_results(
         $wpdb->prepare(
-            "SELECT DATE(created_at) AS day, COUNT(*) AS total FROM `{$table}` WHERE created_at >= %s GROUP BY DATE(created_at) ORDER BY day ASC",
+            "SELECT DATE(created_at) AS day, COUNT(*) AS total FROM `{$table}` WHERE created_at >= %s{$type_where_sql} GROUP BY DATE(created_at) ORDER BY day ASC",
             $since
         ),
         ARRAY_A
@@ -57,7 +57,7 @@ function bap_render_estadisticas_charts( $table, $total_blocks, $top_countries, 
             </div>
         </div>
 
-        <?php bap_render_hourly_line_chart( $table ); ?>
+        <?php bap_render_hourly_line_chart( $table, $type_where_sql ); ?>
     </div>
 
     <?php bap_render_top_bars_row( $total_blocks, $top_countries, $top_uris, $stats_base_url ); ?>

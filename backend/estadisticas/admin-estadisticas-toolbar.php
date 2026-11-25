@@ -42,16 +42,50 @@ function bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $
     <?php
 }
 
-function bap_render_estadisticas_toolbar( $filter_uri, $filter_q, $stats_base_url ) {
+function bap_render_estadisticas_toolbar( $filter_uri, $filter_q, $filter_type, $stats_base_url ) {
     ?>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 12px 0;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <form method="post" style="display:inline-flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0;">
+                <?php wp_nonce_field( 'bap_logs_action' ); ?>
+                <input type="hidden" name="bap_export_filter_type" value="<?php echo esc_attr( $filter_type ); ?>" />
+                <button type="submit" name="bap_export_logs_csv" class="button button-secondary">Exportar Logs CSV</button>
+                <button type="submit" name="bap_export_asn_csv" class="button button-secondary">Exportar Resumen ASN</button>
+                <?php if ( function_exists( 'bap_find_ip2location_log_table' ) && '' !== bap_find_ip2location_log_table() ) : ?>
+                    <button type="submit" name="bap_import_ip2location" class="button button-secondary" onclick="return confirm('¿Importar todo el historial de bloqueos desde la tabla de IP2Location?');">Importar de IP2Location</button>
+                <?php endif; ?>
+                <?php if ( function_exists( 'bap_find_wordfence_log_table' ) && '' !== bap_find_wordfence_log_table() ) : ?>
+                    <button type="submit" name="bap_import_wordfence" class="button button-secondary" onclick="return confirm('¿Importar todo el historial de bloqueos desde las tablas de Wordfence?');">Importar de Wordfence</button>
+                <?php endif; ?>
+                <button type="submit" name="bap_clear_logs" class="button button-link-delete" style="margin-left:4px;" onclick="return confirm('¿Vaciar todos los registros?');">Vaciar historial</button>
+            </form>
+
+            <form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" style="display:inline-flex;align-items:center;gap:6px;margin-left:6px;">
+                <input type="hidden" name="page" value="bap-admin-estadisticas" />
+                <?php if ( '' !== $filter_uri ) : ?>
+                    <input type="hidden" name="filter_uri" value="<?php echo esc_attr( $filter_uri ); ?>" />
+                <?php endif; ?>
+                <?php if ( '' !== $filter_q ) : ?>
+                    <input type="hidden" name="filter_q" value="<?php echo esc_attr( $filter_q ); ?>" />
+                <?php endif; ?>
+                <select name="filter_type" onchange="this.form.submit();" style="min-width:130px;font-weight:600;" aria-label="Filtrar por entorno">
+                    <option value="all" <?php selected( $filter_type, 'all' ); ?>>Todo</option>
+                    <option value="admin" <?php selected( $filter_type, 'admin' ); ?>>Backend</option>
+                    <option value="web" <?php selected( $filter_type, 'web' ); ?>>Frontend</option>
+                </select>
+            </form>
+        </div>
+    </div>
+
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;background:#fff;border:1px solid #c3c4c7;padding:12px 14px;border-radius:4px;">
         <form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <input type="hidden" name="page" value="bap-admin-estadisticas" />
+            <input type="hidden" name="filter_type" value="<?php echo esc_attr( $filter_type ); ?>" />
             <input type="text" name="filter_uri" value="<?php echo esc_attr( $filter_uri ); ?>" placeholder="Filtrar por ruta..." class="regular-text" style="width:210px;" />
             <input type="text" name="filter_q" value="<?php echo esc_attr( $filter_q ); ?>" placeholder="Buscar IP, país, ASN o motivo..." class="regular-text" style="width:220px;" />
             <button type="submit" class="button button-primary">Filtrar</button>
-            <?php if ( '' !== $filter_uri || '' !== $filter_q ) : ?>
-                <a href="<?php echo esc_url( $stats_base_url ); ?>" class="button button-secondary">Limpiar</a>
+            <?php if ( '' !== $filter_uri || '' !== $filter_q || 'all' !== $filter_type ) : ?>
+                <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-estadisticas' ) ); ?>" class="button button-secondary">Limpiar</a>
             <?php endif; ?>
         </form>
         <form method="post" style="display:flex;align-items:center;gap:6px;">
@@ -59,22 +93,6 @@ function bap_render_estadisticas_toolbar( $filter_uri, $filter_q, $stats_base_ur
             <label for="bap_logs_retention_days">Retención:</label>
             <input type="number" id="bap_logs_retention_days" name="bap_logs_retention_days" value="<?php echo (int) get_option( 'bap_logs_retention_days', 30 ); ?>" min="0" max="3650" style="width:65px;" /> días
             <button type="submit" name="bap_save_retention" class="button button-secondary">Guardar</button>
-        </form>
-    </div>
-
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:10px;">
-        <h2 style="margin:0;">Últimos 100 intentos bloqueados</h2>
-        <form method="post" style="display:flex;gap:6px;flex-wrap:wrap;">
-            <?php wp_nonce_field( 'bap_logs_action' ); ?>
-            <button type="submit" name="bap_export_logs_csv" class="button button-secondary">Exportar Logs CSV</button>
-            <button type="submit" name="bap_export_asn_csv" class="button button-secondary">Exportar Resumen ASN</button>
-            <?php if ( function_exists( 'bap_find_ip2location_log_table' ) && '' !== bap_find_ip2location_log_table() ) : ?>
-                <button type="submit" name="bap_import_ip2location" class="button button-secondary" onclick="return confirm('¿Importar todo el historial de bloqueos desde la tabla de IP2Location?');">Importar de IP2Location</button>
-            <?php endif; ?>
-            <?php if ( function_exists( 'bap_find_wordfence_log_table' ) && '' !== bap_find_wordfence_log_table() ) : ?>
-                <button type="submit" name="bap_import_wordfence" class="button button-secondary" onclick="return confirm('¿Importar todo el historial de bloqueos desde las tablas de Wordfence?');">Importar de Wordfence</button>
-            <?php endif; ?>
-            <button type="submit" name="bap_clear_logs" class="button button-link-delete" style="margin-left:6px;" onclick="return confirm('¿Vaciar todos los registros?');">Vaciar historial</button>
         </form>
     </div>
     <?php

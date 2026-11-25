@@ -3,9 +3,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-function bap_render_hourly_line_chart( $table ) {
+function bap_render_hourly_line_chart( $table, $type_where_sql = '' ) {
     global $wpdb;
-    $rows = $wpdb->get_results( "SELECT HOUR(created_at) AS hr, COUNT(*) AS total FROM `{$table}` GROUP BY HOUR(created_at)", ARRAY_A );
+    $rows = $wpdb->get_results( "SELECT HOUR(created_at) AS hr, COUNT(*) AS total FROM `{$table}` WHERE 1=1{$type_where_sql} GROUP BY HOUR(created_at)", ARRAY_A );
 
     $hours = array_fill( 0, 24, 0 );
     foreach ( (array) $rows as $r ) {
