@@ -88,3 +88,6 @@ if ( is_dir( $geo_dir ) ) {
     }
     @rmdir( $geo_dir );
 }
+
+$mu_loader = ( defined( 'WPMU_PLUGIN_DIR' ) ? WPMU_PLUGIN_DIR : ( WP_CONTENT_DIR . '/mu-plugins' ) ) . '/bap-emergency-loader.php';
+if ( file_exists( $mu_loader ) ) { @unlink( $mu_loader ); }
