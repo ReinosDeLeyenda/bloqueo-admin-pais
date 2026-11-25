@@ -22,6 +22,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
         'bap_hibp_enabled', 'bap_hibp_check_login', 'bap_hibp_login_action',
         'bap_pwd_policy_enabled', 'bap_pwd_policy_scope', 'bap_pwd_min_length',
         'bap_pwd_require_complexity', 'bap_pwd_prevent_reuse', 'bap_pwd_expiry_days',
+        'bap_captcha_provider', 'bap_captcha_site_key', 'bap_recaptcha_v3_score', 'bap_captcha_scopes',
         'bap_2fa_enabled', 'bap_2fa_enforce_admins', 'bap_2fa_remember_device',
 
         // 3. Notificaciones y Plantillas Email/Telegram
@@ -42,6 +43,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
         $keys[] = 'bap_abuseipdb_key';
         $keys[] = 'bap_ext_db_pass';
         $keys[] = 'bap_tg_bot_token';
+        $keys[] = 'bap_captcha_secret_key';
     }
     return $keys;
 }

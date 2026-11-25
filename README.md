@@ -46,6 +46,7 @@ Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto
 * **Filtros exclusivos (Permitidos o Bloqueados):** Control independiente por **País** (con buscador autocompletable y **atajos por regiones**: UE, Europa, Norteamérica, Sudamérica, Asia, África y Oceanía) y por **ASN**.
 * **Listas Blanca y Negra con soporte CIDR:** Admite IPs individuales y subredes IPv4/IPv6 (`192.168.1.0/24`, `2001:db8::/32`), con tooltip de metadatos al pasar el ratón por la lista negra.
 * **Simulador de IP en vivo:** Analiza cualquier IPv4/IPv6 y ruta URL para comprobar su país, ASN, riesgo AbuseIPDB, estado Tor/FireHOL y el veredicto exacto de las reglas de Admin y Web.
+* **Protección CAPTCHA Multi-Proveedor (8 estilos):** Soporta **CAPTCHA Local Matemático**, **ALTCHA Proof-of-Work Local (SHA-256 sin API)**, **Google reCAPTCHA v3** (por puntuación), **Google reCAPTCHA v2**, **Cloudflare Turnstile**, **hCaptcha**, **Friendly Captcha** y **MTCaptcha**, aplicable de forma independiente a **Inicio de sesión, Registro, Recuperar contraseña y Comentarios**.
 * **Autenticación en Dos Factores (2FA):** Soporte local para App Autenticadora (TOTP con código QR generado 100 % en el navegador), verificación por email, 8 códigos de respaldo de un solo uso, dispositivos de confianza (30 días) y obligatoriedad para Administradores.
 * **Política y Caducidad de Contraseñas:** Exige longitud mínima y complejidad, impide reutilizar las **últimas 5 contraseñas**, permite configurar **rotación obligatoria cada X días** y añade opción en el perfil de usuario para **forzar caducidad inmediata**.
 * **Protección contra contraseñas filtradas (Have I Been Pwned):** Comprueba contraseñas expuestas en brechas públicas mediante *k-Anonymity* al cambiar clave o iniciar sesión.
@@ -95,6 +96,23 @@ bloqueo-admin-pais/
     ├── notificaciones/           # Configuración de canales y rutas de alertas
     └── comun/                    # Widget del Escritorio y selector de países compartido
 ```
+
+---
+
+## Comparativa frente a Wordfence e IP2Location
+
+Este plugin sustituye en una sola herramienta ligera a **IP2Location Country Blocker**, **WP 2FA**, **Limit Login Attempts** y gran parte de **Wordfence Security**, sin requerir cuentas externas, telemetría ni suscripciones:
+
+| Característica | **Bloqueo Admin y Web** (Este plugin) | **Wordfence Security** (Free / Premium) | **IP2Location Country Blocker** |
+| :--- | :--- | :--- | :--- |
+| **Geobloqueo por País y ASN** | **100 % incluido** (.mmdb local, regiones, ASN y reglas Y/O por URL) | País solo en Premium; sin bloqueo nativo por ASN | Sí (requiere cuenta/token externo) |
+| **Redirecciones por País y Bots SEO** | Redirección PAÍS => URL + doble verificación DNS (DNS + FCrDNS) | No incluye redirecciones por país | Sí |
+| **Listas de Amenazas (IPs/CIDR)** | **Tiempo real gratis** (Tor, FireHOL, AbuseIPDB + listas propias ilimitadas) | Retraso de 30 días en Free; tiempo real solo en Premium | Solo proxies con API comercial |
+| **Cortafuegos WAF y Rate Limit** | Payload (SQLi, XSS, LFI, subidas PHP), Rate Limit, User-Agents y .htaccess | WAF avanzado con reglas *0-day* comerciales en Premium | No incluye WAF ni Rate Limit |
+| **CAPTCHA, 2FA y Sesiones** | **8 estilos CAPTCHA** (reCAPTCHA v2/v3, Turnstile, hCaptcha, Friendly, MTCaptcha y 2 locales), 2FA, HIBP, caducidad de claves y sesiones en vivo | Solo reCAPTCHA v3, 2FA y HIBP; sin gestor de sesiones en vivo | No incluye CAPTCHA, 2FA ni sesiones |
+| **Escáner de Integridad y Diff** | Checksums Core + Plugins WP.org, **visor Diff**, firmas malware y hardening | Escáner completo + base de CVEs comercial | No incluye escáner de archivos |
+| **Alertas y Reportes** | **Telegram (Rich Articles)** + Email con editor visual, cambio de ASN y widget | Solo alertas básicas por email | Resumen básico por email |
+| **Consumo y Privacidad** | **Muy ligero y 100 % autónomo** (1 tabla propia, cero telemetría) | Pesado (>25 tablas MySQL y conexión a servidores externos) | Moderado (dependiente de API/token) |
 
 ---
 

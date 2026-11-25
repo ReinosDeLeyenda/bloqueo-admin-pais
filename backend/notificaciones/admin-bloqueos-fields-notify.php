@@ -181,6 +181,42 @@ function bap_render_bloqueos_notify_and_auth_fields() {
         </td>
     </tr>
     <tr>
+        <th>Protección CAPTCHA (Anti-Bots)</th>
+        <td>
+            <?php
+            $cap_prov   = (string) get_option( 'bap_captcha_provider', 'none' );
+            $cap_scopes = (array) get_option( 'bap_captcha_scopes', [ 'login', 'register', 'lostpassword' ] );
+            ?>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+                <select id="bap_captcha_provider" name="bap_captcha_provider">
+                    <option value="none" <?php selected( $cap_prov, 'none' ); ?>>Desactivado</option>
+                    <option value="math" <?php selected( $cap_prov, 'math' ); ?>>CAPTCHA Local Matemático (100 % sin APIs externas)</option>
+                    <option value="altcha" <?php selected( $cap_prov, 'altcha' ); ?>>ALTCHA Proof-of-Work Local (Automático SHA-256 sin API)</option>
+                    <option value="recaptcha_v3" <?php selected( $cap_prov, 'recaptcha_v3' ); ?>>Google reCAPTCHA v3 (Invisible por puntuación)</option>
+                    <option value="recaptcha_v2" <?php selected( $cap_prov, 'recaptcha_v2' ); ?>>Google reCAPTCHA v2 (Casilla "No soy un robot")</option>
+                    <option value="turnstile" <?php selected( $cap_prov, 'turnstile' ); ?>>Cloudflare Turnstile (Ilimitado gratis / Sin fricción)</option>
+                    <option value="hcaptcha" <?php selected( $cap_prov, 'hcaptcha' ); ?>>hCaptcha (Gratis / Visual)</option>
+                    <option value="friendly" <?php selected( $cap_prov, 'friendly' ); ?>>Friendly Captcha (Gratis 1k/mes / Sin cookies RGPD)</option>
+                    <option value="mtcaptcha" <?php selected( $cap_prov, 'mtcaptcha' ); ?>>MTCaptcha (Gratis 10k/mes / RGPD)</option>
+                </select>
+                <label>Umbral reCAPTCHA v3:
+                    <input type="number" name="bap_recaptcha_v3_score" value="<?php echo esc_attr( get_option( 'bap_recaptcha_v3_score', '0.5' ) ); ?>" min="0.1" max="0.9" step="0.1" class="small-text" />
+                </label>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                <input type="text" name="bap_captcha_site_key" value="<?php echo esc_attr( get_option( 'bap_captcha_site_key', '' ) ); ?>" class="regular-text code" placeholder="Site Key (Clave del sitio)" />
+                <input type="password" name="bap_captcha_secret_key" value="<?php echo esc_attr( get_option( 'bap_captcha_secret_key', '' ) ); ?>" class="regular-text code" placeholder="Secret Key (Clave secreta)" autocomplete="new-password" />
+            </div>
+            <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:4px;">
+                <label><input type="checkbox" name="bap_captcha_scopes[]" value="login" <?php checked( in_array( 'login', $cap_scopes, true ) ); ?> /> Inicio de sesión</label>
+                <label><input type="checkbox" name="bap_captcha_scopes[]" value="register" <?php checked( in_array( 'register', $cap_scopes, true ) ); ?> /> Registro</label>
+                <label><input type="checkbox" name="bap_captcha_scopes[]" value="lostpassword" <?php checked( in_array( 'lostpassword', $cap_scopes, true ) ); ?> /> Recuperar contraseña</label>
+                <label><input type="checkbox" name="bap_captcha_scopes[]" value="comments" <?php checked( in_array( 'comments', $cap_scopes, true ) ); ?> /> Comentarios</label>
+            </div>
+            <p class="description">Para <strong>CAPTCHA Local Matemático</strong> no necesitas claves API. Si usas reCAPTCHA v3, una puntuación menor al umbral (ej. <code>0.5</code>) bloquea el intento y lo registra en Estadísticas.</p>
+        </td>
+    </tr>
+    <tr>
         <th>Autenticación en Dos Factores (2FA)</th>
         <td>
             <label style="display:block;margin-bottom:6px;"><input type="checkbox" name="bap_2fa_enabled" value="1" <?php checked( get_option( 'bap_2fa_enabled', '0' ), '1' ); ?> /> Habilitar 2FA en los perfiles de usuario</label>

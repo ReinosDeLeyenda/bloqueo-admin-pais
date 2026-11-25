@@ -101,6 +101,29 @@ add_action( 'admin_init', function() {
         ] );
     }
     register_setting( 'bap_settings_group', 'bap_hibp_login_action', [ 'sanitize_callback' => fn( $i ) => ( 'block' === $i ) ? 'block' : 'warn', 'default' => 'warn' ] );
+    register_setting( 'bap_settings_group', 'bap_captcha_provider', [
+        'sanitize_callback' => fn( $i ) => in_array( $i, [ 'none', 'math', 'altcha', 'recaptcha_v3', 'recaptcha_v2', 'turnstile', 'hcaptcha', 'friendly', 'mtcaptcha' ], true ) ? $i : 'none',
+        'default'           => 'none',
+    ] );
+    register_setting( 'bap_settings_group', 'bap_captcha_site_key', [
+        'sanitize_callback' => fn( $i ) => trim( sanitize_text_field( (string) $i ) ),
+        'default'           => '',
+    ] );
+    register_setting( 'bap_settings_group', 'bap_captcha_secret_key', [
+        'sanitize_callback' => fn( $i ) => trim( sanitize_text_field( (string) $i ) ),
+        'default'           => '',
+    ] );
+    register_setting( 'bap_settings_group', 'bap_recaptcha_v3_score', [
+        'sanitize_callback' => fn( $i ) => max( 0.1, min( 0.9, round( (float) $i, 1 ) ) ),
+        'default'           => 0.5,
+    ] );
+    register_setting( 'bap_settings_group', 'bap_captcha_scopes', [
+        'sanitize_callback' => function( $i ) {
+            $valid = [ 'login', 'register', 'lostpassword', 'comments' ];
+            return array_values( array_intersect( $valid, array_map( 'sanitize_key', (array) $i ) ) );
+        },
+        'default'           => [ 'login', 'register', 'lostpassword' ],
+    ] );
 
     register_setting( 'bap_settings_group', 'bap_pwd_policy_enabled', [
         'sanitize_callback' => $bool_cb,
