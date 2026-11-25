@@ -96,6 +96,7 @@ function bap_render_auditoria_page() {
             <?php if ( function_exists( 'bap_render_seo_spam_scanner_box' ) ) { bap_render_seo_spam_scanner_box(); } ?>
             <?php if ( function_exists( 'bap_render_file_permissions_box' ) ) { bap_render_file_permissions_box(); } ?>
             <?php if ( function_exists( 'bap_render_rogue_admin_box' ) ) { bap_render_rogue_admin_box(); } ?>
+            <?php if ( function_exists( 'bap_render_weak_passwords_auditor_box' ) ) { bap_render_weak_passwords_auditor_box(); } ?>
             <?php if ( function_exists( 'bap_render_wp_cron_inspector_box' ) ) { bap_render_wp_cron_inspector_box(); } ?>
         <?php endif; ?>
     </div>
