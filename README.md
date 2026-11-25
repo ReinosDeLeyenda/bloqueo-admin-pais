@@ -106,7 +106,7 @@ Este plugin sustituye en una sola herramienta ligera a **IP2Location Country Blo
 | Característica | **Bloqueo Admin y Web** (Este plugin) | **Wordfence Security** (Free / Premium) | **IP2Location Country Blocker** |
 | :--- | :--- | :--- | :--- |
 | **Geobloqueo por País y ASN** | **100 % incluido** (.mmdb local, regiones, ASN y reglas Y/O por URL) | País solo en Premium; sin bloqueo nativo por ASN | Sí (requiere cuenta/token externo) |
-| **Redirecciones por País y Bots SEO** | Redirección PAÍS => URL + doble verificación DNS (DNS + FCrDNS) | No incluye redirecciones por país | Sí |
+| **Redirecciones por País y Bots SEO** | Redirección PAÍS => URL + doble verificación DNS (`rDNS` + `FCrDNS`) | No incluye redirecciones por país | Sí |
 | **Listas de Amenazas (IPs/CIDR)** | **Tiempo real gratis** (Tor, FireHOL, AbuseIPDB + listas propias ilimitadas) | Retraso de 30 días en Free; tiempo real solo en Premium | Solo proxies con API comercial |
 | **Cortafuegos WAF y Rate Limit** | Payload (SQLi, XSS, LFI, subidas PHP), Rate Limit, User-Agents y .htaccess | WAF avanzado con reglas *0-day* comerciales en Premium | No incluye WAF ni Rate Limit |
 | **CAPTCHA, 2FA y Sesiones** | **8 estilos CAPTCHA** (reCAPTCHA v2/v3, Turnstile, hCaptcha, Friendly, MTCaptcha y 2 locales), 2FA, HIBP, caducidad de claves y sesiones en vivo | Solo reCAPTCHA v3, 2FA y HIBP; sin gestor de sesiones en vivo | No incluye CAPTCHA, 2FA ni sesiones |

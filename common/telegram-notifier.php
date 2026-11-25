@@ -163,3 +163,48 @@ function bap_build_telegram_digest_article( array $queue, $site_name, $period_la
     $fb   = function_exists( 'bap_tg_rich_to_fallback_html' ) ? bap_tg_rich_to_fallback_html( $rich ) : strip_tags( $rich );
     return [ 'rich' => $rich, 'fallback' => $fb ];
 }
+
+function bap_queue_or_send_telegram( array $item, $freq ) {
+    $site_name = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+
+    if ( 'instant' === $freq ) {
+        $msg = bap_build_telegram_single_article( $item, $site_name, false );
+        bap_send_telegram_rich_article( $msg['rich'], $msg['fallback'] );
+        return;
+    }
+
+    $queue = get_option( 'bap_tg_digest_queue', [] );
+    if ( ! is_array( $queue ) ) {
+        $queue = [];
+    }
+    $queue[] = $item;
+    if ( count( $queue ) > 2000 ) {
+        $queue = array_slice( $queue, -2000 );
+    }
+    update_option( 'bap_tg_digest_queue', $queue, false );
+
+    if ( ! wp_next_scheduled( 'bap_send_telegram_digest_event' ) ) {
+        bap_reschedule_telegram_cron( $freq );
+    }
+}
+
+function bap_flush_telegram_digest() {
+    $queue = get_option( 'bap_tg_digest_queue', [] );
+    if ( empty( $queue ) || ! is_array( $queue ) ) {
+        return;
+    }
+    delete_option( 'bap_tg_digest_queue' );
+
+    $channel = (string) get_option( 'bap_notify_channel', 'none' );
+    if ( ! in_array( $channel, [ 'telegram', 'both' ], true ) ) {
+        return;
+    }
+
+    $freq      = (string) get_option( 'bap_notify_freq', 'daily' );
+    $intervals = bap_get_telegram_intervals();
+    $period    = $intervals[ $freq ]['label'] ?? '24 horas';
+    $site_name = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+
+    $msg = bap_build_telegram_digest_article( $queue, $site_name, $period, false );
+    bap_send_telegram_rich_article( $msg['rich'], $msg['fallback'] );
+}

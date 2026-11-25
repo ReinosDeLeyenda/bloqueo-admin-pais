@@ -15,12 +15,29 @@
 
             if (ip && meta[ip]) {
                 const d = meta[ip];
-                tip.innerHTML =
-                    '<strong style="color:#72aee6;font-size:13px;">' + ip + '</strong><br>' +
-                    '<strong>País:</strong> ' + d.country + '<br>' +
-                    '<strong>ASN:</strong> ' + d.asn + '<br>' +
-                    '<strong>Intentos:</strong> ' + d.count + ' (' + d.reason + ')<br>' +
-                    '<strong>Riesgo AbuseIPDB:</strong> ' + d.risk;
+                tip.textContent = '';
+
+                const title = document.createElement('strong');
+                title.style.cssText = 'color:#72aee6;font-size:13px;display:block;margin-bottom:4px;';
+                title.textContent = ip;
+                tip.appendChild(title);
+
+                const rows = [
+                    ['País', d.country],
+                    ['ASN', d.asn],
+                    ['Intentos', d.count + ' (' + d.reason + ')'],
+                    ['Riesgo AbuseIPDB', d.risk]
+                ];
+
+                rows.forEach(([label, val]) => {
+                    const line = document.createElement('div');
+                    const strong = document.createElement('strong');
+                    strong.textContent = label + ': ';
+                    line.appendChild(strong);
+                    line.appendChild(document.createTextNode(String(val ?? '')));
+                    tip.appendChild(line);
+                });
+
                 tip.style.display = 'block';
                 tip.style.left = (e.clientX + 14) + 'px';
                 tip.style.top = (e.clientY + 14) + 'px';
@@ -120,7 +137,6 @@
             evaluateKeyStrength();
         });
     }
-
     function syncRadioInputs(radioName, allowId, blockId) {
         const selected = document.querySelector('input[name="' + radioName + '"]:checked')?.value || 'allow';
         const allowEl = document.getElementById(allowId);
@@ -164,6 +180,7 @@
             }
         });
     }
+
     const restorePathsBtn = document.getElementById('bap_restore_paths');
     const pathsTextarea = document.getElementById('bap_protected_paths');
     if (restorePathsBtn && pathsTextarea) {
@@ -172,6 +189,7 @@
             pathsTextarea.value = def;
         });
     }
+
     const routesList = document.getElementById('bap-login-routes-list');
     if (routesList) {
         function syncRouteButtons() {

@@ -3,8 +3,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// Purgar IPs autobaneadas caducadas
-add_action( 'init', function() {
+// Purgar IPs autobaneadas caducadas mediante WP-Cron (evita carga en cada petición)
+function bap_purge_expired_autobans() {
     $duration_hours = (int) get_option( 'bap_auto_ban_duration', 24 );
     if ( $duration_hours <= 0 ) {
         return;
@@ -32,7 +32,17 @@ add_action( 'init', function() {
         update_option( 'bap_blacklist_ips', implode( "\n", $filtered ) );
         update_option( 'bap_auto_ban_expirations', $expirations, false );
     }
-}, 0 );
+}
+add_action( 'bap_purge_autobans_event', 'bap_purge_expired_autobans' );
+
+add_action( 'init', function() {
+    if ( false === get_transient( 'bap_autoban_cron_checked' ) ) {
+        if ( ! wp_next_scheduled( 'bap_purge_autobans_event' ) ) {
+            wp_schedule_event( time() + HOUR_IN_SECONDS, 'hourly', 'bap_purge_autobans_event' );
+        }
+        set_transient( 'bap_autoban_cron_checked', '1', 12 * HOUR_IN_SECONDS );
+    }
+}, 5 );
 
 // Bloqueo de XML-RPC
 if ( '1' === (string) get_option( 'bap_block_xmlrpc', '1' ) ) {
@@ -118,9 +128,20 @@ add_action( 'init', function() {
     if ( '' !== $secret ) {
         $cname = 'bap_bypass_' . md5( $secret );
         $token = hash( 'sha256', $secret . AUTH_SALT );
-        $uri   = isset( $_SERVER['REQUEST_URI'] ) ? rawurldecode( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-        $redir = isset( $_GET['redirect_to'] ) ? wp_unslash( $_GET['redirect_to'] ) : '';
-        if ( isset( $_GET[ $secret ] ) || false !== strpos( $uri, $secret ) || false !== strpos( $redir, $secret ) ) {
+
+        // Comprobar parámetro GET exacto (?MI_LLAVE o ?MI_LLAVE=1)
+        $has_valid_param = array_key_exists( $secret, $_GET );
+
+        // Si viene dentro de redirect_to (ej. tras login), parsear sus parámetros GET reales
+        if ( ! $has_valid_param && ! empty( $_GET['redirect_to'] ) ) {
+            $redir_query = (string) wp_parse_url( wp_unslash( $_GET['redirect_to'] ), PHP_URL_QUERY );
+            if ( '' !== $redir_query ) {
+                parse_str( $redir_query, $redir_params );
+                $has_valid_param = array_key_exists( $secret, $redir_params );
+            }
+        }
+
+        if ( $has_valid_param ) {
             if ( ! headers_sent() ) {
                 setcookie( $cname, $token, time() + DAY_IN_SECONDS, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
             }

@@ -9,7 +9,7 @@ require_once dirname( __DIR__ ) . '/notificaciones/admin-bloqueos-fields-notify.
     <h1>Control de Acceso al Panel</h1>
     <?php bap_render_tabs( 'bap-admin-bloqueos' ); ?>
     <?php settings_errors(); ?>
-    <?php echo $test_notice; ?>
+    <?php echo wp_kses_post( $test_notice ); ?>
 
     <div class="notice notice-info inline">
         <p><strong>Tu conexión actual:</strong> IP <code><?php echo esc_html( $ip ); ?></code> | País <code><?php echo esc_html( $ctry ); ?></code> <?php echo $src ? '(' . esc_html( $src ) . ')' : ''; ?> | ASN <code><?php echo esc_html( bap_get_asn_by_ip( $ip ) ); ?></code></p>

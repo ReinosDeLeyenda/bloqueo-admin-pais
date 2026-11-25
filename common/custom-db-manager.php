@@ -118,6 +118,8 @@ function bap_install_custom_db_from_file( $id, $file_path ) {
         update_option( 'bap_custom_dbs', $dbs );
     }
 
+    bap_bump_custom_dbs_cache_version();
+
     return $count;
 }
 

@@ -194,4 +194,4 @@ add_action( 'wp_login', function( $user_login, $user ) {
         return;
     }
     bap_send_successful_login_alert( $user, false );
-}, 5, 2 );
+}, 20, 2 );
