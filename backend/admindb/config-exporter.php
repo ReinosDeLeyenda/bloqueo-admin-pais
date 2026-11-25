@@ -23,7 +23,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
         'bap_pwd_policy_enabled', 'bap_pwd_policy_scope', 'bap_pwd_min_length',
         'bap_pwd_require_complexity', 'bap_pwd_prevent_reuse', 'bap_pwd_expiry_days',
         'bap_captcha_provider', 'bap_captcha_site_key', 'bap_recaptcha_v3_score', 'bap_captcha_scopes',
-        'bap_magic_login_enabled', 'bap_2fa_enabled', 'bap_2fa_enforce_admins', 'bap_2fa_remember_device',
+        'bap_session_hijack_shield', 'bap_magic_login_enabled', 'bap_2fa_enabled', 'bap_2fa_enforce_admins', 'bap_2fa_remember_device',
 
         // 3. Notificaciones y Plantillas Email/Telegram
         'bap_notify_channel', 'bap_notify_freq', 'bap_notify_emails', 'bap_tg_custom_templates',

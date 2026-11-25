@@ -104,6 +104,7 @@ function bap_render_bloqueos_rules_fields( $bl_raw ) {
     <tr>
         <th>Filtros de seguridad activos</th>
         <td>
+            <label style="display:block;margin-bottom:6px;"><input type="checkbox" name="bap_session_hijack_shield" value="1" <?php checked( get_option( 'bap_session_hijack_shield', '0' ), '1' ); ?> /> <strong>Escudo Anti-Secuestro de Sesion</strong> (vincular cookie a subred IP y navegador)</label>
             <label style="display:block;margin-bottom:6px;"><input type="checkbox" name="bap_block_nonexistent_users" value="1" <?php checked( get_option( 'bap_block_nonexistent_users', '1' ), '1' ); ?> /> Bloquear usuarios o emails inexistentes al instante</label>
             <label style="display:block;margin-bottom:6px;"><input type="checkbox" name="bap_block_xmlrpc" value="1" <?php checked( get_option( 'bap_block_xmlrpc', '1' ), '1' ); ?> /> Desactivar <code>xmlrpc.php</code> y pingbacks</label>
             <label style="display:block;margin-bottom:6px;"><input type="checkbox" name="bap_block_user_enum" value="1" <?php checked( get_option( 'bap_block_user_enum', '1' ), '1' ); ?> /> Evitar enumeración de usuarios (<code>?author</code> y REST API)</label>
