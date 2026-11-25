@@ -3,7 +3,7 @@
  * Plugin Name: Bloqueo Admin por País e IP
  * Plugin URI: https://github.com
  * Description: Bloquea wp-admin, wp-login.php y el frontend por país, ASN, AbuseIPDB, Tor, FireHOL e IP usando bases de datos locales.
- * Version: 1.2.45
+ * Version: 1.2.46
  * Author: ReinosDeLeyenda
  * License: GPLv2 or later
  */
@@ -14,6 +14,33 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $bap_dir   = plugin_dir_path( __FILE__ );
 $bap_files = [
+    // Common - Motor compartido (cargar PRIMERO)
+    'common/mmdb-reader.php',
+    'common/cidr-helper.php',
+    'common/geo-db-manager.php',
+    'common/abuseipdb-manager.php',
+    'common/threat-lists-manager.php',
+    'common/custom-db-manager.php',
+    'common/web-rules-manager.php',
+    'common/security-evaluator.php',
+    'common/htaccess-manager.php',
+    'common/external-db-manager.php',
+    'common/logs-db-manager.php',
+    'common/email-digest-template.php',
+    'common/notificaciones-mail.php',
+    'common/telegram-template-renderer.php',
+    'common/telegram-notifier.php',
+    'common/login-notifier.php',
+    'common/github-updater.php',
+    // Frontend - Cortafuegos público
+    'frontend/block-page-403.php',
+    'frontend/seo-bots-helper.php',
+    'frontend/country-redirects.php',
+    'frontend/frontend-firewall.php',
+    'frontend/rate-limiter.php',
+    'frontend/user-agent-blocker.php',
+    'frontend/honeypot-protector.php',
+    'frontend/waf-payload-inspector.php',
     // Backend - 1. Base de Datos y Escáneres
     'backend/admindb/admin-db.php',
     'backend/admindb/admin-custom-dbs.php',

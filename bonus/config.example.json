@@ -1,0 +1,7 @@
+{
+    "bot_token": "TU_TOKEN_DE_TELEGRAM",
+    "chat_id": "TU_CHAT_ID",
+    "allowed_asns": [
+        "AS57269"
+    ]
+}
