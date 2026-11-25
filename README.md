@@ -11,15 +11,15 @@ Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto
 2. Haz clic derecho sobre el archivo **`bloqueo-admin-pais.zip`** de la última versión y selecciona **Copiar dirección de enlace** (o descárgalo en tu equipo).
 3. En tu panel de WordPress, entra en **Plugins → Añadir nuevo plugin → Subir plugin → Elegir archivo**.
 4. Pega el enlace copiado o selecciona el `.zip` descargado y pulsa **Instalar ahora**.
-5. Activa el plugin, entra en **Bloqueo Admin → 1. Administración Base de Datos** y pulsa **Descargar / Actualizar TODAS las bases de datos**.
+5. Activa el plugin, entra en **Bloqueo Admin → 1. Bases de Datos** y pulsa **Descargar / Actualizar TODAS las bases de datos**.
 
 > **Nota sobre actualizaciones:** Aunque WordPress muestre *"Actualizaciones automáticas no disponibles"* por tratarse de un plugin externo a WordPress.org, **este addon integra actualizaciones automáticas desde GitHub Releases** y permite comprobar nuevas versiones en cualquier momento pulsando **Buscar actualizaciones** en la lista de plugins.
 
 ### Método 2: Instalación manual vía FTP / SSH
 1. Sube la carpeta del plugin dentro de `/wp-content/plugins/bloqueo-admin-pais/`.
 2. Activa el plugin desde el menú **Plugins** de WordPress.
-3. Entra en **Bloqueo Admin → 1. Administración Base de Datos** y pulsa **Descargar / Actualizar TODAS las bases de datos**.
-4. Configura tus reglas en **2. Bloqueos Admin** y **3. Bloqueos Web**.
+3. Entra en **Bloqueo Admin → 1. Bases de Datos** y pulsa **Descargar / Actualizar TODAS las bases de datos**.
+4. Configura tus reglas en **2. Bloqueos (Backend / Frontend)**.
 
 ---
 
@@ -87,15 +87,16 @@ bloqueo-admin-pais/
 ├── uninstall.php                 # Limpieza completa de tablas, opciones, mu-plugin y archivos
 ├── common/                       # Motor compartido (MMDB, CIDR, evaluador, DBs, Email/Telegram, Updater)
 ├── frontend/                     # Cortafuegos público, WAF, Rate Limit, Honeypot, User-Agents y SEO bots
-└── backend/                      # Panel de administración dividido por módulos
-    ├── admindb/                  # 1. Base de Datos, Custom DBs, Backup JSON, Escáneres, Permisos y Modo Emergencia
-    ├── bloqueoa/                 # 2. Bloqueos Admin, Firewall, Ajustes y Simulador de IP
-    ├── bloqueow/                 # 3. Bloqueos Web (Frontend por URL con lógica Y/O)
-    ├── estadisticas/             # 4. Gráficas, Tabla de logs, Exportador CSV e Importadores (Wordfence / IP2Location)
-    ├── plantillase/              # 5. Constructor visual de Plantillas Email
-    ├── plantillast/              # 6. Diseñador Rich Text de Plantillas Telegram
+└── backend/                      # Panel de administración dividido en 5 pestañas principales
+    ├── admindb/                  # 1. Bases de Datos (Locales, Personalizadas, MySQL Externo y Backup JSON)
+    ├── bloqueoa/                 # 2. Bloqueos [General | Backend | Frontend] (Firewall, Simulador IP y Ajustes)
+    ├── bloqueow/                 # 2. Bloqueos -> Subpestaña Frontend (Reglas Y/O por URL, WAF, Rate Limit y Bots)
+    ├── auditoria/                # 3. Auditoría y Hardening (Integridad, Diff/SVN, Malware, BD, Permisos y Emergencia)
+    ├── plantillase/              # 4. Plantillas -> Subpestaña Email (Constructor visual modular)
+    ├── plantillast/              # 4. Plantillas -> Subpestaña Telegram (Diseñador Rich Text)
+    ├── estadisticas/             # 5. Estadísticas (Filtro Todo/Backend/Frontend, Gráficas, Logs e Importadores)
     ├── adminuser/                # Seguridad de cuentas: 2FA, HIBP, Política de Contraseñas y Sesiones
-    ├── notificaciones/           # Configuración de canales y rutas de alertas
+    ├── notificaciones/           # Canales de alerta y rutas de notificación (General)
     └── comun/                    # Widget del Escritorio y selector de países compartido
 ```
 

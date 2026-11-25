@@ -141,7 +141,7 @@ function bap_render_dashboard_widget() {
             </tbody>
         </table>
         <p style="margin:0 0 18px 0;">
-            <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-bloqueos#bap_blacklist_textarea' ) ); ?>" class="button button-primary">Actualizar IPs bloqueadas</a>
+            <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-bloqueos&subtab=backend#bap_blacklist_textarea' ) ); ?>" class="button button-primary">Actualizar IPs bloqueadas</a>
         </p>
 
         <h3 style="color:#ffffff;font-size:15px;margin:0 0 8px 0;">Principales 5 países bloqueados</h3>
@@ -168,7 +168,7 @@ function bap_render_dashboard_widget() {
             </tbody>
         </table>
         <p style="margin:0 0 18px 0;">
-            <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-bloqueos' ) ); ?>" class="button button-primary">Actualizar países bloqueados</a>
+            <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-bloqueos&subtab=backend' ) ); ?>" class="button button-primary">Actualizar países bloqueados</a>
         </p>
 
         <h3 style="color:#ffffff;font-size:15px;margin:0 0 8px 0;">Principales 5 accesos fallidos</h3>
@@ -199,7 +199,7 @@ function bap_render_dashboard_widget() {
             </tbody>
         </table>
         <p style="margin:0 0 18px 0;">
-            <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-bloqueos' ) ); ?>" class="button button-primary">Actualizar las opciones de seguridad en el acceso</a>
+            <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-bloqueos&subtab=backend' ) ); ?>" class="button button-primary">Actualizar las opciones de seguridad en el acceso</a>
         </p>
 
         <h3 style="color:#ffffff;font-size:15px;margin:0 0 6px 0;">Actualizaciones necesarias</h3>
