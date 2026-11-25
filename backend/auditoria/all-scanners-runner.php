@@ -105,5 +105,26 @@ function bap_execute_all_security_scans() {
 
     if ( function_exists( 'bap_scan_seo_spam_and_malicious_links' ) ) { $seo = bap_scan_seo_spam_and_malicious_links(); $cnt = count( $seo['findings'] ?? [] ); $report[] = [ 'name' => 'SEO Spam y Enlaces Maliciosos', 'status' => $cnt > 0 ? 'error' : 'ok', 'detail' => $cnt > 0 ? "{$cnt} enlace(s) oculto(s) o spam SEO detectado(s)." : "Revisados {$seo['posts_checked']} posts y {$seo['comments_checked']} comentarios limpios." ]; }
 
+    if ( function_exists( 'bap_roles_verify_integrity' ) ) {
+        $r_chk    = bap_roles_verify_integrity();
+        $bad_r    = ( $r_chk['changed'] || ! empty( $r_chk['escalations'] ) );
+        $report[] = [
+            'name'   => 'Integridad de Roles y Capacidades',
+            'status' => $bad_r ? 'error' : 'ok',
+            'detail' => $bad_r ? 'Alteracion o escalada detectada en wp_user_roles.' : 'Roles y permisos de usuario verificados sin cambios.',
+        ];
+    }
+
+    if ( function_exists( 'bap_dns_mon_verify' ) ) {
+        $d_chk = bap_dns_mon_verify();
+        if ( is_array( $d_chk ) ) {
+            $report[] = [
+                'name'   => 'Registros DNS del Dominio',
+                'status' => ! empty( $d_chk['changed'] ) ? 'error' : 'ok',
+                'detail' => ! empty( $d_chk['changed'] ) ? 'Cambios detectados en DNS (' . implode( ', ', array_keys( $d_chk['diffs'] ) ) . ').' : 'Registros NS, A, AAAA y MX verificados sin cambios.',
+            ];
+        }
+    }
+
     return $report;
 }

@@ -23,8 +23,8 @@ function bap_cron_resolve_hook_origin( $hook ) {
             } catch ( Throwable $e ) {}
             if ( '' !== $file ) {
                 $norm = wp_normalize_path( $file );
-                if ( preg_match( '#/plugins/([^/]+)/#', $norm, $m ) ) { $origins[] = 'Plugin: ' . $m; }
-                elseif ( preg_match( '#/themes/([^/]+)/#', $norm, $m ) ) { $origins[] = 'Tema: ' . $m; }
+                if ( preg_match( '#/plugins/([^/]+)/#', $norm, $m ) ) { $origins[] = 'Plugin: ' . $m[1]; }
+                elseif ( preg_match( '#/themes/([^/]+)/#', $norm, $m ) ) { $origins[] = 'Tema: ' . $m[1]; }
                 elseif ( 0 === strpos( $norm, $root . '/mu-plugins/' ) ) { $origins[] = 'MU-Plugin: ' . basename( $norm ); }
                 else { $origins[] = 'WordPress Core'; }
             }

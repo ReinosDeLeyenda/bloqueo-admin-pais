@@ -3,7 +3,39 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// Purgar IPs autobaneadas caducadas mediante WP-Cron (evita carga en cada petición)
+function bap_is_away_mode_active() {
+    if ( '1' !== (string) get_option( 'bap_away_mode_enabled', '0' ) ) {
+        return false;
+    }
+
+    $days = (array) get_option( 'bap_away_mode_days', [] );
+    $dow  = (string) current_time( 'N' );
+    if ( ! in_array( $dow, $days, true ) ) {
+        return false;
+    }
+
+    $start_str = (string) get_option( 'bap_away_mode_start', '23:00' );
+    $end_str   = (string) get_option( 'bap_away_mode_end', '07:00' );
+    if ( ! preg_match( '/^(\d{2}):(\d{2})$/', $start_str, $ms ) || ! preg_match( '/^(\d{2}):(\d{2})$/', $end_str, $me ) ) {
+        return false;
+    }
+
+    $now_str = (string) current_time( 'H:i' );
+    list( $nh, $nm ) = array_map( 'intval', explode( ':', $now_str ) );
+
+    $cur_mins   = ( $nh * 60 ) + $nm;
+    $start_mins = ( (int) $ms[1] * 60 ) + (int) $ms[2];
+    $end_mins   = ( (int) $me[1] * 60 ) + (int) $me[2];
+
+    if ( $start_mins === $end_mins ) {
+        return false;
+    }
+    if ( $start_mins < $end_mins ) {
+        return ( $cur_mins >= $start_mins && $cur_mins < $end_mins );
+    }
+    return ( $cur_mins >= $start_mins || $cur_mins < $end_mins );
+}
+
 function bap_purge_expired_autobans() {
     $duration_hours = (int) get_option( 'bap_auto_ban_duration', 24 );
     if ( $duration_hours <= 0 ) {
@@ -44,7 +76,6 @@ add_action( 'init', function() {
     }
 }, 5 );
 
-// Bloqueo de XML-RPC
 if ( '1' === (string) get_option( 'bap_block_xmlrpc', '1' ) ) {
     add_filter( 'xmlrpc_enabled', '__return_false' );
     add_filter( 'xmlrpc_methods', '__return_empty_array' );
@@ -64,7 +95,6 @@ if ( '1' === (string) get_option( 'bap_block_xmlrpc', '1' ) ) {
     }, 1 );
 }
 
-// Bloqueo de enumeración de usuarios (Author scan y REST API)
 if ( '1' === (string) get_option( 'bap_block_user_enum', '1' ) ) {
     add_action( 'template_redirect', function() {
         if ( ! is_user_logged_in() && ( is_author() || isset( $_GET['author'] ) ) ) {
@@ -73,7 +103,7 @@ if ( '1' === (string) get_option( 'bap_block_user_enum', '1' ) ) {
                 return;
             }
             $country = function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'DESCONOCIDO';
-            bap_deny_access( $ip, $country, 'Intento de enumeración de usuarios (?author)' );
+            bap_deny_access( $ip, $country, 'Intento de enumeracion de usuarios (?author)' );
         }
     }, 1 );
 
@@ -129,10 +159,8 @@ add_action( 'init', function() {
         $cname = 'bap_bypass_' . md5( $secret );
         $token = hash( 'sha256', $secret . AUTH_SALT );
 
-        // Comprobar parámetro GET exacto (?MI_LLAVE o ?MI_LLAVE=1)
         $has_valid_param = array_key_exists( $secret, $_GET );
 
-        // Si viene dentro de redirect_to (ej. tras login), parsear sus parámetros GET reales
         if ( ! $has_valid_param && ! empty( $_GET['redirect_to'] ) ) {
             $redir_query = (string) wp_parse_url( wp_unslash( $_GET['redirect_to'] ), PHP_URL_QUERY );
             if ( '' !== $redir_query ) {
@@ -156,40 +184,6 @@ add_action( 'init', function() {
     if ( bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) ) {
         return;
     }
-
-function bap_is_away_mode_active() {
-    if ( '1' !== (string) get_option( 'bap_away_mode_enabled', '0' ) ) {
-        return false;
-    }
-
-    $days = (array) get_option( 'bap_away_mode_days', [] );
-    $dow  = (string) current_time( 'N' ); // 1 (Lun) .. 7 (Dom)
-    if ( ! in_array( $dow, $days, true ) ) {
-        return false;
-    }
-
-    $start_str = (string) get_option( 'bap_away_mode_start', '23:00' );
-    $end_str   = (string) get_option( 'bap_away_mode_end', '07:00' );
-    if ( ! preg_match( '/^(\d{2}):(\d{2})$/', $start_str, $ms ) || ! preg_match( '/^(\d{2}):(\d{2})$/', $end_str, $me ) ) {
-        return false;
-    }
-
-    $now_str   = (string) current_time( 'H:i' );
-    list( $nh, $nm ) = array_map( 'intval', explode( ':', $now_str ) );
-
-    $cur_mins   = ( $nh * 60 ) + $nm;
-    $start_mins = ( (int) $ms[1] * 60 ) + (int) $ms[2];
-    $end_mins   = ( (int) $me[1] * 60 ) + (int) $me[2];
-
-    if ( $start_mins === $end_mins ) {
-        return false;
-    }
-    if ( $start_mins < $end_mins ) {
-        return ( $cur_mins >= $start_mins && $cur_mins < $end_mins );
-    }
-    // Franja nocturna que cruza la medianoche (ej. 23:00 a 07:00)
-    return ( $cur_mins >= $start_mins || $cur_mins < $end_mins );
-}
 
     $country = function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'DESCONOCIDO';
     if ( bap_is_away_mode_active() ) {

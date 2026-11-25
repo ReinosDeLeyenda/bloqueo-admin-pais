@@ -34,6 +34,7 @@ Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto
   * **FireHOL Level 1 / Spamhaus DROP:** Subredes CIDR secuestradas o maliciosas.
 * **Acciones masivas inteligentes:** Botones dedicados para **Actualizar TODAS**, **Descargar faltantes** o **Actualizar obsoletas** según la frecuencia configurada.
 * **Bases de datos personalizadas (IPs / CIDR):** Añade listas propias por **URL remota** (auto-actualizable) o subiendo archivos locales (`.txt`, `.netset`, `.csv`, `.json`, `.gz`) con procesamiento en streaming y caché por IP, incluyendo **presets en 1 clic** (VPNs Comerciales, Datacenters/Cloud y Proxies Abiertos).
+* **Copia de Seguridad de Base de Datos (`.sql.gz`) a Telegram o descarga directa:** Volcado MySQL en PHP puro sin dependencias externas.
 * **Actualización programada, MySQL Externo y Copias de Seguridad (`.json`):** Descarga automática mediante **WP-Cron**, almacenamiento centralizado en servidor MySQL remoto con cifrado AES-256-CBC y exportación/importación completa en `.json`.
 
 ### 2. Bloqueos (`General` | `Backend` | `Frontend`)
@@ -56,8 +57,10 @@ Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto
 * **Filtros exclusivos (Permitidos o Bloqueados):** Control independiente por **País** (con buscador autocompletable y **atajos por regiones**: UE, Europa, Norteamérica, Sudamérica, Asia, África y Oceanía) y por **ASN**, además de listas Blanca y Negra CIDR con tooltip de metadatos.
 * **Protección CAPTCHA Multi-Proveedor (8 estilos):** Soporta **CAPTCHA Local Matemático**, **ALTCHA Proof-of-Work Local (SHA-256 sin API)**, **Google reCAPTCHA v3**, **Google reCAPTCHA v2**, **Cloudflare Turnstile**, **hCaptcha**, **Friendly Captcha** y **MTCaptcha** en **Login, Registro, Recuperar clave y Comentarios**.
 * **Autenticación en Dos Factores (2FA):** App Autenticadora (TOTP con QR generado 100 % en local), verificación por email, 8 códigos de respaldo, dispositivos de confianza (30 días) y obligatoriedad para Administradores.
+* **Escudo Anti-Secuestro de Sesión (*Session Hijack Binding*):** Vincula la cookie de sesión a la subred IP y navegador.
 * **Política de Contraseñas, HIBP y Sesiones en Vivo:** Longitud mínima, complejidad, historial de **5 últimas contraseñas**, caducidad cada X días, bloqueo de claves filtradas (*Have I Been Pwned*), gestor de sesiones activas con expulsión remota y alerta inmediata si se crea o asciende un Administrador.
 #### Subpestaña `Frontend`
+* **Challenge JS Antibots (Pantalla de espera SHA-256):** Reto criptográfico ligero en navegador con cookie HMAC.
 * **Rutas Trampa (Auto-Baneo Instantáneo):** Detección de accesos a rutas de reconocimiento (/.env, /wp-config.php.bak, etc.).
 * **Reglas por ámbito/URL con lógica Y/O:** Aplicable a toda la web pública (`Global`) o a rutas específicas (`/tienda/*`, `/formulario*`, etc.) encadenando condiciones arrastrables.
 * **Cortafuegos WAF (Inspección de Payload y Cabeceras):** Analiza URLs (incluyendo longitud > 2048 caracteres, *null-bytes* y doble codificación), cabecera `HTTP_REFERER`, formularios `GET`/`POST` y subidas de archivos (`FILES`) contra **SQLi, XSS, Path Traversal / LFI, inyección PHP** y ejecutables, con auto-baneo opcional.
@@ -74,6 +77,7 @@ Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto
 * **Escáner de Inyecciones en Base de Datos y Auditoría Programada:** Analiza `wp_posts` y `wp_options` en busca de scripts ocultos (`<script>`, `eval`, redirecciones JS o PHP inyectado) y ejecuta auditorías automáticas periódicas (diarias o semanales) con alertas de CVEs, integridad, malware, SSL y archivos críticos a Telegram y Email.
 * **Monitor de Certificado SSL y Vigilancia SHA-256:** Comprueba la fecha de caducidad del certificado HTTPS (alertando si quedan ≤ 15 días) y vigila cambios no autorizados en `wp-config.php` y `.htaccess`.
 * **Endurecimiento de WordPress (Hardening en 1 clic), WAF Pre-WordPress y Auditoría de Permisos:** Desactiva el editor de archivos (`DISALLOW_FILE_EDIT`), oculta la versión de WordPress, bloquea PHP en `uploads/`, añade cabeceras HTTP de seguridad, configura WAF temprano en `.user.ini` (`auto_prepend_file`) y audita permisos de archivos y carpetas críticas.
+* **Parcheo Virtual Automático (vPatching CVE), Firewall HTTP Saliente, Magic Bytes/SVG, Monitor de Roles, Contraseñas Débiles, Inspector WP-Cron y Monitor DNS:** Protección activa y auditoría integral.
 * **Modo Emergencia Anti-Crash (`mu-plugins`):** Cargador ultraligero en `wp-content/mu-plugins/` que captura errores fatales en el backend (incluso dentro de este mismo plugin) y envía al instante un **enlace mágico firmado** por Telegram y Email para entrar aislando plugins.
 
 ### 4. Plantillas (`Email` | `Telegram`)

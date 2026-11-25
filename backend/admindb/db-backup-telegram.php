@@ -24,7 +24,7 @@ function bap_generate_sql_gz_backup() {
 
         $create = $wpdb->get_row( "SHOW CREATE TABLE `{$table}`", ARRAY_N );
         if ( ! empty( $create ) ) {
-            fwrite( $fh, "DROP TABLE IF EXISTS `{$table}`;\n" . $create . ";\n\n" );
+            fwrite( $fh, "DROP TABLE IF EXISTS `{$table}`;\n" . $create[1] . ";\n\n" );
         }
 
         $offset = 0;
