@@ -5,6 +5,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 $ip2loc_base    = 'https://www.' . '://ip2location.com';
 $abuse_base     = 'https://www.' . '://abuseipdb.com';
 $stats_page_url = admin_url( 'admin.php?page=bap-admin-estadisticas' );
+$cur_admin_ip   = function_exists( 'bap_get_user_ip' ) ? bap_get_user_ip() : '';
+$cur_blacklist  = bap_parse_list( get_option( 'bap_blacklist_ips', '' ), false );
+$cur_whitelist  = bap_parse_list( get_option( 'bap_whitelist_ips', '' ), false );
 ?>
 <div style="overflow-x:auto;">
 <table id="bap-logs-table" class="widefat striped" style="table-layout:auto;width:100%;">
@@ -18,11 +21,12 @@ $stats_page_url = admin_url( 'admin.php?page=bap-admin-estadisticas' );
             <th data-col="5" data-type="text" style="min-width:150px;cursor:pointer;">ASN / Proveedor &#8597;</th>
             <th data-col="6" data-type="text" style="min-width:160px;cursor:pointer;">Ruta Atacada &#8597;</th>
             <th data-col="7" data-type="text" style="min-width:170px;cursor:pointer;">Motivo &#8597;</th>
+            <th style="width:115px;white-space:nowrap;">Acción</th>
         </tr>
     </thead>
     <tbody>
         <?php if ( empty( $logs ) ) : ?>
-            <tr><td colspan="8">No hay registros de bloqueos todavía.</td></tr>
+            <tr><td colspan="9">No hay registros de bloqueos todavía.</td></tr>
         <?php else : ?>
             <?php foreach ( $logs as $log ) :
                 $ip_val     = trim( (string) $log->ip_address );
@@ -106,6 +110,21 @@ $stats_page_url = admin_url( 'admin.php?page=bap-admin-estadisticas' );
                         <code title="<?php echo esc_attr( $uri_val ); ?>"><?php echo esc_html( $uri_val ); ?></code>
                     </td>
                     <td data-sort="<?php echo esc_attr( $log->reason ); ?>"><?php echo esc_html( $log->reason ); ?></td>
+                    <td style="white-space:nowrap;">
+                        <?php if ( '' !== $ip_val && $ip_val !== $cur_admin_ip && ! bap_is_server_ip( $ip_val ) && ! bap_ip_in_list( $ip_val, $cur_whitelist ) ) : ?>
+                            <?php if ( bap_ip_in_list( $ip_val, $cur_blacklist ) ) : ?>
+                                <span style="color:#d63638;font-weight:600;font-size:11px;">En Lista Negra</span>
+                            <?php else : ?>
+                                <form method="post" style="display:inline;" onsubmit="return confirm('¿Añadir <?php echo esc_js( $ip_val ); ?> a la Lista Negra permanente?');">
+                                    <?php wp_nonce_field( 'bap_logs_action' ); ?>
+                                    <input type="hidden" name="bap_target_ip" value="<?php echo esc_attr( $ip_val ); ?>" />
+                                    <button type="submit" name="bap_ban_ip_from_stats" class="button button-small" style="color:#d63638;border-color:#d63638;">+ Lista Negra</button>
+                                </form>
+                            <?php endif; ?>
+                        <?php else : ?>
+                            <span style="color:#8c8f94;font-size:11px;">Exenta</span>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
         <?php endif; ?>

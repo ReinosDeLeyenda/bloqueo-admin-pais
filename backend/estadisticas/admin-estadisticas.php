@@ -11,6 +11,22 @@ function bap_handle_stats_actions() {
     global $wpdb;
     $table = bap_get_logs_table_name();
 
+    if ( isset( $_POST['bap_ban_ip_from_stats'] ) && check_admin_referer( 'bap_logs_action' ) ) {
+        $target_ip = trim( sanitize_text_field( wp_unslash( $_POST['bap_target_ip'] ?? '' ) ) );
+        if ( ! filter_var( $target_ip, FILTER_VALIDATE_IP ) ) {
+            return '<div class="notice notice-error is-dismissible"><p>Dirección IP no válida.</p></div>';
+        }
+        $my_ip = function_exists( 'bap_get_user_ip' ) ? bap_get_user_ip() : '';
+        if ( $target_ip === $my_ip || bap_is_server_ip( $target_ip ) ) {
+            return '<div class="notice notice-error is-dismissible"><p><strong>Seguridad:</strong> No puedes añadir tu propia IP o la del servidor a la Lista Negra.</p></div>';
+        }
+        $bl = bap_parse_list( get_option( 'bap_blacklist_ips', '' ), false );
+        if ( ! in_array( $target_ip, $bl, true ) ) {
+            $bl[] = $target_ip;
+            update_option( 'bap_blacklist_ips', implode( "\n", $bl ) );
+        }
+        return '<div class="notice notice-success is-dismissible"><p><strong>IP bloqueada:</strong> <code>' . esc_html( $target_ip ) . '</code> se ha añadido permanentemente a la Lista Negra.</p></div>';
+    }
     if ( isset( $_POST['bap_clear_logs'] ) && check_admin_referer( 'bap_logs_action' ) ) {
         $wpdb->query( "TRUNCATE TABLE `{$table}`" );
         return '<div class="notice notice-success is-dismissible"><p>Historial de ataques vaciado.</p></div>';
