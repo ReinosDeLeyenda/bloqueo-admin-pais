@@ -103,5 +103,7 @@ function bap_execute_all_security_scans() {
         ];
     }
 
+    if ( function_exists( 'bap_scan_seo_spam_and_malicious_links' ) ) { $seo = bap_scan_seo_spam_and_malicious_links(); $cnt = count( $seo['findings'] ?? [] ); $report[] = [ 'name' => 'SEO Spam y Enlaces Maliciosos', 'status' => $cnt > 0 ? 'error' : 'ok', 'detail' => $cnt > 0 ? "{$cnt} enlace(s) oculto(s) o spam SEO detectado(s)." : "Revisados {$seo['posts_checked']} posts y {$seo['comments_checked']} comentarios limpios." ]; }
+
     return $report;
 }

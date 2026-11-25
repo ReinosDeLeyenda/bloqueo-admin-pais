@@ -79,6 +79,7 @@ function bap_run_scheduled_security_audit() {
         }
     }
 
+    if ( function_exists( 'bap_scan_seo_spam_and_malicious_links' ) ) { $seo_res = bap_scan_seo_spam_and_malicious_links(); if ( ! empty( $seo_res['findings'] ) ) { $alerts[] = 'SEO Spam: ' . count( $seo_res['findings'] ) . ' enlace(s) malicioso(s) u oculto(s) en contenido.'; } }
     $db_hits = bap_scan_database_injections();
     if ( ! empty( $db_hits ) ) {
         $alerts[] = 'Base de Datos: ' . count( $db_hits ) . ' posible(s) inyección(es) en posts u opciones.';
