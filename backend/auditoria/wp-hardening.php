@@ -189,6 +189,38 @@ function bap_render_hardening_box() {
 
             <button type="submit" name="bap_save_hardening" class="button button-primary">Guardar endurecimiento</button>
         </form>
+
+        <?php
+        $srv_sw   = strtolower( (string) ( $_SERVER['SERVER_SOFTWARE'] ?? '' ) );
+        $is_nginx = ( false !== strpos( $srv_sw, 'nginx' ) );
+        $site_h   = (string) wp_parse_url( home_url(), PHP_URL_HOST );
+        ?>
+        <details style="margin-top:16px;background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:10px 14px;" <?php echo $is_nginx ? 'open' : ''; ?>>
+            <summary style="cursor:pointer;font-weight:600;">
+                Reglas equivalentes para servidores Nginx (si no usas Apache/LiteSpeed)
+                <?php if ( $is_nginx ) : ?>
+                    <span style="background:#d97706;color:#fff;font-size:10px;padding:1px 6px;border-radius:3px;margin-left:6px;">NGINX DETECTADO</span>
+                <?php endif; ?>
+            </summary>
+            <p class="description" style="margin:8px 0;">Nginx ignora los archivos <code>.htaccess</code>. Añade este bloque dentro del bloque <code>server { ... }</code> de tu configuración de Nginx y recarga el servicio:</p>
+            <textarea id="bap-nginx-snippet" rows="13" readonly class="large-text code" style="font-size:11px;background:#1d2327;color:#e5e7eb;" onclick="this.select();"># 1. Bloquear ejecución de PHP en wp-content/uploads/
+location ~* /wp-content/uploads/.*\.(?:php|phtml|php3|php4|php5|php7|php8|phar|pl|py|cgi|sh)$ {
+    deny all;
+}
+
+# 2. Bloquear acceso directo a archivos sensibles y xmlrpc.php
+location ~* (?:/xmlrpc\.php|\.(?:log|zip|rar|tar|tar\.gz|tgz|7z|gz|bak|sql|env|git.*))$ {
+    deny all;
+}
+
+# 3. Anti-Hotlinking de imágenes
+location ~* \.(?:jpg|jpeg|png|gif|webp|avif)$ {
+    valid_referers none blocked server_names <?php echo esc_html( $site_h ); ?> *.google. *.bing. *.duckduckgo. *.yahoo.;
+    if ($invalid_referer) {
+        return 403;
+    }
+}</textarea>
+        </details>
     </div>
     <?php
 }
