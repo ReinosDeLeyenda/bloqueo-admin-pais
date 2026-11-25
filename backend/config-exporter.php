@@ -10,7 +10,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
         'bap_ext_db_enabled', 'bap_ext_db_host', 'bap_ext_db_port',
         'bap_ext_db_name', 'bap_ext_db_user', 'bap_ext_db_table',
 
-        // 2. Bloqueos Admin (Reglas, Red, HIBP y 2FA)
+        // 2. Bloqueos Admin (Reglas, Red, HIBP, Política Contraseñas y 2FA)
         'bap_ip_source', 'bap_protected_paths', 'bap_enable_htaccess', 'bap_redirect_url',
         'bap_country_mode', 'bap_allowed_countries', 'bap_blocked_countries',
         'bap_asn_mode', 'bap_allowed_asns', 'bap_blocked_asns',
@@ -19,10 +19,12 @@ function bap_get_exportable_options( $include_secrets = false ) {
         'bap_block_tor', 'bap_block_firehol',
         'bap_whitelist_ips', 'bap_blacklist_ips',
         'bap_hibp_enabled', 'bap_hibp_check_login', 'bap_hibp_login_action',
+        'bap_pwd_policy_enabled', 'bap_pwd_policy_scope', 'bap_pwd_min_length',
+        'bap_pwd_require_complexity', 'bap_pwd_prevent_reuse', 'bap_pwd_expiry_days',
         'bap_2fa_enabled', 'bap_2fa_enforce_admins', 'bap_2fa_remember_device',
 
-        // 3. Notificaciones y Plantillas Email
-        'bap_notify_channel', 'bap_notify_freq', 'bap_notify_emails','bap_tg_custom_templates',
+        // 3. Notificaciones y Plantillas Email/Telegram
+        'bap_notify_channel', 'bap_notify_freq', 'bap_notify_emails', 'bap_tg_custom_templates',
         'bap_email_template', 'bap_custom_email_templates', 'bap_tg_chat_ids',
         'bap_login_notify_channel', 'bap_login_notify_routes',
 
@@ -31,7 +33,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
         'bap_web_redirect_url', 'bap_web_block_message',
         'bap_waf_enabled', 'bap_waf_autoban',
         'bap_rl_max_req_min', 'bap_rl_max_404_min', 'bap_rl_autoban',
-        'bap_blocked_user_agents', 'bap_block_empty_ua','bap_honeypot_enabled', 'bap_hp_autoban',
+        'bap_blocked_user_agents', 'bap_block_empty_ua', 'bap_honeypot_enabled', 'bap_hp_autoban',
     ];
 
     if ( $include_secrets ) {

@@ -34,59 +34,59 @@ function bap_render_bloqueos_notify_and_auth_fields() {
             </div>
         </td>
     </tr>
-  <tr>
-      <th>Avisos de conexión exitosa</th>
-      <td>
-          <?php
-          $login_ch = (string) get_option( 'bap_login_notify_channel', 'none' );
-          $routes   = get_option( 'bap_login_notify_routes', [] );
-          if ( ! is_array( $routes ) || empty( $routes ) ) {
-              $routes = [ [ 'user_id' => 0, 'target' => '', 'type' => 'telegram' ] ];
-          }
-          $wp_users = get_users( [ 'fields' => [ 'ID', 'user_login', 'display_name' ], 'orderby' => 'login', 'order' => 'ASC' ] );
-          ?>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
-              <select name="bap_login_notify_channel">
-                  <option value="none" <?php selected( $login_ch, 'none' ); ?>>Desactivado</option>
-                  <option value="email" <?php selected( $login_ch, 'email' ); ?>>Email</option>
-                  <option value="telegram" <?php selected( $login_ch, 'telegram' ); ?>>Telegram</option>
-                  <option value="both" <?php selected( $login_ch, 'both' ); ?>>Telegram y Email</option>
-              </select>
-          </div>
+    <tr>
+        <th>Avisos de conexión exitosa</th>
+        <td>
+            <?php
+            $login_ch = (string) get_option( 'bap_login_notify_channel', 'none' );
+            $routes   = get_option( 'bap_login_notify_routes', [] );
+            if ( ! is_array( $routes ) || empty( $routes ) ) {
+                $routes = [ [ 'user_id' => 0, 'target' => '', 'type' => 'telegram' ] ];
+            }
+            $wp_users = get_users( [ 'fields' => [ 'ID', 'user_login', 'display_name' ], 'orderby' => 'login', 'order' => 'ASC' ] );
+            ?>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
+                <select name="bap_login_notify_channel">
+                    <option value="none" <?php selected( $login_ch, 'none' ); ?>>Desactivado</option>
+                    <option value="email" <?php selected( $login_ch, 'email' ); ?>>Email</option>
+                    <option value="telegram" <?php selected( $login_ch, 'telegram' ); ?>>Telegram</option>
+                    <option value="both" <?php selected( $login_ch, 'both' ); ?>>Telegram y Email</option>
+                </select>
+            </div>
 
-          <div id="bap-login-routes-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
-              <?php foreach ( $routes as $r ) :
-                  $r_uid  = (int) ( $r['user_id'] ?? 0 );
-                  $r_tgt  = (string) ( $r['target'] ?? '' );
-                  $r_type = ( 'email' === ( $r['type'] ?? 'telegram' ) ) ? 'email' : 'telegram';
-              ?>
-                  <div class="bap-login-route-row" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;">
-                      <select name="bap_login_route_user[]" class="bap-login-route-user" style="width:155px;">
-                          <option value="0" <?php selected( $r_uid, 0 ); ?>>Todos los usuarios</option>
-                          <?php foreach ( $wp_users as $wu ) : ?>
-                              <option value="<?php echo (int) $wu->ID; ?>" <?php selected( $r_uid, (int) $wu->ID ); ?>>
-                                  <?php echo esc_html( $wu->user_login . ( $wu->display_name && $wu->display_name !== $wu->user_login ? ' (' . $wu->display_name . ')' : '' ) ); ?>
-                              </option>
-                          <?php endforeach; ?>
-                      </select>
+            <div id="bap-login-routes-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
+                <?php foreach ( $routes as $r ) :
+                    $r_uid  = (int) ( $r['user_id'] ?? 0 );
+                    $r_tgt  = (string) ( $r['target'] ?? '' );
+                    $r_type = ( 'email' === ( $r['type'] ?? 'telegram' ) ) ? 'email' : 'telegram';
+                ?>
+                    <div class="bap-login-route-row" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;">
+                        <select name="bap_login_route_user[]" class="bap-login-route-user" style="width:155px;">
+                            <option value="0" <?php selected( $r_uid, 0 ); ?>>Todos los usuarios</option>
+                            <?php foreach ( $wp_users as $wu ) : ?>
+                                <option value="<?php echo (int) $wu->ID; ?>" <?php selected( $r_uid, (int) $wu->ID ); ?>>
+                                    <?php echo esc_html( $wu->user_login . ( $wu->display_name && $wu->display_name !== $wu->user_login ? ' (' . $wu->display_name . ')' : '' ) ); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
 
-                      <input type="text" name="bap_login_route_target[]" value="<?php echo esc_attr( $r_tgt ); ?>" class="bap-login-route-target" style="width:185px;" placeholder="<?php echo 'email' === $r_type ? 'correo@dominio.com' : 'Chat ID (ej. -124)'; ?>" />
+                        <input type="text" name="bap_login_route_target[]" value="<?php echo esc_attr( $r_tgt ); ?>" class="bap-login-route-target" style="width:185px;" placeholder="<?php echo 'email' === $r_type ? 'correo@dominio.com' : 'Chat ID (ej. -124)'; ?>" />
 
-                      <select name="bap_login_route_type[]" class="bap-login-route-type" style="width:95px;">
-                          <option value="telegram" <?php selected( $r_type, 'telegram' ); ?>>Telegram</option>
-                          <option value="email" <?php selected( $r_type, 'email' ); ?>>Email</option>
-                      </select>
+                        <select name="bap_login_route_type[]" class="bap-login-route-type" style="width:95px;">
+                            <option value="telegram" <?php selected( $r_type, 'telegram' ); ?>>Telegram</option>
+                            <option value="email" <?php selected( $r_type, 'email' ); ?>>Email</option>
+                        </select>
 
-                      <button type="button" class="button button-secondary bap-add-login-route" title="Añadir otra línea" style="font-weight:700;padding:0 8px;">+</button>
-                      <button type="button" class="button button-secondary bap-del-login-route" title="Borrar esta línea" style="color:#d63638;font-weight:700;padding:0 8px;">&times;</button>
-                      <button type="button" class="button button-secondary bap-test-login-route">Probar aviso de conexión</button>
-                  </div>
-              <?php endforeach; ?>
-          </div>
+                        <button type="button" class="button button-secondary bap-add-login-route" title="Añadir otra línea" style="font-weight:700;padding:0 8px;">+</button>
+                        <button type="button" class="button button-secondary bap-del-login-route" title="Borrar esta línea" style="color:#d63638;font-weight:700;padding:0 8px;">&times;</button>
+                        <button type="button" class="button button-secondary bap-test-login-route">Probar aviso de conexión</button>
+                    </div>
+                <?php endforeach; ?>
+            </div>
 
-          <p class="description">Configura destinos específicos por usuario (o para todos). Si dejas el destino vacío, usará los destinatarios generales de bloqueos. Remarca si el <strong>ASN</strong> difiere de su última sesión o sesiones activas.</p>
-      </td>
-  </tr>
+            <p class="description">Configura destinos específicos por usuario (o para todos). Si dejas el destino vacío, usará los destinatarios generales de bloqueos. Remarca si el <strong>ASN</strong> difiere de su última sesión o sesiones activas.</p>
+        </td>
+    </tr>
     <tr>
         <th>Destinatarios de emails</th>
         <td>
@@ -143,6 +143,41 @@ function bap_render_bloqueos_notify_and_auth_fields() {
                 <option value="warn" <?php selected( get_option( 'bap_hibp_login_action', 'warn' ), 'warn' ); ?>>Permitir acceso pero mostrar alerta roja en el panel</option>
                 <option value="block" <?php selected( get_option( 'bap_hibp_login_action', 'warn' ), 'block' ); ?>>Bloquear inicio de sesión y obligar a restablecer contraseña</option>
             </select>
+        </td>
+    </tr>
+    <tr>
+        <th>Política y Caducidad de Contraseñas</th>
+        <td>
+            <label style="display:block;margin-bottom:8px;">
+                <input type="checkbox" name="bap_pwd_policy_enabled" value="1" <?php checked( get_option( 'bap_pwd_policy_enabled', '0' ), '1' ); ?> />
+                Exigir contraseñas fuertes obligatorias
+            </label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+                <label>Aplicar a:
+                    <select name="bap_pwd_policy_scope">
+                        <option value="admins" <?php selected( get_option( 'bap_pwd_policy_scope', 'admins_editors' ), 'admins' ); ?>>Solo Administradores</option>
+                        <option value="admins_editors" <?php selected( get_option( 'bap_pwd_policy_scope', 'admins_editors' ), 'admins_editors' ); ?>>Administradores y Editores</option>
+                        <option value="all" <?php selected( get_option( 'bap_pwd_policy_scope', 'admins_editors' ), 'all' ); ?>>Todos los usuarios</option>
+                    </select>
+                </label>
+                <label>Longitud mínima:
+                    <input type="number" name="bap_pwd_min_length" value="<?php echo (int) get_option( 'bap_pwd_min_length', 12 ); ?>" min="8" max="64" class="small-text" /> caracteres
+                </label>
+            </div>
+            <label style="display:block;margin-bottom:6px;">
+                <input type="checkbox" name="bap_pwd_require_complexity" value="1" <?php checked( get_option( 'bap_pwd_require_complexity', '1' ), '1' ); ?> />
+                Exigir mayúsculas, minúsculas, números y símbolos (y prohibir el nombre de usuario)
+            </label>
+            <label style="display:block;margin-bottom:8px;">
+                <input type="checkbox" name="bap_pwd_prevent_reuse" value="1" <?php checked( get_option( 'bap_pwd_prevent_reuse', '1' ), '1' ); ?> />
+                Impedir reutilizar las últimas 5 contraseñas al cambiarla
+            </label>
+            <div>
+                <label>Caducidad / rotación obligatoria cada:
+                    <input type="number" name="bap_pwd_expiry_days" value="<?php echo (int) get_option( 'bap_pwd_expiry_days', 0 ); ?>" min="0" max="730" class="small-text" /> días
+                </label>
+                <span class="description">(<code>0</code> = sin caducidad; recomendado: <code>90</code> días)</span>
+            </div>
         </td>
     </tr>
     <tr>

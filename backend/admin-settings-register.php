@@ -75,10 +75,10 @@ add_action( 'admin_init', function() {
         'default'           => function_exists( 'bap_get_default_protected_paths' ) ? bap_get_default_protected_paths() : "/wp-admin/*\n/wp-login.php",
     ] );
 
-  register_setting( 'bap_settings_group', 'bap_login_notify_channel', [
-      'sanitize_callback' => fn( $i ) => in_array( $i, [ 'none', 'email', 'telegram', 'both' ], true ) ? $i : 'none',
-      'default'           => 'none',
-  ] );
+    register_setting( 'bap_settings_group', 'bap_login_notify_channel', [
+        'sanitize_callback' => fn( $i ) => in_array( $i, [ 'none', 'email', 'telegram', 'both' ], true ) ? $i : 'none',
+        'default'           => 'none',
+    ] );
 
     $booleans = [
         'bap_2fa_enabled'             => '0',
@@ -100,8 +100,33 @@ add_action( 'admin_init', function() {
             'default'           => $def,
         ] );
     }
-
     register_setting( 'bap_settings_group', 'bap_hibp_login_action', [ 'sanitize_callback' => fn( $i ) => ( 'block' === $i ) ? 'block' : 'warn', 'default' => 'warn' ] );
+
+    register_setting( 'bap_settings_group', 'bap_pwd_policy_enabled', [
+        'sanitize_callback' => $bool_cb,
+        'default'           => '0',
+    ] );
+    register_setting( 'bap_settings_group', 'bap_pwd_policy_scope', [
+        'sanitize_callback' => fn( $i ) => in_array( $i, [ 'admins', 'admins_editors', 'all' ], true ) ? $i : 'admins_editors',
+        'default'           => 'admins_editors',
+    ] );
+    register_setting( 'bap_settings_group', 'bap_pwd_min_length', [
+        'sanitize_callback' => fn( $i ) => max( 8, min( 64, (int) $i ) ),
+        'default'           => 12,
+    ] );
+    register_setting( 'bap_settings_group', 'bap_pwd_require_complexity', [
+        'sanitize_callback' => $bool_cb,
+        'default'           => '1',
+    ] );
+    register_setting( 'bap_settings_group', 'bap_pwd_prevent_reuse', [
+        'sanitize_callback' => $bool_cb,
+        'default'           => '1',
+    ] );
+    register_setting( 'bap_settings_group', 'bap_pwd_expiry_days', [
+        'sanitize_callback' => fn( $i ) => max( 0, min( 730, (int) $i ) ),
+        'default'           => 0,
+    ] );
+
     register_setting( 'bap_settings_group', 'bap_country_mode', [ 'sanitize_callback' => fn( $i ) => ( 'block' === $i ) ? 'block' : 'allow', 'default' => 'allow' ] );
     register_setting( 'bap_settings_group', 'bap_asn_mode', [ 'sanitize_callback' => fn( $i ) => ( 'block' === $i ) ? 'block' : 'allow', 'default' => 'allow' ] );
     register_setting( 'bap_settings_group', 'bap_allowed_countries', [ 'sanitize_callback' => fn( $i ) => implode( ', ', bap_parse_list( $i, true ) ), 'default' => 'ES' ] );
