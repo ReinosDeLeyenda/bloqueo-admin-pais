@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 require_once plugin_dir_path( __FILE__ ) . 'admin-bloqueos-fields-rules.php';
-require_once plugin_dir_path( __FILE__ ) . 'admin-bloqueos-fields-notify.php';
+require_once dirname( __DIR__ ) . '/notificaciones/admin-bloqueos-fields-notify.php';
 ?>
 <div class="wrap">
     <h1>Control de Acceso al Panel</h1>

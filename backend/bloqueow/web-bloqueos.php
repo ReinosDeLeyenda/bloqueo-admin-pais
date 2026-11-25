@@ -118,8 +118,8 @@ function bap_render_web_bloqueos_page() {
     $rules    = $state['rules'];
     $current  = bap_normalize_web_rule( (array) ( $rules[ $selected ] ?? [] ) );
 
-    wp_enqueue_script( 'bap-countries-data', plugin_dir_url( __FILE__ ) . 'countries-data.js', [], '1.0', true );
-    wp_enqueue_script( 'bap-countries-picker', plugin_dir_url( __FILE__ ) . 'countries-picker.js', [ 'bap-countries-data' ], '13.4', true );
+    wp_enqueue_script( 'bap-countries-data', plugins_url( 'backend/comun/countries-data.js', dirname( __DIR__, 2 ) . '/bloqueo-admin-pais.php' ), [], '1.0', true );
+    wp_enqueue_script( 'bap-countries-picker', plugins_url( 'backend/comun/countries-picker.js', dirname( __DIR__, 2 ) . '/bloqueo-admin-pais.php' ), [ 'bap-countries-data' ], '13.4', true );
     wp_enqueue_script( 'bap-web-logic-switch', plugin_dir_url( __FILE__ ) . 'web-logic-switch.js', [], '1.2', true );
 
     require plugin_dir_path( __FILE__ ) . 'web-bloqueos-view.php';

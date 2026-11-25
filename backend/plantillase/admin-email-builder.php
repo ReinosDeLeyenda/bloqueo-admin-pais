@@ -124,7 +124,7 @@ add_action( 'wp_ajax_bap_preview_email_template', function() {
         'sizes'       => (array) ( $_POST['sizes'] ?? [] ),
     ] );
 
-    require_once dirname( __DIR__ ) . '/common/email-templates/template-custom.php';
+    require_once dirname( __DIR__, 2 ) . '/common/email-templates/template-custom.php';
     $queue     = bap_get_email_preview_sample_queue();
     $data      = bap_prepare_digest_stats( $queue );
     $site_name = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );

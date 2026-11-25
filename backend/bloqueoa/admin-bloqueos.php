@@ -117,8 +117,8 @@ function bap_render_bloqueos_page() {
     $ip_meta     = bap_build_blacklist_tooltip_meta( $bl_ips );
 
     wp_enqueue_script( 'bap-admin-bloqueos', plugin_dir_url( __FILE__ ) . 'admin-bloqueos.js', [], '12.2', true );
-    wp_enqueue_script( 'bap-countries-data', plugin_dir_url( __FILE__ ) . 'countries-data.js', [], '1.0', true );
-    wp_enqueue_script( 'bap-countries-picker', plugin_dir_url( __FILE__ ) . 'countries-picker.js', [ 'bap-countries-data' ], '13.2', true );
+    wp_enqueue_script( 'bap-countries-data', plugins_url( 'backend/comun/countries-data.js', dirname( __DIR__, 2 ) . '/bloqueo-admin-pais.php' ), [], '1.0', true );
+    wp_enqueue_script( 'bap-countries-picker', plugins_url( 'backend/comun/countries-picker.js', dirname( __DIR__, 2 ) . '/bloqueo-admin-pais.php' ), [ 'bap-countries-data' ], '13.2', true );
     wp_localize_script( 'bap-admin-bloqueos', 'bapAdminData', [ 'ipMeta' => $ip_meta ] );
 
     require plugin_dir_path( __FILE__ ) . 'admin-bloqueos-view.php';

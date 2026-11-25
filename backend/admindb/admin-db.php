@@ -13,7 +13,7 @@ add_action( 'admin_menu', function() {
     add_submenu_page( 'bap-admin-db', 'Plantillas Telegram', 'Plantillas Telegram', 'manage_options', 'bap-tg-templates', 'bap_render_tg_templates_page' );
 });
 
-add_filter( 'plugin_action_links_' . plugin_basename( dirname( __DIR__ ) . '/bloqueo-admin-pais.php' ), function( $links ) {
+add_filter( 'plugin_action_links_' . plugin_basename( dirname( __DIR__, 2 ) . '/bloqueo-admin-pais.php' ), function( $links ) {
     $url = admin_url( 'admin.php?page=bap-admin-db' );
     array_unshift( $links, '<a href="' . esc_url( $url ) . '"><strong>Ajustes</strong></a>' );
     return $links;
