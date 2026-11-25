@@ -55,6 +55,10 @@ function bap_delete_single_db( $key ) {
 }
 
 function bap_run_db_updates_by_state( $target_state ) {
+    if ( ! function_exists( 'bap_get_db_status_state' ) ) {
+        require_once plugin_dir_path( __FILE__ ) . 'admin-db-cards.php';
+    }
+
     $freq  = (string) get_option( 'bap_db_auto_update_freq', 'none' );
     $mmdb  = bap_get_mmdb_path();
     $asn   = bap_get_asn_mmdb_path();
@@ -79,8 +83,8 @@ function bap_run_db_updates_by_state( $target_state ) {
     $errs    = [];
 
     foreach ( $checks as $name => $cfg ) {
-        if ( $target_state === bap_get_db_status_state( $cfg, $cfg, $freq ) ) {
-            $res = $cfg();
+        if ( $target_state === bap_get_db_status_state( $cfg[0], $cfg[1], $freq ) ) {
+            $res = $cfg[2]();
             if ( is_wp_error( $res ) ) {
                 $errs[] = $name . ': ' . $res->get_error_message();
             } else {

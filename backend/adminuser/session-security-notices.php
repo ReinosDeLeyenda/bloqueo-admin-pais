@@ -94,8 +94,8 @@ add_action( 'wp_login', function( $user_login, $user ) {
     }
 
     $parts   = explode( ' — ', $asn_raw, 2 );
-    $cur_asn = trim( $parts ?? $asn_raw );
-    $cur_isp = trim( $parts ?? $asn_raw );
+    $cur_asn = trim( $parts[0] ?? $asn_raw );
+    $cur_isp = trim( $parts[1] ?? $asn_raw );
 
     $prev = get_user_meta( $user->ID, '_bap_prev_session_net', true );
     $cur  = [
