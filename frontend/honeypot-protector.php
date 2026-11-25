@@ -76,9 +76,27 @@ function bap_hp_block_and_log( $reason ) {
     }
 }
 
+function bap_hp_has_valid_local_referer() {
+    $ref = isset( $_SERVER['HTTP_REFERER'] ) ? trim( (string) wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : '';
+    if ( '' === $ref ) {
+        return false;
+    }
+    $ref_host  = strtolower( (string) wp_parse_url( $ref, PHP_URL_HOST ) );
+    $site_host = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+    return ( '' !== $ref_host && '' !== $site_host && $ref_host === $site_host );
+}
+
 // 1. Comentarios nativos de WordPress
 add_action( 'comment_form_after_fields', 'bap_hp_render_fields' );
 add_filter( 'preprocess_comment', function( $commentdata ) {
+    if ( bap_hp_is_enabled() && ! is_user_logged_in() ) {
+        $ip = bap_get_user_ip();
+        $is_exempt = ( '' === $ip || bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_whitelist_ips', '' ) ) ) );
+        if ( ! $is_exempt && ! bap_hp_has_valid_local_referer() ) {
+            bap_hp_block_and_log( 'Web: Comentario directo sin Referer local válido' );
+            wp_die( '<strong>Bloqueo anti-spam:</strong> Envío de comentario no válido (origen no verificado).', 'Spam Bloqueado', [ 'response' => 403 ] );
+        }
+    }
     $reason = bap_hp_detect_bot_reason();
     if ( '' !== $reason ) {
         bap_hp_block_and_log( $reason );
