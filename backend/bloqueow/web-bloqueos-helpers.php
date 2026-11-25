@@ -160,9 +160,14 @@ function bap_render_web_response_and_general_fields( array $current ) {
                         <input type="checkbox" name="bap_honeypot_enabled" value="1" <?php checked( get_option( 'bap_honeypot_enabled', '0' ), '1' ); ?> />
                         Activar trampa invisible + control de tiempo en <strong>Comentarios, Registro, Recuperar clave, Contact Form 7 y WPForms</strong>
                     </label>
-                    <label style="display:block;">
+                    <label style="display:block;margin-bottom:6px;">
                         <input type="checkbox" name="bap_hp_autoban" value="1" <?php checked( get_option( 'bap_hp_autoban', '0' ), '1' ); ?> />
                         Auto-banear en la Lista Negra temporal a los bots que caigan en el Honeypot
+                    </label>
+                    <label style="display:block;">
+                        Máximo de enlaces (<code>http/https</code>) permitidos en comentarios:
+                        <input type="number" name="bap_hp_max_comment_links" value="<?php echo (int) get_option( 'bap_hp_max_comment_links', 0 ); ?>" min="0" max="50" style="width:70px;" />
+                        <span class="description">(<code>0</code> = sin límite; recomendado: <code>2</code>)</span>
                     </label>
                 </td>
             </tr>
