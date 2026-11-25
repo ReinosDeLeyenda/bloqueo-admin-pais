@@ -170,6 +170,7 @@ function bap_render_hardening_box() {
         $hotlink  = ! empty( $_POST['bap_harden_anti_hotlink'] ) ? '1' : '0';
         $clean_hd = ! empty( $_POST['bap_harden_clean_head_headers'] ) ? '1' : '0';
         $usr_lock = ! empty( $_POST['bap_harden_user_lockdown'] ) ? '1' : '0';
+        $up_magic = ! empty( $_POST['bap_harden_upload_magic_bytes'] ) ? '1' : '0';
 
         update_option( 'bap_harden_disable_file_edit', $no_edit );
         update_option( 'bap_harden_hide_wp_version', $hide_ver );
@@ -180,6 +181,7 @@ function bap_render_hardening_box() {
         update_option( 'bap_harden_anti_hotlink', $hotlink );
         update_option( 'bap_harden_clean_head_headers', $clean_hd );
         update_option( 'bap_harden_user_lockdown', $usr_lock );
+        update_option( 'bap_harden_upload_magic_bytes', $up_magic );
 
         $ok_up  = bap_sync_uploads_php_protection( '1' === $no_php );
         $ok_hl  = bap_sync_hotlink_protection( '1' === $hotlink );
@@ -232,6 +234,8 @@ function bap_render_hardening_box() {
                 <input type="checkbox" name="bap_harden_user_lockdown" value="1" <?php checked( get_option( 'bap_harden_user_lockdown', '0' ), '1' ); ?> />
                 <strong>Bloqueo de creación de nuevos usuarios (User Lockdown)</strong> (impide cualquier alta pública o por código/API; solo un administrador puede crear usuarios desde el panel)
             </label>
+
+            <label style="display:block;margin-bottom:14px;"><input type="checkbox" name="bap_harden_upload_magic_bytes" value="1" <?php checked( get_option( 'bap_harden_upload_magic_bytes', '0' ), '1' ); ?> /> <strong>Verificar firma binaria (Magic Bytes) y sanitizar SVG en subidas</strong> (impide subir webshells camuflados como .jpg o SVG con XSS)</label>
 
             <button type="submit" name="bap_save_hardening" class="button button-primary">Guardar endurecimiento</button>
         </form>
