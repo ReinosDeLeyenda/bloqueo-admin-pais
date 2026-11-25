@@ -157,7 +157,46 @@ add_action( 'init', function() {
         return;
     }
 
+function bap_is_away_mode_active() {
+    if ( '1' !== (string) get_option( 'bap_away_mode_enabled', '0' ) ) {
+        return false;
+    }
+
+    $days = (array) get_option( 'bap_away_mode_days', [] );
+    $dow  = (string) current_time( 'N' ); // 1 (Lun) .. 7 (Dom)
+    if ( ! in_array( $dow, $days, true ) ) {
+        return false;
+    }
+
+    $start_str = (string) get_option( 'bap_away_mode_start', '23:00' );
+    $end_str   = (string) get_option( 'bap_away_mode_end', '07:00' );
+    if ( ! preg_match( '/^(\d{2}):(\d{2})$/', $start_str, $ms ) || ! preg_match( '/^(\d{2}):(\d{2})$/', $end_str, $me ) ) {
+        return false;
+    }
+
+    $now_str   = (string) current_time( 'H:i' );
+    list( $nh, $nm ) = array_map( 'intval', explode( ':', $now_str ) );
+
+    $cur_mins   = ( $nh * 60 ) + $nm;
+    $start_mins = ( (int) $ms[1] * 60 ) + (int) $ms[2];
+    $end_mins   = ( (int) $me[1] * 60 ) + (int) $me[2];
+
+    if ( $start_mins === $end_mins ) {
+        return false;
+    }
+    if ( $start_mins < $end_mins ) {
+        return ( $cur_mins >= $start_mins && $cur_mins < $end_mins );
+    }
+    // Franja nocturna que cruza la medianoche (ej. 23:00 a 07:00)
+    return ( $cur_mins >= $start_mins || $cur_mins < $end_mins );
+}
+
     $country = function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'DESCONOCIDO';
+    if ( bap_is_away_mode_active() ) {
+        $s_h = (string) get_option( 'bap_away_mode_start', '23:00' );
+        $e_h = (string) get_option( 'bap_away_mode_end', '07:00' );
+        bap_deny_access( $ip, $country, "Modo Ausente activo ({$s_h} - {$e_h})" );
+    }
     $verdict = bap_evaluate_ip_access( $ip, $country, 'admin', true );
 
     if ( 'block' === $verdict['status'] ) {

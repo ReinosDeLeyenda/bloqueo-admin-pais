@@ -54,6 +54,30 @@ function bap_render_bloqueos_rules_fields( $bl_raw ) {
         </td>
     </tr>
     <tr>
+        <th>Modo Ausente por Horario (Away Mode)</th>
+        <td>
+            <?php
+            $away_days = (array) get_option( 'bap_away_mode_days', [ '1', '2', '3', '4', '5', '6', '7' ] );
+            $day_names = [ '1' => 'Lun', '2' => 'Mar', '3' => 'Mié', '4' => 'Jue', '5' => 'Vie', '6' => 'Sáb', '7' => 'Dom' ];
+            ?>
+            <label style="display:block;margin-bottom:8px;">
+                <input type="checkbox" name="bap_away_mode_enabled" value="1" <?php checked( get_option( 'bap_away_mode_enabled', '0' ), '1' ); ?> />
+                <strong>Bloquear el acceso al panel durante el horario fuera de oficina</strong>
+            </label>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+                <label>Desde: <input type="time" name="bap_away_mode_start" value="<?php echo esc_attr( get_option( 'bap_away_mode_start', '23:00' ) ); ?>" /></label>
+                <label>Hasta: <input type="time" name="bap_away_mode_end" value="<?php echo esc_attr( get_option( 'bap_away_mode_end', '07:00' ) ); ?>" /></label>
+                <span class="description">(Hora local WP actual: <code><?php echo esc_html( current_time( 'H:i' ) ); ?></code>)</span>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <?php foreach ( $day_names as $d_num => $d_lbl ) : ?>
+                    <label><input type="checkbox" name="bap_away_mode_days[]" value="<?php echo esc_attr( $d_num ); ?>" <?php checked( in_array( $d_num, $away_days, true ) ); ?> /> <?php echo esc_html( $d_lbl ); ?></label>
+                <?php endforeach; ?>
+            </div>
+            <p class="description">Admite franjas nocturnas (ej. <code>23:00</code> a <code>07:00</code>). Las IPs en Lista Blanca y la Llave secreta URL siguen pudiendo acceder.</p>
+        </td>
+    </tr>
+    <tr>
         <th><label style="display:flex;justify-content:space-between;cursor:pointer;"><span>Países PERMITIDOS</span><input type="radio" name="bap_country_mode" value="allow" <?php checked( $country_mode, 'allow' ); ?> /></label></th>
         <td><input type="text" id="bap_allowed_countries" name="bap_allowed_countries" value="<?php echo esc_attr( get_option( 'bap_allowed_countries', 'ES' ) ); ?>" class="regular-text" placeholder="Ej: ES, FR (vacío = desactivado)" /></td>
     </tr>

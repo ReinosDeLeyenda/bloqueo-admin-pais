@@ -150,6 +150,25 @@ add_action( 'admin_init', function() {
         'default'           => 0,
     ] );
 
+    register_setting( 'bap_settings_group', 'bap_away_mode_enabled', [
+        'sanitize_callback' => $bool_cb,
+        'default'           => '0',
+    ] );
+    register_setting( 'bap_settings_group', 'bap_away_mode_start', [
+        'sanitize_callback' => fn( $i ) => preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', (string) $i ) ? (string) $i : '23:00',
+        'default'           => '23:00',
+    ] );
+    register_setting( 'bap_settings_group', 'bap_away_mode_end', [
+        'sanitize_callback' => fn( $i ) => preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', (string) $i ) ? (string) $i : '07:00',
+        'default'           => '07:00',
+    ] );
+    register_setting( 'bap_settings_group', 'bap_away_mode_days', [
+        'sanitize_callback' => function( $i ) {
+            $valid = [ '1', '2', '3', '4', '5', '6', '7' ];
+            return array_values( array_intersect( $valid, array_map( 'strval', (array) $i ) ) );
+        },
+        'default'           => [ '1', '2', '3', '4', '5', '6', '7' ],
+    ] );
     register_setting( 'bap_settings_group', 'bap_country_mode', [ 'sanitize_callback' => fn( $i ) => ( 'block' === $i ) ? 'block' : 'allow', 'default' => 'allow' ] );
     register_setting( 'bap_settings_group', 'bap_asn_mode', [ 'sanitize_callback' => fn( $i ) => ( 'block' === $i ) ? 'block' : 'allow', 'default' => 'allow' ] );
     register_setting( 'bap_settings_group', 'bap_allowed_countries', [ 'sanitize_callback' => fn( $i ) => implode( ', ', bap_parse_list( $i, true ) ), 'default' => 'ES' ] );
