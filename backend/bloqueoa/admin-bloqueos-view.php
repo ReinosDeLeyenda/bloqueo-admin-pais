@@ -28,6 +28,8 @@ require_once dirname( __DIR__ ) . '/notificaciones/admin-bloqueos-fields-notify.
         </form>
     </div>
 
+    <?php if ( function_exists( 'bap_render_active_sessions_box' ) ) { bap_render_active_sessions_box(); } ?>
+
     <form id="bap_test_email_form" method="post" style="display:none;">
         <?php wp_nonce_field( 'bap_test_email_action' ); ?>
     </form>
