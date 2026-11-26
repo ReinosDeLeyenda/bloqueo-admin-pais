@@ -32,7 +32,7 @@ function bap_sys_get_dpkg_package_info( array $pkg_candidates ) {
                 $head = (string) @gzread( $gz, 2048 );
                 @gzclose( $gz );
                 if ( preg_match( '/^ -- [^>]+>\s+([A-Za-z]{3},\s+\d{1,2}\s+[A-Za-z]{3}\s+\d{4}\s+\d{2}:\d{2}:\d{2}\s+[+-]\d{4})/m', $head, $md ) ) {
-                    $ts = strtotime( $md );
+                    $ts = strtotime( (string) ( $md[1] ?? '' ) );
                     if ( false !== $ts ) { $rel_date = wp_date( 'Y-m-d', $ts ); }
                 }
             }
