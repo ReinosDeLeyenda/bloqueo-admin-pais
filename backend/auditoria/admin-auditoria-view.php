@@ -96,6 +96,7 @@ function bap_render_auditoria_page() {
             <?php if ( function_exists( 'bap_render_core_integrity_box' ) ) { bap_render_core_integrity_box(); } ?>
             <?php if ( function_exists( 'bap_render_root_directory_watcher_box' ) ) { bap_render_root_directory_watcher_box(); } ?>
             <?php if ( function_exists( 'bap_render_unused_files_scanner_box' ) ) { bap_render_unused_files_scanner_box(); } ?>
+            <?php if ( function_exists( 'bap_render_plugin_usage_scanner_box' ) ) { bap_render_plugin_usage_scanner_box(); } ?>
             <?php if ( function_exists( 'bap_render_server_error_log_scanner_box' ) ) { bap_render_server_error_log_scanner_box(); } ?>
             <?php if ( function_exists( 'bap_render_ssh_auth_log_scanner_box' ) ) { bap_render_ssh_auth_log_scanner_box(); } ?>
             <?php if ( function_exists( 'bap_render_custom_integrity_box' ) ) { bap_render_custom_integrity_box(); } ?>
