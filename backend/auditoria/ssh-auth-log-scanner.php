@@ -58,6 +58,10 @@ function bap_analyze_ssh_auth_log( $filepath ) {
             $user = $m; $ip = $m;
         } elseif ( preg_match( '/maximum authentication attempts exceeded for (?:invalid user )?([^\s]+) from ([0-9a-fA-F:.]+)/', $line, $m ) ) {
             $user = $m; $ip = $m;
+        } elseif ( preg_match( '/DENY sshd connection from ([0-9a-fA-F:.]+)/i', $line, $m ) ) {
+            $user = '[DENY hosts.deny]'; $ip = $m;
+        } elseif ( preg_match( '/refused connect from (?:[^\s(]+\s*\()?([0-9a-fA-F:.]+)/i', $line, $m ) ) {
+            $user = '[TCP Refused]'; $ip = $m;
         }
         if ( '' === $ip || ! filter_var( $ip, FILTER_VALIDATE_IP ) || $ip === $my_ip || bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, $wl ) ) { continue; }
         if ( ! isset( $suspects[ $ip ] ) ) {
@@ -92,6 +96,23 @@ function bap_render_ssh_auth_log_scanner_box() {
             bap_add_ip_to_blacklist( $bip, false );
             $notice = '<div class="notice notice-success inline"><p><strong>IP bloqueada en WordPress:</strong> <code>' . esc_html( $bip ) . '</code> añadida a la Lista Negra.</p></div>';
         }
+    }
+    if ( isset( $_POST['bap_ban_all_ssh_ips'] ) && check_admin_referer( 'bap_ssh_log_action', 'bap_ssh_log_nonce' ) ) {
+        $preset_b = trim( sanitize_text_field( wp_unslash( $_POST['bap_ssh_log_select'] ?? '' ) ) );
+        $selected = ( '' !== $preset_b ) ? $preset_b : $selected;
+        $res_b    = bap_analyze_ssh_auth_log( $selected );
+        $added_c  = 0;
+        if ( is_array( $res_b ) && ! empty( $res_b['suspects'] ) && function_exists( 'bap_add_ip_to_blacklist' ) ) {
+            $cur_bl_check = bap_parse_list( get_option( 'bap_blacklist_ips', '' ), false );
+            foreach ( $res_b['suspects'] as $sus ) {
+                $sip = $sus['ip'] ?? '';
+                if ( filter_var( $sip, FILTER_VALIDATE_IP ) && ! bap_ip_in_list( $sip, $cur_bl_check ) && bap_add_ip_to_blacklist( $sip, false ) ) {
+                    $added_c++;
+                }
+            }
+        }
+        $notice   = '<div class="notice notice-success inline"><p><strong>Bloqueo masivo SSH completado:</strong> Se han anadido <strong>' . (int) $added_c . '</strong> IP(s) nuevas a la Lista Negra.</p></div>';
+        $scan_res = is_array( $res_b ) ? $res_b : null;
     }
     if ( isset( $_POST['bap_scan_ssh_auth_log'] ) && check_admin_referer( 'bap_ssh_log_action', 'bap_ssh_log_nonce' ) ) {
         $preset = trim( sanitize_text_field( wp_unslash( $_POST['bap_ssh_log_select'] ?? '' ) ) );
@@ -128,6 +149,16 @@ function bap_render_ssh_auth_log_scanner_box() {
         if ( empty( $scan_res['suspects'] ) ) {
             echo '<div class="notice notice-success inline"><p><strong>Sin ataques de fuerza bruta SSH detectados</strong> en las últimas ' . (int) $scan_res['lines_read'] . ' líneas leídas.</p></div>';
         } else {
+            $unbanned_cnt = count( array_filter( $scan_res['suspects'], fn( $x ) => ! bap_ip_in_list( $x['ip'], $cur_bl ) ) );
+            echo '<div class="notice notice-warning inline" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:8px 12px;">';
+            echo '<span>Se han detectado <strong>' . count( $scan_res['suspects'] ) . '</strong> IP(s) atacantes en SSH:</span>';
+            if ( $unbanned_cnt > 0 ) {
+                echo '<form method="post" style="margin:0;" onsubmit="return confirm(\'Anadir las ' . (int) $unbanned_cnt . ' IPs nuevas a la Lista Negra permanente?\' );">';
+                wp_nonce_field( 'bap_ssh_log_action', 'bap_ssh_log_nonce' );
+                echo '<input type="hidden" name="bap_ssh_log_select" value="' . esc_attr( $selected ) . '" />';
+                echo '<button type="submit" name="bap_ban_all_ssh_ips" class="button button-secondary" style="color:#d63638;border-color:#d63638;">+ Bloquear todas en Lista Negra (' . (int) $unbanned_cnt . ')</button></form>';
+            }
+            echo '</div>';
             echo '<table class="widefat striped" style="margin-top:10px;"><thead><tr><th>IP Atacante</th><th>País / ASN</th><th style="width:95px;">Fallos SSH</th><th>Usuarios probados</th><th style="width:135px;">Acción</th></tr></thead><tbody>';
             foreach ( $scan_res['suspects'] as $s ) {
                 $already = bap_ip_in_list( $s['ip'], $cur_bl );
