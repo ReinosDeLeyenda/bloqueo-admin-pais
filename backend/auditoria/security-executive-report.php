@@ -3,16 +3,16 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 function bap_calculate_security_score_summary() {
     $checks = [
-        [ 'label' => 'Bases de datos de inteligencia locales (Países / ASN / Amenazas)', 'ok' => ( file_exists( bap_get_mmdb_path() ) && file_exists( bap_get_asn_mmdb_path() ) ), 'pts' => 15 ],
-        [ 'label' => 'Protección perimetral Backend (País / ASN / Lista Blanca)', 'ok' => ( '' !== trim( (string) get_option( 'bap_allowed_countries', '' ) ) || '' !== trim( (string) get_option( 'bap_allowed_asns', '' ) ) || '' !== trim( (string) get_option( 'bap_whitelist_ips', '' ) ) ), 'pts' => 15 ],
-        [ 'label' => 'Cortafuegos WAF / Early WAF (.user.ini)', 'ok' => ( '1' === (string) get_option( 'bap_waf_enabled', '0' ) || ( function_exists( 'bap_is_early_waf_installed' ) && bap_is_early_waf_installed() ) ), 'pts' => 10 ],
-        [ 'label' => 'Autenticación en Dos Factores (2FA)', 'ok' => ( '1' === (string) get_option( 'bap_2fa_enabled', '0' ) ), 'pts' => 15 ],
-        [ 'label' => 'Escudo Anti-Secuestro de Sesión (Cookie Binding)', 'ok' => ( '1' === (string) get_option( 'bap_session_hijack_shield', '0' ) ), 'pts' => 10 ],
-        [ 'label' => 'Bloqueo de XML-RPC y Enumeración de Usuarios', 'ok' => ( '1' === (string) get_option( 'bap_block_xmlrpc', '1' ) && '1' === (string) get_option( 'bap_block_user_enum', '1' ) ), 'pts' => 10 ],
-        [ 'label' => 'Endurecimiento Hardening (Editor desactivado + PHP bloqueado en Uploads)', 'ok' => ( '1' === (string) get_option( 'bap_harden_disable_file_edit', '0' ) && '1' === (string) get_option( 'bap_harden_block_uploads_php', '0' ) ), 'pts' => 10 ],
-        [ 'label' => 'Verificación Magic Bytes / SVG en Subidas', 'ok' => ( '1' === (string) get_option( 'bap_harden_upload_magic_bytes', '0' ) ), 'pts' => 5 ],
-        [ 'label' => 'Modo Emergencia Anti-Crash (mu-plugins)', 'ok' => ( function_exists( 'bap_is_mu_emergency_loader_installed' ) && bap_is_mu_emergency_loader_installed() ), 'pts' => 5 ],
-        [ 'label' => 'Auditoría Programada sin Alertas Pendientes', 'ok' => empty( get_option( 'bap_last_auto_scan_alerts', [] ) ), 'pts' => 5 ],
+        [ 'label' => 'Bases de datos de inteligencia locales (Paises / ASN / Amenazas)', 'ok' => ( file_exists( bap_get_mmdb_path() ) && file_exists( bap_get_asn_mmdb_path() ) ), 'pts' => 15, 'url' => admin_url( 'admin.php?page=bap-admin-db' ) ],
+        [ 'label' => 'Proteccion perimetral Backend (Pais / ASN / Lista Blanca)', 'ok' => ( '' !== trim( (string) get_option( 'bap_allowed_countries', '' ) ) || '' !== trim( (string) get_option( 'bap_allowed_asns', '' ) ) || '' !== trim( (string) get_option( 'bap_whitelist_ips', '' ) ) ), 'pts' => 15, 'url' => admin_url( 'admin.php?page=bap-bloqueos&subtab=backend' ) ],
+        [ 'label' => 'Cortafuegos WAF / Early WAF (.user.ini)', 'ok' => ( '1' === (string) get_option( 'bap_waf_enabled', '0' ) || ( function_exists( 'bap_is_early_waf_installed' ) && bap_is_early_waf_installed() ) ), 'pts' => 10, 'url' => admin_url( 'admin.php?page=bap-bloqueos&subtab=frontend' ) ],
+        [ 'label' => 'Autenticacion en Dos Factores (2FA)', 'ok' => ( '1' === (string) get_option( 'bap_2fa_enabled', '0' ) ), 'pts' => 15, 'url' => admin_url( 'admin.php?page=bap-bloqueos&subtab=backend' ) ],
+        [ 'label' => 'Escudo Anti-Secuestro de Sesion (Cookie Binding)', 'ok' => ( '1' === (string) get_option( 'bap_session_hijack_shield', '0' ) ), 'pts' => 10, 'url' => admin_url( 'admin.php?page=bap-bloqueos&subtab=backend' ) ],
+        [ 'label' => 'Bloqueo de XML-RPC y Enumeracion de Usuarios', 'ok' => ( '1' === (string) get_option( 'bap_block_xmlrpc', '1' ) && '1' === (string) get_option( 'bap_block_user_enum', '1' ) ), 'pts' => 10, 'url' => admin_url( 'admin.php?page=bap-bloqueos&subtab=backend' ) ],
+        [ 'label' => 'Endurecimiento Hardening (Editor desactivado + PHP bloqueado en Uploads)', 'ok' => ( '1' === (string) get_option( 'bap_harden_disable_file_edit', '0' ) && '1' === (string) get_option( 'bap_harden_block_uploads_php', '0' ) ), 'pts' => 10, 'url' => admin_url( 'admin.php?page=bap-auditoria&subtab=hardening' ) ],
+        [ 'label' => 'Verificacion Magic Bytes / SVG en Subidas', 'ok' => ( '1' === (string) get_option( 'bap_harden_upload_magic_bytes', '0' ) ), 'pts' => 5, 'url' => admin_url( 'admin.php?page=bap-auditoria&subtab=hardening' ) ],
+        [ 'label' => 'Modo Emergencia Anti-Crash (mu-plugins)', 'ok' => ( function_exists( 'bap_is_mu_emergency_loader_installed' ) && bap_is_mu_emergency_loader_installed() ), 'pts' => 5, 'url' => admin_url( 'admin.php?page=bap-auditoria&subtab=hardening' ) ],
+        [ 'label' => 'Auditoria Programada sin Alertas Pendientes', 'ok' => empty( get_option( 'bap_last_auto_scan_alerts', [] ) ), 'pts' => 5, 'url' => admin_url( 'admin.php?page=bap-auditoria&subtab=escaneres#bap-box-db-inj' ) ],
     ];
 
     $score = 0;
@@ -83,7 +83,13 @@ add_action( 'admin_post_bap_executive_security_report', function() {
                         <tr>
                             <td><?php echo esc_html( $c['label'] ); ?></td>
                             <td><?php echo (int) $c['pts']; ?> pts</td>
-                            <td><strong style="color:<?php echo $c['ok'] ? '#16a34a' : '#d97706'; ?>;"><?php echo $c['ok'] ? 'ACTIVO' : 'PENDIENTE'; ?></strong></td>
+                            <td>
+                                <?php if ( $c['ok'] ) : ?>
+                                    <strong style="color:#16a34a;">ACTIVO</strong>
+                                <?php else : ?>
+                                    <a href="<?php echo esc_url( $c['url'] ); ?>" target="_blank" rel="noopener noreferrer" style="color:#d97706;font-weight:700;text-decoration:underline;" title="Ir a configurar este control">PENDIENTE &rarr;</a>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
