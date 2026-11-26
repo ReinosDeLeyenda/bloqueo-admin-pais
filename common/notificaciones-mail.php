@@ -59,8 +59,11 @@ add_action( 'phpmailer_init', function( $phpmailer ) {
         if ( '' === trim( (string) $phpmailer->Sender ) || false !== stripos( $phpmailer->Sender, 'www-data@' ) ) {
             $phpmailer->Sender = $aligned_from;
         }
-        if ( false !== stripos( (string) $phpmailer->From, 'wordpress@' ) ) {
-            $phpmailer->From = $aligned_from;
+        $cur_from = strtolower( trim( (string) $phpmailer->From ) );
+        if ( '' !== $site_host && ( '' === $cur_from || false === stripos( $cur_from, '@' . $site_host ) ) ) {
+
+            $phpmailer->From   = $aligned_from;
+            $phpmailer->Sender = $aligned_from;
         }
     }
     if ( 'text/html' === $phpmailer->ContentType && '' === trim( (string) $phpmailer->AltBody ) ) {
