@@ -13,11 +13,11 @@ function bap_execute_all_security_scans() {
     if ( function_exists( 'bap_run_core_checksum_scan' ) ) {
         $core = bap_run_core_checksum_scan( true );
         if ( is_wp_error( $core ) ) {
-            $report[] = [ 'name' => 'Integridad Core + Plugins WP.org', 'status' => 'warning', 'detail' => $core->get_error_message() ];
+            $report[] = [ 'name' => 'Integridad Core + Plugins WP.org', 'link' => $aud_url . '#bap-box-core', 'status' => 'warning', 'detail' => $core->get_error_message() ];
         } else {
             $issues   = count( $core['modified'] ) + count( $core['missing'] ) + count( $core['extra'] );
             $report[] = [
-                'name'   => 'Integridad Core + Plugins WP.org',
+                'name'   => 'Integridad Core + Plugins WP.org', 'link' => $aud_url . '#bap-box-core',
                 'status' => $issues > 0 ? 'error' : 'ok',
                 'detail' => $issues > 0 ? "{$issues} anomalía(s) detectada(s) en archivos oficiales." : "Verificados {$core['checked']} archivos oficiales sin cambios.",
             ];
@@ -28,11 +28,11 @@ function bap_execute_all_security_scans() {
     if ( function_exists( 'bap_verify_custom_integrity_baseline' ) ) {
         $base = bap_verify_custom_integrity_baseline();
         if ( null === $base ) {
-            $report[] = [ 'name' => 'Integridad Temas/Plugins Privados', 'status' => 'warning', 'detail' => 'Sin huella base SHA-256 creada todavía.' ];
+            $report[] = [ 'name' => 'Integridad Temas/Plugins Privados', 'link' => $aud_url . '#bap-box-custom-base', 'status' => 'warning', 'detail' => 'Sin huella base SHA-256 creada todavía.' ];
         } else {
             $diff     = count( $base['modified'] ) + count( $base['added'] ) + count( $base['deleted'] );
             $report[] = [
-                'name'   => 'Integridad Temas/Plugins Privados',
+                'name'   => 'Integridad Temas/Plugins Privados', 'link' => $aud_url . '#bap-box-custom-base',
                 'status' => $diff > 0 ? 'error' : 'ok',
                 'detail' => $diff > 0 ? "{$diff} archivo(s) modificado(s), añadido(s) o eliminado(s)." : "Verificados {$base['checked']} archivos sin cambios.",
             ];
@@ -45,7 +45,7 @@ function bap_execute_all_security_scans() {
         $GLOBALS['bap_all_scans_cve'] = $cve;
         $cnt      = count( $cve['findings'] ?? [] );
         $report[] = [
-            'name'   => 'Vulnerabilidades Conocidas (CVE)',
+            'name'   => 'Vulnerabilidades Conocidas (CVE)', 'link' => $aud_url . '#bap-box-cve',
             'status' => $cnt > 0 ? 'error' : 'ok',
             'detail' => $cnt > 0 ? "{$cnt} vulnerabilidad(es) CVE detectada(s)." : "Analizados {$cve['checked']} componentes sin CVEs conocidos.",
             'items'  => array_map( fn( $f ) => $f['component'] . ' v' . $f['version'] . ' (' . implode( ', ', $f['cves'] ) . ')', $cve['findings'] ?? [] ),
@@ -58,7 +58,7 @@ function bap_execute_all_security_scans() {
         $GLOBALS['bap_all_scans_mal'] = $mal;
         $cnt      = count( $mal['findings'] ?? [] );
         $report[] = [
-            'name'   => 'Escáner de Malware y Uploads',
+            'name'   => 'Escáner de Malware y Uploads', 'link' => $aud_url . '#bap-box-malware',
             'status' => $cnt > 0 ? 'error' : 'ok',
             'detail' => $cnt > 0 ? "{$cnt} archivo(s) sospechoso(s) detectado(s)." : "Analizados {$mal['scanned']} archivos sin firmas maliciosas.",
             'items'  => array_map( fn( $f ) => $f['type'] . ': ' . $f['file'] . ' [' . ( $f['date'] ?? 'N/D' ) . ']', $mal['findings'] ?? [] ),
@@ -70,7 +70,7 @@ function bap_execute_all_security_scans() {
         $ab       = bap_scan_abandoned_plugins();
         $cnt      = count( $ab['findings'] ?? [] );
         $report[] = [
-            'name'   => 'Plugins Abandonados / Retirados',
+            'name'   => 'Plugins Abandonados / Retirados', 'link' => $aud_url . '#bap-box-abandoned',
             'status' => $cnt > 0 ? 'warning' : 'ok',
             'detail' => $cnt > 0 ? "{$cnt} plugin(s) antiguo(s) (+1 año) o cerrado(s)." : "Verificados {$ab['checked']} plugins oficiales al día.",
         ];
@@ -81,7 +81,7 @@ function bap_execute_all_security_scans() {
         $db       = bap_scan_database_injections();
         $cnt      = count( $db );
         $report[] = [
-            'name'   => 'Inyecciones en Base de Datos',
+            'name'   => 'Inyecciones en Base de Datos', 'link' => $aud_url . '#bap-box-db-inj',
             'status' => $cnt > 0 ? 'error' : 'ok',
             'detail' => $cnt > 0 ? "{$cnt} posible(s) script(s) o inyección en posts/opciones." : 'Base de datos limpia (sin scripts sospechosos).',
         ];
@@ -93,7 +93,7 @@ function bap_execute_all_security_scans() {
         $bad      = array_filter( $perms, fn( $r ) => in_array( $r['status'], [ 'critical', 'warning' ], true ) );
         $cnt      = count( $bad );
         $report[] = [
-            'name'   => 'Permisos de Archivos Críticos',
+            'name'   => 'Permisos de Archivos Críticos', 'link' => $aud_url . '#bap-box-perms',
             'status' => $cnt > 0 ? 'warning' : 'ok',
             'detail' => $cnt > 0 ? "{$cnt} archivo(s) o carpeta(s) con permisos abiertos." : 'Permisos de archivos y carpetas verificados.',
         ];
@@ -102,19 +102,19 @@ function bap_execute_all_security_scans() {
     if ( function_exists( 'bap_scan_privileged_admins' ) ) {
         $adm      = bap_scan_privileged_admins();
         $report[] = [
-            'name'   => 'Auditoría de Administradores',
+            'name'   => 'Auditoría de Administradores', 'link' => $aud_url . '#bap-box-admins',
             'status' => $adm['suspicious'] > 0 ? 'error' : 'ok',
             'detail' => $adm['suspicious'] > 0 ? "{$adm['suspicious']} cuenta(s) con privilegios sospechosos." : "{$adm['total']} administrador(es) verificado(s) sin anomalías.",
         ];
     }
 
-    if ( function_exists( 'bap_scan_seo_spam_and_malicious_links' ) ) { $seo = bap_scan_seo_spam_and_malicious_links(); $cnt = count( $seo['findings'] ?? [] ); $report[] = [ 'name' => 'SEO Spam y Enlaces Maliciosos', 'status' => $cnt > 0 ? 'error' : 'ok', 'detail' => $cnt > 0 ? "{$cnt} enlace(s) oculto(s) o spam SEO detectado(s)." : "Revisados {$seo['posts_checked']} posts y {$seo['comments_checked']} comentarios limpios." ]; }
+    if ( function_exists( 'bap_scan_seo_spam_and_malicious_links' ) ) { $seo = bap_scan_seo_spam_and_malicious_links(); $cnt = count( $seo['findings'] ?? [] ); $report[] = [ 'name' => 'SEO Spam y Enlaces Maliciosos', 'link' => $aud_url . '#bap-box-seo', 'status' => $cnt > 0 ? 'error' : 'ok', 'detail' => $cnt > 0 ? "{$cnt} enlace(s) oculto(s) o spam SEO detectado(s)." : "Revisados {$seo['posts_checked']} posts y {$seo['comments_checked']} comentarios limpios." ]; }
 
     if ( function_exists( 'bap_roles_verify_integrity' ) ) {
         $r_chk    = bap_roles_verify_integrity();
         $bad_r    = ( $r_chk['changed'] || ! empty( $r_chk['escalations'] ) );
         $report[] = [
-            'name'   => 'Integridad de Roles y Capacidades',
+            'name'   => 'Integridad de Roles y Capacidades', 'link' => $aud_url . '#bap-box-roles',
             'status' => $bad_r ? 'error' : 'ok',
             'detail' => $bad_r ? 'Alteracion o escalada detectada en wp_user_roles.' : 'Roles y permisos de usuario verificados sin cambios.',
         ];
@@ -124,7 +124,7 @@ function bap_execute_all_security_scans() {
         $d_chk = bap_dns_mon_verify();
         if ( is_array( $d_chk ) ) {
             $report[] = [
-                'name'   => 'Registros DNS del Dominio',
+                'name'   => 'Registros DNS del Dominio', 'link' => add_query_arg( 'subtab', 'hardening', $aud_url ),
                 'status' => ! empty( $d_chk['changed'] ) ? 'error' : 'ok',
                 'detail' => ! empty( $d_chk['changed'] ) ? 'Cambios detectados en DNS (' . implode( ', ', array_keys( $d_chk['diffs'] ) ) . ').' : 'Registros NS, A, AAAA y MX verificados sin cambios.',
             ];
@@ -135,7 +135,7 @@ function bap_execute_all_security_scans() {
         $wp_res   = bap_audit_privileged_users_weak_passwords();
         $w_cnt    = count( $wp_res['weak'] ?? [] );
         $report[] = [
-            'name'   => 'Contraseñas Debiles en Usuarios',
+            'name'   => 'Contraseñas Debiles en Usuarios', 'link' => $aud_url . '#bap-box-weak-pwd',
             'status' => $w_cnt > 0 ? 'error' : 'ok',
             'detail' => $w_cnt > 0 ? "{$w_cnt} cuenta(s) con clave debil o predecible." : "Verificadas {$wp_res['checked']} cuentas privilegiadas sin claves debiles.",
         ];
@@ -145,7 +145,7 @@ function bap_execute_all_security_scans() {
         $evs      = bap_get_scheduled_cron_events_list();
         $susp     = count( array_filter( $evs, fn( $e ) => ! empty( $e['suspicious'] ) ) );
         $report[] = [
-            'name'   => 'Tareas Programadas (WP-Cron)',
+            'name'   => 'Tareas Programadas (WP-Cron)', 'link' => add_query_arg( 'subtab', 'cron', $aud_url ),
             'status' => $susp > 0 ? 'warning' : 'ok',
             'detail' => $susp > 0 ? "{$susp} tarea(s) cron huerfana(s) o sospechosa(s)." : count( $evs ) . ' tareas programadas verificadas.',
         ];
@@ -154,7 +154,7 @@ function bap_execute_all_security_scans() {
     if ( function_exists( 'bap_db_schema_verify' ) ) {
         $sch      = bap_db_schema_verify();
         $report[] = [
-            'name'   => 'Esquema de Tablas MySQL',
+            'name'   => 'Esquema de Tablas MySQL', 'link' => $aud_url . '#bap-box-schema',
             'status' => ! empty( $sch['changed'] ) ? 'warning' : 'ok',
             'detail' => ! empty( $sch['changed'] ) ? 'Tablas nuevas (' . count( $sch['added'] ) . ') o eliminadas (' . count( $sch['removed'] ) . ').' : "{$sch['total']} tablas MySQL verificadas sin cambios.",
         ];
@@ -163,7 +163,7 @@ function bap_execute_all_security_scans() {
     if ( function_exists( 'bap_content_guard_verify' ) ) {
         $cg       = bap_content_guard_verify();
         $report[] = [
-            'name'   => 'Integridad de Páginas (Anti-Defacement)',
+            'name'   => 'Integridad de Páginas (Anti-Defacement)', 'link' => $aud_url . '#bap-box-defacement',
             'status' => ! empty( $cg['changed'] ) ? 'warning' : 'ok',
             'detail' => ! empty( $cg['changed'] ) ? 'Cambios detectados en ' . count( $cg['modified'] ) . ' página(s).' : "{$cg['checked']} páginas/entradas verificadas sin cambios.",
         ];
@@ -173,7 +173,7 @@ function bap_execute_all_security_scans() {
         $rw       = bap_scan_wp_root_orphan_files();
         $cnt      = count( $rw['findings'] ?? [] );
         $report[] = [
-            'name'   => 'Archivos Extra en Carpeta Raíz',
+            'name'   => 'Archivos Extra en Carpeta Raíz', 'link' => $aud_url . '#bap-box-root',
             'status' => $cnt > 0 ? 'warning' : 'ok',
             'detail' => $cnt > 0 ? "{$cnt} archivo(s) no oficial(es) en la raíz de WordPress." : "Revisados {$rw['checked']} archivos en raíz sin anomalías.",
         ];
