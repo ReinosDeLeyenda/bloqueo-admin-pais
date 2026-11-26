@@ -72,12 +72,15 @@ add_filter( 'pre_set_site_transient_update_plugins', function( $transient ) {
 
     if ( $release && ! empty( $release['zip_url'] ) ) {
         $item = (object) [
-            'id'          => 'https://github.com' . BAP_GITHUB_REPO,
-            'slug'        => $slug,
-            'plugin'      => $plugin_slug,
-            'new_version' => $release['version'],
-            'url'         => $release['html_url'],
-            'package'     => $release['zip_url'],
+            'id'           => 'https://github.com/' . BAP_GITHUB_REPO,
+            'slug'         => $slug,
+            'plugin'       => $plugin_slug,
+            'new_version'  => $release['version'],
+            'url'          => $release['html_url'],
+            'package'      => $release['zip_url'],
+            'requires'     => '6.0',
+            'requires_php' => '7.4',
+            'tested'       => get_bloginfo( 'version' ),
         ];
         if ( version_compare( $release['version'], $current_ver, '>' ) ) {
             $transient->response[ $plugin_slug ] = $item;
@@ -109,12 +112,15 @@ add_filter( 'site_transient_update_plugins', function( $transient ) {
     if ( empty( $transient->response[ $plugin_slug ] ) && empty( $transient->no_update[ $plugin_slug ] ) ) {
         $slug = dirname( $plugin_slug );
         $transient->no_update[ $plugin_slug ] = (object) [
-            'id'          => 'https://github.com' . BAP_GITHUB_REPO,
-            'slug'        => ( '.' === $slug ) ? basename( $plugin_slug, '.php' ) : $slug,
-            'plugin'      => $plugin_slug,
-            'new_version' => $transient->checked[ $plugin_slug ] ?? '1.0.0',
-            'url'         => 'https://github.com' . BAP_GITHUB_REPO,
-            'package'     => '',
+            'id'           => 'https://github.com/' . BAP_GITHUB_REPO,
+            'slug'         => ( '.' === $slug ) ? basename( $plugin_slug, '.php' ) : $slug,
+            'plugin'       => $plugin_slug,
+            'new_version'  => $transient->checked[ $plugin_slug ] ?? '1.0.0',
+            'url'          => 'https://github.com/' . BAP_GITHUB_REPO,
+            'package'      => '',
+            'requires'     => '6.0',
+            'requires_php' => '7.4',
+            'tested'       => get_bloginfo( 'version' ),
         ];
     }
     return $transient;
