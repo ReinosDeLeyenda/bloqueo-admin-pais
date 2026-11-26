@@ -1,55 +1,37 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
+if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-function bap_resolve_server_public_ipv4() {
+function bap_check_server_dnsbl_reputation() {
     $host = (string) wp_parse_url( home_url(), PHP_URL_HOST );
-    if ( '' === $host || in_array( $host, [ 'localhost', '127.0.0.1' ], true ) ) {
-        return '';
-    }
-    if ( filter_var( $host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
-        return $host;
-    }
-    $resolved = @gethostbyname( $host );
-    if ( $resolved !== $host && filter_var( $resolved, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
-        return $resolved;
-    }
-    return '';
-}
-
-function bap_check_ip_against_dnsbls( $ip ) {
-    $ip = trim( (string) $ip );
+    $ip   = ( '' !== $host ) ? @gethostbyname( $host ) : '';
     if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
-        return new WP_Error( 'invalid_ipv4', 'La comprobación DNSBL requiere una dirección IPv4 pública válida.' );
-    }
-    if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
-        return new WP_Error( 'private_ipv4', 'La IP ' . esc_html( $ip ) . ' es privada/local y no puede consultarse en listas DNSBL públicas.' );
+        return new WP_Error( 'no_ipv4', 'No se pudo resolver una IPv4 publica para el servidor.' );
     }
 
-    $reversed = implode( '.', array_reverse( explode( '.', $ip ) ) );
-    $zones    = [
-        'Spamhaus ZEN'   => 'zen.spamhaus.org',
-        'Barracuda BRBL' => 'b.barracudacentral.org',
-        'SpamCop'        => 'bl.spamcop.net',
-        'SORBS DNSBL'    => 'dnsbl.sorbs.net',
+    $rev = implode( '.', array_reverse( explode( '.', $ip ) ) );
+    $providers = [
+        'Spamhaus ZEN'  => [ 'zone' => 'zen.spamhaus.org', 'delist' => 'https://' . 'check.spamhaus.org/results?query=' . rawurlencode( $ip ) ],
+        'SpamCop'       => [ 'zone' => 'bl.spamcop.net', 'delist' => 'https://' . 'www.spamcop.net/w3m?action=checkblock&ip=' . rawurlencode( $ip ) ],
+        'Barracuda'     => [ 'zone' => 'b.barracudacentral.org', 'delist' => 'https://' . 'www.barracudacentral.org/rbl/removal-request' ],
+        'UCEPROTECT L1' => [ 'zone' => 'dnsbl-1.uceprotect.net', 'delist' => 'https://' . 'www.uceprotect.net/en/rblcheck.php?ipr=' . rawurlencode( $ip ) ],
     ];
 
-    $results = [];
-    foreach ( $zones as $label => $zone ) {
-        $query  = $reversed . '.' . $zone . '.';
-        $listed = @checkdnsrr( $query, 'A' );
-        $results[] = [
-            'provider' => $label,
-            'zone'     => $zone,
-            'listed'   => $listed,
-        ];
+    $rows = [];
+    foreach ( $providers as $name => $cfg ) {
+        $zone   = $cfg['zone'];
+        $recs   = @dns_get_record( $rev . '.' . $zone . '.', DNS_A );
+        $listed = false;
+        foreach ( (array) $recs as $rec ) {
+            $ans = (string) ( $rec['ip'] ?? '' );
+            if ( '' !== $ans && 0 === strpos( $ans, '127.' ) && 0 !== strpos( $ans, '127.255.255.' ) ) {
+                $listed = true;
+                break;
+            }
+        }
+        $rows[] = [ 'name' => $name, 'zone' => $zone, 'listed' => $listed, 'delist' => $cfg['delist'] ];
     }
 
-    return [
-        'ip'      => $ip,
-        'results' => $results,
-    ];
+    return [ 'ip' => $ip, 'rows' => $rows ];
 }
 
 function bap_render_dnsbl_reputation_box() {
