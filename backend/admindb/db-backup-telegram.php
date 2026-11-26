@@ -112,6 +112,7 @@ function bap_send_db_backup_to_telegram() {
 
     return null === $last_err ? true : $last_err;
 }
+
 add_action( 'admin_init', function() {
     if ( isset( $_POST['bap_download_sql_backup'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_db_backup_action', 'bap_db_backup_nonce' ) ) {
         $file = bap_generate_sql_gz_backup();
@@ -126,24 +127,60 @@ add_action( 'admin_init', function() {
     }
 } );
 
+function bap_reschedule_db_backup_cron( $freq ) {
+    if ( function_exists( 'bap_reschedule_cron_hook' ) ) {
+        bap_reschedule_cron_hook( 'bap_auto_db_backup_telegram_event', $freq, [
+            'daily'   => [ 'daily', DAY_IN_SECONDS ],
+            'weekly'  => [ 'weekly', WEEK_IN_SECONDS ],
+            'monthly' => [ 'bap_monthly', 30 * DAY_IN_SECONDS ],
+        ] );
+    }
+}
+add_action( 'bap_auto_db_backup_telegram_event', 'bap_send_db_backup_to_telegram' );
+
 function bap_render_db_backup_telegram_card() {
     if ( ! current_user_can( 'manage_options' ) ) { return; }
     $notice = '';
+    if ( isset( $_POST['bap_save_backup_schedule'] ) && check_admin_referer( 'bap_db_backup_action', 'bap_db_backup_nonce' ) ) {
+        $freq = in_array( $_POST['bap_db_backup_freq'] ?? 'none', [ 'none', 'daily', 'weekly', 'monthly' ], true ) ? $_POST['bap_db_backup_freq'] : 'none';
+        update_option( 'bap_db_backup_freq', $freq );
+        bap_reschedule_db_backup_cron( $freq );
+        $notice = '<div class="notice notice-success inline"><p><strong>Programacion de copias de seguridad guardada.</strong></p></div>';
+    }
     if ( isset( $_POST['bap_send_backup_tg_now'] ) && check_admin_referer( 'bap_db_backup_action', 'bap_db_backup_nonce' ) ) {
         $res    = bap_send_db_backup_to_telegram();
         $notice = is_wp_error( $res )
             ? '<div class="notice notice-error inline"><p><strong>Error:</strong> ' . esc_html( $res->get_error_message() ) . '</p></div>'
             : '<div class="notice notice-success inline"><p><strong>Copia de seguridad (.sql.gz) enviada a Telegram correctamente.</strong></p></div>';
     }
+
+    $cur_freq  = (string) get_option( 'bap_db_backup_freq', 'none' );
+    $next_cron = wp_next_scheduled( 'bap_auto_db_backup_telegram_event' );
     ?>
     <div class="card" style="max-width:760px;padding:16px 24px;margin-top:24px;">
         <h2>Copia de Seguridad de Base de Datos (.sql.gz)</h2>
-        <p class="description">Genera un volcado comprimido de las tablas de WordPress (omitiendo logs de ataques para mantenerlo ligero) y descargalo o envialo directo a tu chat de Telegram.</p>
+        <p class="description">Genera un volcado comprimido de las tablas de WordPress (omitiendo logs de ataques para mantenerlo ligero), descargalo o programalo para recibirlo automaticamente en Telegram.</p>
         <?php echo wp_kses_post( $notice ); ?>
-        <form method="post" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+        <form method="post" style="margin-top:12px;">
             <?php wp_nonce_field( 'bap_db_backup_action', 'bap_db_backup_nonce' ); ?>
-            <button type="submit" name="bap_send_backup_tg_now" class="button button-primary">Enviar copia (.sql.gz) a Telegram ahora</button>
-            <button type="submit" name="bap_download_sql_backup" class="button button-secondary">Descargar copia (.sql.gz)</button>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid #dcdcde;">
+                <label><strong>Envio automatico a Telegram:</strong>
+                    <select name="bap_db_backup_freq">
+                        <option value="none" <?php selected( $cur_freq, 'none' ); ?>>Desactivado</option>
+                        <option value="daily" <?php selected( $cur_freq, 'daily' ); ?>>Diario (cada 24 horas)</option>
+                        <option value="weekly" <?php selected( $cur_freq, 'weekly' ); ?>>Semanal (cada 7 dias)</option>
+                        <option value="monthly" <?php selected( $cur_freq, 'monthly' ); ?>>Mensual (cada 30 dias)</option>
+                    </select>
+                </label>
+                <button type="submit" name="bap_save_backup_schedule" class="button button-secondary">Guardar programacion</button>
+                <?php if ( $next_cron ) : ?>
+                    <span class="description" style="color:#008a20;width:100%;">Proxima copia automatica: <code><?php echo esc_html( wp_date( 'Y-m-d H:i:s', $next_cron ) ); ?></code></span>
+                <?php endif; ?>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button type="submit" name="bap_send_backup_tg_now" class="button button-primary">Enviar copia (.sql.gz) a Telegram ahora</button>
+                <button type="submit" name="bap_download_sql_backup" class="button button-secondary">Descargar copia (.sql.gz)</button>
+            </div>
         </form>
     </div>
     <?php

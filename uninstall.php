@@ -114,6 +114,6 @@ if ( file_exists( $up_ht ) && is_writable( $up_ht ) ) {
     $up_rem = preg_replace( '/# BEGIN Bloqueo Admin Uploads.*?# END Bloqueo Admin Uploads\s*/s', '', $up_raw );
     if ( '' === trim( $up_rem ) ) { @unlink( $up_ht ); } else { @file_put_contents( $up_ht, $up_rem ); }
 }
-foreach ( [ 'bap_send_telegram_digest_event', 'bap_auto_update_dbs_event', 'bap_daily_logs_cleanup', 'bap_send_digest_email_event', 'bap_purge_autobans_event', 'bap_scheduled_security_scan_event' ] as $ev ) {
+foreach ( [ 'bap_send_telegram_digest_event', 'bap_auto_update_dbs_event', 'bap_daily_logs_cleanup', 'bap_send_digest_email_event', 'bap_purge_autobans_event', 'bap_scheduled_security_scan_event', 'bap_auto_db_backup_telegram_event' ] as $ev ) {
     wp_clear_scheduled_hook( $ev );
 }
