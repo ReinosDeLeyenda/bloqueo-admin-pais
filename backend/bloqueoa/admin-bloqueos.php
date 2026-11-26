@@ -22,6 +22,19 @@ function bap_handle_test_email_post() {
             ? '<div class="notice notice-success is-dismissible"><p><strong>¡Email de prueba de resumen agrupado enviado a:</strong> <code>' . esc_html( implode( ', ', $recipients ) ) . '</code>!</p></div>'
             : '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> WordPress (<code>wp_mail</code>) no pudo enviar el correo de resumen.</p></div>';
     }
+    if ( isset( $_POST['bap_send_test_webhook'] ) && check_admin_referer( 'bap_test_email_action' ) ) {
+        $res = function_exists( 'bap_send_generic_webhook' ) ? bap_send_generic_webhook( 'test_event', [
+            'ip'      => bap_get_user_ip() ?: '185.220.101.4',
+            'country' => 'DE',
+            'asn'     => 'AS205100 — F3 Netze e.V.',
+            'risk'    => '100%',
+            'reason'  => 'Prueba de Webhook JSON',
+            'uri'     => '/wp-login.php',
+        ], true ) : new WP_Error( 'missing', 'Módulo Webhook no cargado.' );
+        return is_wp_error( $res )
+            ? '<div class="notice notice-error is-dismissible"><p><strong>Error Webhook:</strong> ' . esc_html( $res->get_error_message() ) . '</p></div>'
+            : '<div class="notice notice-success is-dismissible"><p><strong>¡Payload JSON de prueba enviado al Webhook correctamente!</strong></p></div>';
+    }
     if ( isset( $_POST['bap_send_test_tg'] ) && check_admin_referer( 'bap_test_email_action' ) ) {
         $site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
         $item = [

@@ -134,5 +134,18 @@ function bap_render_only_notify_fields() {
             <p class="description">Crea tu bot con <code>@BotFather</code>, inícialo enviándole <code>/start</code> y guarda antes de pulsar probar.</p>
         </td>
     </tr>
+<tr>
+        <th>Webhook JSON (Discord / Slack / n8n)</th>
+        <td>
+            <div style="display:flex;flex-direction:column;gap:8px;max-width:460px;">
+                <input type="url" name="bap_webhook_url" value="<?php echo esc_attr( get_option( 'bap_webhook_url', '' ) ); ?>" class="regular-text code" placeholder="https://discord.com... o https://n8n..." />
+                <input type="password" name="bap_webhook_secret" value="<?php echo esc_attr( get_option( 'bap_webhook_secret', '' ) ); ?>" class="regular-text code" placeholder="Clave secreta HMAC opcional (cabecera X-BAP-Signature)" autocomplete="new-password" />
+                <div>
+                    <button type="submit" form="bap_test_email_form" name="bap_send_test_webhook" value="1" class="button button-secondary">Probar Webhook JSON</button>
+                </div>
+            </div>
+            <p class="description">Envía un <code>POST</code> JSON en tiempo real con los datos del ataque (compatible con Discord, Slack, n8n, Make o scripts firewall).</p>
+        </td>
+    </tr>
     <?php
 }

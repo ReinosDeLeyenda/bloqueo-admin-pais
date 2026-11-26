@@ -90,6 +90,10 @@ function bap_log_blocked_attempt( $ip, $country, $reason ) {
 
     if ( function_exists( 'bap_track_and_autoban_subnet' ) ) { bap_track_and_autoban_subnet( $ip ); }
 
+    if ( function_exists( 'bap_send_generic_webhook' ) && '' !== trim( (string) get_option( 'bap_webhook_url', '' ) ) ) {
+        bap_send_generic_webhook( 'ip_blocked', [ 'ip' => $ip, 'country' => $country, 'asn' => $asn, 'reason' => $reason, 'uri' => $uri ], false );
+    }
+
     if ( function_exists( 'bap_queue_or_send_notification' ) ) {
         bap_queue_or_send_notification( $ip, $country, $reason );
     }
