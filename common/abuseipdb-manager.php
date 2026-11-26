@@ -7,6 +7,10 @@ function bap_get_abuseipdb_path() {
     return bap_get_geo_storage_path( 'abuseipdb-list.json' );
 }
 
+function bap_get_abuseipdb_live_cache_path() {
+    return bap_get_geo_storage_path( 'abuseipdb-live-cache.json' );
+}
+
 function bap_download_abuseipdb_database() {
     $api_key = trim( (string) get_option( 'bap_abuseipdb_key', '' ) );
     $map     = [];
@@ -25,7 +29,7 @@ function bap_download_abuseipdb_database() {
             return $res;
         }
         if ( 200 !== wp_remote_retrieve_response_code( $res ) ) {
-            return new WP_Error( 'abuse_api', 'AbuseIPDB devolvió HTTP ' . wp_remote_retrieve_response_code( $res ) . '. Revisa tu API Key.' );
+            return new WP_Error( 'abuse_api', 'AbuseIPDB devolvio HTTP ' . wp_remote_retrieve_response_code( $res ) . '. Revisa tu API Key.' );
         }
 
         $body = json_decode( wp_remote_retrieve_body( $res ), true );
@@ -41,7 +45,7 @@ function bap_download_abuseipdb_database() {
         $mirror = 'https://' . implode( '.', [ 'raw', 'githubusercontent', 'com' ] ) . '/' . implode( '/', [ 'borestad', 'blocklist-abuseipdb', 'main', 'abuseipdb-s100-30d.ipv4' ] );
         $res    = wp_remote_get( $mirror, [ 'timeout' => 30 ] );
         if ( is_wp_error( $res ) || 200 !== wp_remote_retrieve_response_code( $res ) ) {
-            return new WP_Error( 'abuse_mirror', 'No se pudo descargar el espejo público ni hay API Key configurada.' );
+            return new WP_Error( 'abuse_mirror', 'No se pudo descargar el espejo publico ni hay API Key configurada.' );
         }
         $lines = preg_split( '/\r\n|\r|\n/', wp_remote_retrieve_body( $res ) );
         foreach ( $lines as $line ) {
@@ -53,28 +57,44 @@ function bap_download_abuseipdb_database() {
     }
 
     if ( empty( $map ) ) {
-        return new WP_Error( 'abuse_empty', 'La lista descargada no contiene IPs válidas.' );
+        return new WP_Error( 'abuse_empty', 'La lista descargada no contiene IPs validas.' );
     }
 
     return bap_save_json_list( 'abuseipdb-list.json', $map, 'bap_abuseipdb_last_updated', 'bap_abuseipdb_count' );
 }
 
-function bap_get_abuseipdb_score( $ip ) {
+function bap_get_abuseipdb_score( $ip, $allow_live_api = true ) {
     if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
         return null;
     }
 
+    // 1. Buscar en la lista negra oficial descargada
     $db = bap_load_cached_json_list( 'abuseipdb-list.json' );
     if ( isset( $db[ $ip ] ) ) {
         return (int) $db[ $ip ];
     }
 
-    $tkey   = 'bap_abuse_' . md5( $ip );
-    $cached = get_transient( $tkey );
-    if ( false !== $cached ) {
-        return (int) $cached;
+    // 2. Buscar en la cache persistente de IPs ya consultadas (valida 30 dias)
+    static $live_cache = null;
+    $cache_file        = bap_get_abuseipdb_live_cache_path();
+    if ( null === $live_cache ) {
+        $raw        = file_exists( $cache_file ) ? json_decode( (string) @file_get_contents( $cache_file ), true ) : [];
+        $live_cache = is_array( $raw ) ? $raw : [];
     }
 
+    $now = time();
+    $ttl = 30 * DAY_IN_SECONDS;
+    if ( isset( $live_cache[ $ip ] ) && is_array( $live_cache[ $ip ] ) ) {
+        if ( ( $now - (int) ( $live_cache[ $ip ]['ts'] ?? 0 ) ) < $ttl ) {
+            return (int) ( $live_cache[ $ip ]['score'] ?? 0 );
+        }
+    }
+
+    if ( ! $allow_live_api || false !== get_transient( 'bap_abuse_api_cooldown' ) ) {
+        return null;
+    }
+
+    // 3. Consultar API en vivo solo para IPs nuevas y guardar en disco
     $api_key = trim( (string) get_option( 'bap_abuseipdb_key', '' ) );
     if ( '' !== $api_key ) {
         $url = 'https://' . implode( '.', [ 'api', 'abuseipdb', 'com' ] ) . '/api/v2/check?ipAddress=' . rawurlencode( $ip ) . '&maxAgeInDays=90';
@@ -82,11 +102,24 @@ function bap_get_abuseipdb_score( $ip ) {
             'timeout' => 4,
             'headers' => [ 'Key' => $api_key, 'Accept' => 'application/json' ],
         ] );
-        if ( ! is_wp_error( $res ) && 200 === wp_remote_retrieve_response_code( $res ) ) {
-            $data  = json_decode( wp_remote_retrieve_body( $res ), true );
-            $score = (int) ( $data['data']['abuseConfidenceScore'] ?? 0 );
-            set_transient( $tkey, $score, DAY_IN_SECONDS );
-            return $score;
+
+        if ( ! is_wp_error( $res ) ) {
+            $code = wp_remote_retrieve_response_code( $res );
+            if ( 200 === $code ) {
+                $data  = json_decode( wp_remote_retrieve_body( $res ), true );
+                $score = (int) ( $data['data']['abuseConfidenceScore'] ?? 0 );
+
+                $live_cache[ $ip ] = [ 'score' => $score, 'ts' => $now ];
+                if ( count( $live_cache ) > 25000 ) {
+                    $live_cache = array_slice( $live_cache, -20000, null, true );
+                }
+                @file_put_contents( $cache_file, wp_json_encode( $live_cache ), LOCK_EX );
+
+                return $score;
+            }
+            if ( 429 === $code ) {
+                set_transient( 'bap_abuse_api_cooldown', '1', HOUR_IN_SECONDS );
+            }
         }
     }
 
@@ -108,7 +141,7 @@ function bap_install_abuseipdb_from_file( $tmp_path, $original_name ) {
     }
 
     if ( '' === $content ) {
-        return new WP_Error( 'empty_file', 'El archivo subido está vacío.' );
+        return new WP_Error( 'empty_file', 'El archivo subido esta vacio.' );
     }
 
     $map  = [];
@@ -144,7 +177,7 @@ function bap_install_abuseipdb_from_file( $tmp_path, $original_name ) {
     }
 
     if ( empty( $map ) ) {
-        return new WP_Error( 'invalid_abuse', 'No se encontraron direcciones IP válidas en el archivo.' );
+        return new WP_Error( 'invalid_abuse', 'No se encontraron direcciones IP validas en el archivo.' );
     }
 
     return bap_save_json_list( 'abuseipdb-list.json', $map, 'bap_abuseipdb_last_updated', 'bap_abuseipdb_count' );
