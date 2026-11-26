@@ -147,7 +147,7 @@ add_filter( 'authenticate', function( $user, $username, $password ) {
 }, 30, 3 );
 
 add_action( 'init', function() {
-    if ( ! bap_is_protected_request() ) {
+    if ( ( function_exists( 'bap_is_guest_demo_session' ) && bap_is_guest_demo_session() ) || ! bap_is_protected_request() ) {
         if ( function_exists( 'bap_check_frontend_rules' ) ) {
             bap_check_frontend_rules();
         }

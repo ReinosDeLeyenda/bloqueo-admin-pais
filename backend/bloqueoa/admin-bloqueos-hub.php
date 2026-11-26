@@ -84,6 +84,7 @@ function bap_render_bloqueos_hub_page() {
 
             <?php if ( function_exists( 'bap_render_ip_simulator_box' ) ) { bap_render_ip_simulator_box(); } ?>
             <?php if ( function_exists( 'bap_render_under_attack_panic_box' ) ) { bap_render_under_attack_panic_box(); } ?>
+            <?php if ( function_exists( 'bap_render_guest_demo_card' ) ) { bap_render_guest_demo_card(); } ?>
         <?php endif; ?>
     </div>
     <?php

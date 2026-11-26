@@ -4,6 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 function bap_get_all_active_user_sessions() {
+    if ( function_exists( 'bap_is_guest_demo_session' ) && bap_is_guest_demo_session() ) { return []; }
     $users  = get_users( [
         'meta_key'     => 'session_tokens',
         'meta_compare' => 'EXISTS',

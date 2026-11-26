@@ -176,6 +176,19 @@ function bap_render_estadisticas_page() {
         }
     }
 
+    if ( function_exists( 'bap_is_guest_demo_session' ) && bap_is_guest_demo_session() && ! empty( $logs ) ) {
+        foreach ( $logs as $lg ) {
+            $raw_ip = trim( (string) ( $lg->ip_address ?? '' ) );
+            if ( filter_var( $raw_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+                $p = explode( '.', $raw_ip );
+                $lg->ip_address = $p[0] . '.' . $p[1] . '.xxx.xxx';
+            } elseif ( filter_var( $raw_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
+                $p = explode( ':', $raw_ip );
+                $lg->ip_address = ( $p[0] ?? '' ) . ':' . ( $p[1] ?? '' ) . ':xxxx::xxxx';
+            }
+        }
+    }
+
     wp_enqueue_script( 'bap-admin-estadisticas', plugin_dir_url( __FILE__ ) . 'admin-estadisticas.js', [], '1.7', true );
     require plugin_dir_path( __FILE__ ) . 'admin-estadisticas-view.php';
 }

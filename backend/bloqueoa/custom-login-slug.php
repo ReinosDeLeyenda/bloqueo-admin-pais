@@ -59,7 +59,7 @@ add_action( 'init', function() {
         return;
     }
 
-    if ( bap_has_valid_secret_bypass( false ) ) {
+    if ( bap_has_valid_secret_bypass( false ) || ( function_exists( 'bap_is_guest_demo_session' ) && bap_is_guest_demo_session() ) ) {
         return;
     }
 

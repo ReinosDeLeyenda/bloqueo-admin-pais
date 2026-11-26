@@ -42,6 +42,7 @@ Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto
 #### Subpestaña `General`
 * **Detección segura de IP (Anti-Spoofing):** Selector explícito de origen de IP (`REMOTE_ADDR`, `CF-Connecting-IP` de Cloudflare, `X-Forwarded-For` o `X-Real-IP`).
 * **Simulador de IP en vivo:** Analiza cualquier IPv4/IPv6 y ruta URL para comprobar su país, ASN, riesgo AbuseIPDB, estado Tor/FireHOL y el veredicto exacto de las reglas de Backend y Frontend.
+* **Modo Invitado / Demo (Acceso por QR en Solo Lectura):** Genera un enlace temporal y un código QR en local para compartir acceso de demostración a todas las secciones del plugin sin dar permisos en WordPress, bloqueando cualquier modificación y ocultando claves API, tokens, sesiones e IPs reales.
 
 #### Subpestaña `Backend`
 * **Modo Vacaciones y Restricción Geo/ASN por Cuenta:** Suspensión temporal y reglas por usuario.
