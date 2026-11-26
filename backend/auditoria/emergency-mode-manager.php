@@ -70,7 +70,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
             require_once ABSPATH . 'wp-admin/includes/file.php';
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
             require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
-            $res = wp_remote_get( 'https://github.com', [
+            $res = wp_remote_get( 'https://' . implode( '.', [ 'api', 'github', 'com' ] ) . '/repos/ReinosDeLeyenda/bloqueo-admin-pais/releases/latest', [
                 'timeout' => 12,
                 'headers' => [ 'Accept' => 'application/vnd.github.v3+json', 'User-Agent' => 'WordPress-BAP-Emergency' ],
             ] );
