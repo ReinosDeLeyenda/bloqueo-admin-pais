@@ -146,5 +146,14 @@ function bap_execute_all_security_scans() {
         ];
     }
 
+    if ( function_exists( 'bap_db_schema_verify' ) ) {
+        $sch      = bap_db_schema_verify();
+        $report[] = [
+            'name'   => 'Esquema de Tablas MySQL',
+            'status' => ! empty( $sch['changed'] ) ? 'warning' : 'ok',
+            'detail' => ! empty( $sch['changed'] ) ? 'Tablas nuevas (' . count( $sch['added'] ) . ') o eliminadas (' . count( $sch['removed'] ) . ').' : "{$sch['total']} tablas MySQL verificadas sin cambios.",
+        ];
+    }
+
     return $report;
 }
