@@ -40,17 +40,21 @@ add_action( 'init', function() {
     }
 }, 0 );
 
-// 2. Permitir acceso exclusivamente a las pantallas del plugin en modo solo lectura
+// 2. Permitir acceso exclusivamente a las pantallas del plugin en modo solo lectura (prohibiendo plugins/temas)
 add_filter( 'user_has_cap', function( $allcaps, $caps ) {
     if ( ! bap_is_guest_demo_session() ) { return $allcaps; }
+    foreach ( [ 'activate_plugins', 'install_plugins', 'update_plugins', 'delete_plugins', 'edit_plugins', 'switch_themes', 'edit_themes', 'update_core', 'manage_network_plugins' ] as $deny_cap ) {
+        $allcaps[ $deny_cap ] = false;
+    }
+    global $pagenow;
     $page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
     $allowed_pages = [ 'bap-admin-db', 'bap-bloqueos', 'bap-auditoria', 'bap-plantillas', 'bap-notificaciones', 'bap-admin-estadisticas' ];
-    if ( is_admin() && in_array( $page, $allowed_pages, true ) && in_array( 'manage_options', $caps, true ) ) {
+    if ( is_admin() && 'admin.php' === (string) $pagenow && ! isset( $_GET['action'] ) && in_array( $page, $allowed_pages, true ) && in_array( 'manage_options', $caps, true ) ) {
         $allcaps['manage_options'] = true;
         $allcaps['read']           = true;
     }
     return $allcaps;
-}, 10, 2 );
+}, 999, 2 );
 
 // 3. Bloquear cualquier modificacion POST o descarga en modo invitado
 add_action( 'admin_init', function() {
@@ -60,13 +64,14 @@ add_action( 'admin_init', function() {
         wp_safe_redirect( home_url( '/' ) );
         exit;
     }
+    global $pagenow;
     $page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
     $allowed_pages = [ 'bap-admin-db', 'bap-bloqueos', 'bap-auditoria', 'bap-plantillas', 'bap-notificaciones', 'bap-admin-estadisticas' ];
-    if ( ! wp_doing_ajax() && ! in_array( $page, $allowed_pages, true ) ) {
+    if ( ! wp_doing_ajax() && ( 'admin.php' !== (string) $pagenow || isset( $_GET['action'] ) || ! in_array( $page, $allowed_pages, true ) ) ) {
         wp_safe_redirect( admin_url( 'admin.php?page=bap-admin-estadisticas' ) );
         exit;
     }
-    if ( 'POST' === ( $_SERVER['REQUEST_METHOD'] ?? '' ) ) {
+    if ( 'POST' === ( $_SERVER['REQUEST_METHOD'] ?? '' ) || wp_doing_ajax() ) {
         wp_die( '<h2>Modo Invitado (Solo Lectura)</h2><p>Esta accion esta deshabilitada en la demostracion publica.</p><p><a href="javascript:history.back()">&larr; Volver</a></p>', 'Modo Invitado', [ 'response' => 403 ] );
     }
 }, 0 );
