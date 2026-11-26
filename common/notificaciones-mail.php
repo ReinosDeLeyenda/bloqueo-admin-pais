@@ -47,7 +47,7 @@ add_action( 'update_option_bap_notify_freq', function( $old_val, $new_val ) {
 add_action( 'bap_send_digest_email_event', 'bap_flush_email_digest' );
 
 add_action( 'phpmailer_init', function( $phpmailer ) {
-    $admin_mail = sanitize_email( (string) get_option( 'admin_email', '' ) );
+    $custom_from = sanitize_email( (string) get_option( 'bap_mail_from_address', '' ) ); $admin_mail = is_email( $custom_from ) ? $custom_from : sanitize_email( (string) get_option( 'admin_email', '' ) );
     $site_host  = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
     if ( '' !== $site_host && 0 === strpos( $site_host, 'www.' ) ) {
         $site_host = substr( $site_host, 4 );

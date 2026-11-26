@@ -105,7 +105,7 @@ function bap_audit_mail_dns_records() {
     }
 
     // 7. Alineacion de remitente WordPress (admin_email) con el dominio propio
-    $wp_admin_mail = strtolower( trim( (string) get_option( 'admin_email', '' ) ) );
+    $custom_f = strtolower( trim( (string) get_option( 'bap_mail_from_address', '' ) ) ); $wp_admin_mail = '' !== $custom_f ? $custom_f : strtolower( trim( (string) get_option( 'admin_email', '' ) ) );
     $from_aligned  = ( '' !== $wp_admin_mail && false !== stripos( $wp_admin_mail, '@' . $domain ) );
     $checks[]      = [
         'type'   => 'Remitente WP (From)',
