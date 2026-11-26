@@ -179,5 +179,15 @@ function bap_execute_all_security_scans() {
         ];
     }
 
+    if ( function_exists( 'bap_audit_wp_options_autoload' ) ) {
+        $al       = bap_audit_wp_options_autoload();
+        $report[] = [
+            'name'   => 'Peso Autoload (wp_options)',
+            'link'   => $aud_url . '#bap-box-autoload',
+            'status' => $al['bloated'] ? 'warning' : 'ok',
+            'detail' => "Total autoload: {$al['total_kb']} KB ({$al['total_rows']} opciones, {$al['expired_trans']} transients caducados).",
+        ];
+    }
+
     return $report;
 }
