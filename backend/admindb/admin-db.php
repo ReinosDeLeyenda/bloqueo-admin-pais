@@ -25,7 +25,8 @@ function bap_render_tabs( $active_slug ) {
         'bap-bloqueos'           => '2. Bloqueos',
         'bap-auditoria'          => '3. Auditoría y Hardening',
         'bap-plantillas'         => '4. Plantillas',
-        'bap-admin-estadisticas' => '5. Estadísticas',
+        'bap-notificaciones'     => '5. Notificaciones',
+        'bap-admin-estadisticas' => '6. Estadísticas',
     ];
     echo '<h2 class="nav-tab-wrapper" style="margin-bottom:20px;">';
     foreach ( $tabs as $slug => $label ) {
