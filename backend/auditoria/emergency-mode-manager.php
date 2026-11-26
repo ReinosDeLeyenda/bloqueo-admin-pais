@@ -248,7 +248,7 @@ function bap_mu_emergency_needs_update() {
     }
     $content = (string) @file_get_contents( bap_get_mu_emergency_loader_path() );
     if ( preg_match( '/Version:\s*([0-9.]+)/i', $content, $m ) ) {
-        return version_compare( $m, '1.1.0', '<' );
+        return version_compare( $m[1], '1.1.0', '<' );
     }
     return true;
 }
