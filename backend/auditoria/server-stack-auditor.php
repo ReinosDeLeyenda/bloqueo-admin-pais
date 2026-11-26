@@ -1,6 +1,47 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
+function bap_sys_get_dpkg_package_info( array $pkg_candidates ) {
+    if ( ! @is_readable( '/var/lib/dpkg/status' ) ) { return null; }
+    $fh = @fopen( '/var/lib/dpkg/status', 'rb' );
+    if ( ! $fh ) { return null; }
+    $cur_pkg = ''; $cur_status = ''; $cur_ver = '';
+    $found   = [];
+    while ( ( $line = fgets( $fh ) ) !== false ) {
+        $trim = trim( $line );
+        if ( '' === $trim ) {
+            if ( '' !== $cur_pkg && in_array( $cur_pkg, $pkg_candidates, true ) && false !== strpos( $cur_status, 'installed' ) && '' !== $cur_ver ) {
+                $found[ $cur_pkg ] = $cur_ver;
+            }
+            $cur_pkg = ''; $cur_status = ''; $cur_ver = '';
+            continue;
+        }
+        if ( 0 === strpos( $trim, 'Package:' ) ) { $cur_pkg = trim( substr( $trim, 8 ) ); }
+        elseif ( 0 === strpos( $trim, 'Status:' ) ) { $cur_status = trim( substr( $trim, 7 ) ); }
+        elseif ( 0 === strpos( $trim, 'Version:' ) ) { $cur_ver = trim( substr( $trim, 8 ) ); }
+    }
+    fclose( $fh );
+    foreach ( $pkg_candidates as $cand ) {
+        if ( empty( $found[ $cand ] ) ) { continue; }
+        $pkg_ver  = $found[ $cand ];
+        $rel_date = '';
+        $cl_path  = '/usr/share/doc/' . $cand . '/changelog.Debian.gz';
+        if ( function_exists( 'gzopen' ) && @is_readable( $cl_path ) ) {
+            $gz = @gzopen( $cl_path, 'rb' );
+            if ( $gz ) {
+                $head = (string) @gzread( $gz, 2048 );
+                @gzclose( $gz );
+                if ( preg_match( '/^ -- [^>]+>\s+([A-Za-z]{3},\s+\d{1,2}\s+[A-Za-z]{3}\s+\d{4}\s+\d{2}:\d{2}:\d{2}\s+[+-]\d{4})/m', $head, $md ) ) {
+                    $ts = strtotime( $md );
+                    if ( false !== $ts ) { $rel_date = wp_date( 'Y-m-d', $ts ); }
+                }
+            }
+        }
+        return [ 'package' => $cand, 'version' => $pkg_ver, 'date' => $rel_date ];
+    }
+    return null;
+}
+
 function bap_sys_detect_environment() {
     global $wpdb;
     $os_name = PHP_OS_FAMILY;
@@ -115,13 +156,19 @@ function bap_run_server_stack_audit() {
     $k_cves  = ( 'Linux' === PHP_OS_FAMILY && '' !== $k_clean ) ? bap_sys_query_osv_cves( 'Linux', $k_clean ) : [];
     $rows[]  = [
         'component' => 'Kernel del Sistema',
-        'version'   => $env['kernel'] ?: 'No disponible',
+        'version'   => ( function() use ( $env ) {
+            $k_v = $env['kernel'] ?: 'No disponible';
+            $dp  = ( 'Linux' === PHP_OS_FAMILY && '' !== $env['kernel'] ) ? bap_sys_get_dpkg_package_info( [ 'linux-image-' . $env['kernel'], 'linux-image-amd64', 'linux-image-arm64' ] ) : null;
+            return is_array( $dp ) ? $k_v . ' [Paquete: ' . $dp['version'] . ( '' !== $dp['date'] ? ' · ' . $dp['date'] : '' ) . ']' : $k_v;
+        } )(),
         'eol'       => $k_eol,
         'cves'      => $k_cves,
     ];
 
     // 3. Servidor Web
-    $ws_low  = strtolower( $env['web_srv'] );
+    $ws_low   = strtolower( $env['web_srv'] );
+    $dpkg_ws  = ( 'nginx' === $ws_low ) ? bap_sys_get_dpkg_package_info( [ 'nginx', 'nginx-core', 'nginx-full', 'nginx-extras', 'nginx-light' ] ) : ( ( 'apache' === $ws_low ) ? bap_sys_get_dpkg_package_info( [ 'apache2' ] ) : null );
+    $ws_pkg_tag = is_array( $dpkg_ws ) ? ' [Paquete: ' . $dpkg_ws['version'] . ( '' !== $dpkg_ws['date'] ? ' · ' . $dpkg_ws['date'] : '' ) . ']' : '';
     $ws_prod = ( 'nginx' === $ws_low ) ? 'nginx' : ( ( 'apache' === $ws_low ) ? 'apache-http-server' : '' );
     $ws_pkg  = ( 'nginx' === $ws_low ) ? 'nginx' : ( ( 'apache' === $ws_low ) ? 'httpd' : '' );
     $ws_eol  = ( '' !== $ws_prod && '' !== $env['web_ver'] ) ? bap_sys_check_eol( $ws_prod, $env['web_ver'] ) : null;
@@ -136,7 +183,11 @@ function bap_run_server_stack_audit() {
     // 4. PHP
     $rows[] = [
         'component' => 'Motor PHP',
-        'version'   => 'PHP ' . $env['php_ver'],
+        'version'   => ( function() use ( $env ) {
+            $maj_min = implode( '.', array_slice( explode( '.', $env['php_ver'] ), 0, 2 ) );
+            $dp      = bap_sys_get_dpkg_package_info( [ 'php' . $maj_min . '-fpm', 'php' . $maj_min . '-cli', 'php-fpm', 'php' ] );
+            return 'PHP ' . $env['php_ver'] . ( is_array( $dp ) ? ' [Paquete: ' . $dp['version'] . ( '' !== $dp['date'] ? ' · ' . $dp['date'] : '' ) . ']' : '' );
+        } )(),
         'eol'       => bap_sys_check_eol( 'php', $env['php_ver'] ),
         'cves'      => bap_sys_query_osv_cves( 'php', $env['php_ver'] ),
     ];
@@ -145,7 +196,11 @@ function bap_run_server_stack_audit() {
     $db_slug = strtolower( $env['db_type'] );
     $rows[]  = [
         'component' => 'Base de Datos',
-        'version'   => $env['db_type'] . ' ' . $env['db_ver'],
+        'version'   => ( function() use ( $env ) {
+            $cands = ( 'MariaDB' === $env['db_type'] ) ? [ 'mariadb-server', 'mariadb-server-core' ] : [ 'mysql-server', 'mysql-server-8.0', 'mysql-server-8.4' ];
+            $dp    = bap_sys_get_dpkg_package_info( $cands );
+            return $env['db_type'] . ' ' . $env['db_ver'] . ( is_array( $dp ) ? ' [Paquete: ' . $dp['version'] . ( '' !== $dp['date'] ? ' · ' . $dp['date'] : '' ) . ']' : '' );
+        } )(),
         'eol'       => bap_sys_check_eol( $db_slug, $env['db_ver'] ),
         'cves'      => bap_sys_query_osv_cves( $db_slug, $env['db_ver'] ),
     ];
