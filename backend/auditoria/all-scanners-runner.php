@@ -164,5 +164,15 @@ function bap_execute_all_security_scans() {
         ];
     }
 
+    if ( function_exists( 'bap_scan_wp_root_orphan_files' ) ) {
+        $rw       = bap_scan_wp_root_orphan_files();
+        $cnt      = count( $rw['findings'] ?? [] );
+        $report[] = [
+            'name'   => 'Archivos Extra en Carpeta Raíz',
+            'status' => $cnt > 0 ? 'warning' : 'ok',
+            'detail' => $cnt > 0 ? "{$cnt} archivo(s) no oficial(es) en la raíz de WordPress." : "Revisados {$rw['checked']} archivos en raíz sin anomalías.",
+        ];
+    }
+
     return $report;
 }

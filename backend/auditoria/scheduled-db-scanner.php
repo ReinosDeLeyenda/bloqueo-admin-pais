@@ -84,6 +84,7 @@ function bap_run_scheduled_security_audit() {
     if ( function_exists( 'bap_dns_mon_verify' ) ) { $d_chk = bap_dns_mon_verify(); if ( is_array( $d_chk ) && ! empty( $d_chk['changed'] ) ) { $alerts[] = 'DNS Hijack: Cambios detectados en registros (' . implode( ', ', array_keys( $d_chk['diffs'] ) ) . ').'; } }
     if ( function_exists( 'bap_db_schema_verify' ) ) { $s_chk = bap_db_schema_verify(); if ( ! empty( $s_chk['changed'] ) ) { $alerts[] = 'Tablas MySQL: Cambios detectados en el esquema de BD.'; } }
     if ( function_exists( 'bap_content_guard_verify' ) ) { $c_chk = bap_content_guard_verify(); if ( ! empty( $c_chk['changed'] ) ) { $alerts[] = 'Anti-Defacement: Cambios no aprobados en páginas publicadas.'; } }
+    if ( function_exists( 'bap_scan_wp_root_orphan_files' ) ) { $rw_chk = bap_scan_wp_root_orphan_files(); if ( ! empty( $rw_chk['findings'] ) ) { $alerts[] = 'Carpeta Raíz: ' . count( $rw_chk['findings'] ) . ' archivo(s) extraño(s) detectado(s).'; } }
     $db_hits = bap_scan_database_injections();
     if ( ! empty( $db_hits ) ) {
         $alerts[] = 'Base de Datos: ' . count( $db_hits ) . ' posible(s) inyección(es) en posts u opciones.';
