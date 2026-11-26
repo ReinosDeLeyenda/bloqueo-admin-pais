@@ -83,6 +83,31 @@ function bap_analyze_ssh_auth_log( $filepath ) {
     return [ 'lines_read' => count( $lines ), 'suspects' => array_slice( $filtered, 0, 50 ) ];
 }
 
+add_action( 'admin_init', function() {
+    if ( ! isset( $_POST['bap_download_ipset_blacklist'] ) || ! current_user_can( 'manage_options' ) ) { return; }
+    check_admin_referer( 'bap_ssh_scan_action', 'bap_ssh_scan_nonce' );
+    $raw_bl = (string) get_option( 'bap_blacklist_ips', '' );
+    $lines  = preg_split( '/\r\n|\r|\n/', $raw_bl );
+    $out    = [ 'create bap_wp_blacklist hash:net family inet hashsize 1024 maxelem 65536 -exist' ];
+    foreach ( (array) $lines as $ln ) {
+        $clean = trim( preg_replace( '/\s*#.*$/', '', (string) $ln ) );
+        if ( '' === $clean ) { continue; }
+        if ( filter_var( $clean, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+            $out[] = 'add bap_wp_blacklist ' . $clean . ' -exist';
+        } elseif ( false !== strpos( $clean, '/' ) ) {
+            list( $net, $mask ) = array_pad( explode( '/', $clean, 2 ), 2, '' );
+            if ( filter_var( $net, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) && is_numeric( $mask ) && (int) $mask >= 8 && (int) $mask <= 32 ) {
+                $out[] = 'add bap_wp_blacklist ' . $net . '/' . (int) $mask . ' -exist';
+            }
+        }
+    }
+    nocache_headers();
+    header( 'Content-Type: text/plain; charset=utf-8' );
+    header( 'Content-Disposition: attachment; filename="bap-blacklist-ipset.txt"' );
+    echo implode( "\n", $out ) . "\n";
+    exit;
+} );
+
 function bap_render_ssh_auth_log_scanner_box() {
     if ( ! current_user_can( 'manage_options' ) ) { return; }
     $notice     = '';
@@ -210,6 +235,10 @@ ufw limit 22/tcp comment "Rate-limit SSH"
 # Con nftables nativo (Debian 12/13):
 nft add table inet filter
 nft add set inet filter ssh_blacklist { type ipv4_addr\; flags interval\; }</pre>';
+            echo '<form method="post" style="margin-top:10px;">';
+            wp_nonce_field( 'bap_ssh_scan_action', 'bap_ssh_scan_nonce' );
+            echo '<button type="submit" name="bap_download_ipset_blacklist" class="button button-secondary">Descargar Lista Negra completa para Firewall (ipset restore)</button>';
+            echo ' <small class="description">Uso en servidor: <code>ipset restore -! &lt; bap-blacklist-ipset.txt</code></small></form>';
             echo '</details>';
         }
     }
