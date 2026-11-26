@@ -75,7 +75,16 @@ function bap_render_auditoria_page() {
                                 <tr>
                                     <td><strong><?php echo esc_html( $row['name'] ); ?></strong></td>
                                     <td><span style="background:<?php echo esc_attr( $bg ); ?>;color:#fff;padding:2px 7px;border-radius:3px;font-weight:700;font-size:11px;"><?php echo esc_html( $tx ); ?></span></td>
-                                    <td><?php echo esc_html( $row['detail'] ); ?></td>
+                                    <td>
+                                        <?php echo esc_html( $row['detail'] ); ?>
+                                        <?php if ( ! empty( $row['items'] ) && is_array( $row['items'] ) ) : ?>
+                                            <ul style="margin:6px 0 2px 16px;list-style:disc;color:#b91c1c;font-size:12px;">
+                                                <?php foreach ( $row['items'] as $sub_item ) : ?>
+                                                    <li><code><?php echo esc_html( $sub_item ); ?></code></li>
+                                                <?php endforeach; ?>
+                                            </ul>
+                                        <?php endif; ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

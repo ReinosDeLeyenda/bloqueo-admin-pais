@@ -41,22 +41,26 @@ function bap_execute_all_security_scans() {
     // 3. Vulnerabilidades CVE
     if ( function_exists( 'bap_run_cve_vulnerability_scan' ) ) {
         $cve      = bap_run_cve_vulnerability_scan( true );
+        $GLOBALS['bap_all_scans_cve'] = $cve;
         $cnt      = count( $cve['findings'] ?? [] );
         $report[] = [
             'name'   => 'Vulnerabilidades Conocidas (CVE)',
             'status' => $cnt > 0 ? 'error' : 'ok',
             'detail' => $cnt > 0 ? "{$cnt} vulnerabilidad(es) CVE detectada(s)." : "Analizados {$cve['checked']} componentes sin CVEs conocidos.",
+            'items'  => array_map( fn( $f ) => $f['component'] . ' v' . $f['version'] . ' (' . implode( ', ', $f['cves'] ) . ')', $cve['findings'] ?? [] ),
         ];
     }
 
     // 4. Malware y Backdoors
     if ( function_exists( 'bap_run_wp_content_malware_scan' ) ) {
         $mal      = bap_run_wp_content_malware_scan();
+        $GLOBALS['bap_all_scans_mal'] = $mal;
         $cnt      = count( $mal['findings'] ?? [] );
         $report[] = [
             'name'   => 'Escáner de Malware y Uploads',
             'status' => $cnt > 0 ? 'error' : 'ok',
             'detail' => $cnt > 0 ? "{$cnt} archivo(s) sospechoso(s) detectado(s)." : "Analizados {$mal['scanned']} archivos sin firmas maliciosas.",
+            'items'  => array_map( fn( $f ) => $f['type'] . ': ' . $f['file'], $mal['findings'] ?? [] ),
         ];
     }
 
