@@ -128,12 +128,28 @@ function bap_render_root_directory_watcher_box() {
         }
     }
 
+    $preview_img_uri = '';
     if ( isset( $_POST['bap_preview_root_file'] ) && check_admin_referer( 'bap_root_watch_action', 'bap_root_watch_nonce' ) ) {
         $fname = basename( wp_unslash( $_POST['bap_root_fname'] ?? '' ) );
         $full  = wp_normalize_path( $root . $fname );
         if ( '' !== $fname && 0 === strpos( $full, $root ) && is_file( $full ) && is_readable( $full ) ) {
             $preview_name = $fname;
-            $preview_code = (string) @file_get_contents( $full, false, null, 0, 16384 );
+            $ext          = strtolower( pathinfo( $fname, PATHINFO_EXTENSION ) );
+            $img_mimes    = [
+                'gif'  => 'image/gif',
+                'jpg'  => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png'  => 'image/png',
+                'webp' => 'image/webp',
+                'ico'  => 'image/x-icon',
+                'bmp'  => 'image/bmp',
+            ];
+            if ( isset( $img_mimes[ $ext ] ) && (int) @filesize( $full ) <= 2097152 ) {
+                $raw_img         = (string) @file_get_contents( $full );
+                $preview_img_uri = 'data:' . $img_mimes[ $ext ] . ';base64,' . base64_encode( $raw_img );
+            } else {
+                $preview_code = (string) @file_get_contents( $full, false, null, 0, 16384 );
+            }
         }
     }
 
@@ -165,7 +181,13 @@ function bap_render_root_directory_watcher_box() {
                     <strong style="color:#72aee6;">Vista previa: <?php echo esc_html( $preview_name ); ?></strong>
                     <a href="#bap-box-root" onclick="this.parentElement.parentElement.remove();return false;" style="color:#f87171;text-decoration:none;font-weight:700;">Cerrar &times;</a>
                 </div>
-                <pre style="margin:0;white-space:pre-wrap;word-break:break-all;font-size:12px;max-height:280px;overflow-y:auto;"><?php echo esc_html( $preview_code ); ?></pre>
+                <?php if ( '' !== $preview_img_uri ) : ?>
+                    <div style="text-align:center;padding:12px;background:#111827;border-radius:4px;">
+                        <img src="<?php echo esc_attr( $preview_img_uri ); ?>" alt="<?php echo esc_attr( $preview_name ); ?>" style="max-width:100%;max-height:280px;object-fit:contain;border:1px solid #374151;background:#fff;" />
+                    </div>
+                <?php else : ?>
+                    <pre style="margin:0;white-space:pre-wrap;word-break:break-all;font-size:12px;max-height:280px;overflow-y:auto;"><?php echo esc_html( $preview_code ); ?></pre>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
 
