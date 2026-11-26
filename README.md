@@ -135,6 +135,19 @@ Este plugin sustituye en una sola herramienta ligera a **Wordfence Security**, *
 
 ---
 
+## Opcional: Auditoría de accesos fallidos por SSH desde WordPress
+
+Si tienes acceso por SSH al servidor y quieres inspeccionar intentos fallidos de autenticación (sshd) desde **3. Auditoría y Hardening**:
+
+1. Crea un enlace simbólico en /var/log/ con el nombre que desees (el desplegable del plugin lo detectará automáticamente):
+   sudo ln -s /var/log/auth.log /var/log/bap-ssh.log
+   *(En RHEL, AlmaLinux o Rocky Linux sustituye /var/log/auth.log por /var/log/secure).*
+
+2. Concede permiso de solo lectura al usuario del servidor web (ej. www-data, nginx o apache) sobre el archivo original:
+   sudo setfacl -m u:www-data:r /var/log/auth.log
+
+---
+
 ## Requisitos
 * WordPress 6.0 o superior.
 * PHP 8.0 o superior (con extensión `zlib` recomendada para descomprimir `.mmdb.gz`).

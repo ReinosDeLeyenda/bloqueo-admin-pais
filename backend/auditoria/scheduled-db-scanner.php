@@ -85,6 +85,15 @@ function bap_run_scheduled_security_audit() {
     if ( function_exists( 'bap_db_schema_verify' ) ) { $s_chk = bap_db_schema_verify(); if ( ! empty( $s_chk['changed'] ) ) { $alerts[] = 'Tablas MySQL: Cambios detectados en el esquema de BD.'; } }
     if ( function_exists( 'bap_content_guard_verify' ) ) { $c_chk = bap_content_guard_verify(); if ( ! empty( $c_chk['changed'] ) ) { $alerts[] = 'Anti-Defacement: Cambios no aprobados en páginas publicadas.'; } }
     if ( function_exists( 'bap_scan_wp_root_orphan_files' ) ) { $rw_chk = bap_scan_wp_root_orphan_files(); if ( ! empty( $rw_chk['findings'] ) ) { $alerts[] = 'Carpeta Raíz: ' . count( $rw_chk['findings'] ) . ' archivo(s) extraño(s) detectado(s).'; } }
+    if ( function_exists( 'bap_analyze_ssh_auth_log' ) && function_exists( 'bap_get_ssh_log_candidates' ) ) {
+        $ssh_saved = trim( (string) get_option( 'bap_ssh_auth_log_path', '' ) );
+        $ssh_cands = bap_get_ssh_log_candidates();
+        $ssh_path  = ( '' !== $ssh_saved ) ? $ssh_saved : (string) array_key_first( $ssh_cands );
+        $ssh_res   = bap_analyze_ssh_auth_log( $ssh_path );
+        if ( is_array( $ssh_res ) && ! empty( $ssh_res['suspects'] ) ) {
+            $alerts[] = 'Fuerza Bruta SSH: ' . count( $ssh_res['suspects'] ) . ' IP(s) con múltiples intentos fallidos en ' . basename( $ssh_path ) . '.';
+        }
+    }
     $db_hits = bap_scan_database_injections();
     if ( ! empty( $db_hits ) ) {
         $alerts[] = 'Base de Datos: ' . count( $db_hits ) . ' posible(s) inyección(es) en posts u opciones.';

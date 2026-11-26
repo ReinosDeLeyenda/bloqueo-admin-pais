@@ -179,6 +179,22 @@ function bap_execute_all_security_scans() {
         ];
     }
 
+    if ( function_exists( 'bap_analyze_ssh_auth_log' ) && function_exists( 'bap_get_ssh_log_candidates' ) ) {
+        $ssh_saved = trim( (string) get_option( 'bap_ssh_auth_log_path', '' ) );
+        $ssh_cands = bap_get_ssh_log_candidates();
+        $ssh_path  = ( '' !== $ssh_saved ) ? $ssh_saved : (string) array_key_first( $ssh_cands );
+        $ssh_res   = bap_analyze_ssh_auth_log( $ssh_path );
+        if ( is_array( $ssh_res ) ) {
+            $cnt      = count( $ssh_res['suspects'] ?? [] );
+            $report[] = [
+                'name'   => 'Accesos Fallidos por SSH',
+                'link'   => $aud_url . '#bap-box-ssh-log',
+                'status' => $cnt > 0 ? 'warning' : 'ok',
+                'detail' => $cnt > 0 ? "{$cnt} IP(s) con intentos fallidos SSH en " . basename( $ssh_path ) . '.' : 'Sin fuerza bruta SSH detectada en ' . basename( $ssh_path ) . '.',
+            ];
+        }
+    }
+
     if ( function_exists( 'bap_audit_wp_options_autoload' ) ) {
         $al       = bap_audit_wp_options_autoload();
         $report[] = [
