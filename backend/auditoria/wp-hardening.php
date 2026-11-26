@@ -262,12 +262,17 @@ location ~* /wp-content/uploads/.*\.(?:php|phtml|php3|php4|php5|php7|php8|phar|p
     deny all;
 }
 
-# 2. Bloquear acceso directo a archivos sensibles y xmlrpc.php
+# 2. Bloquear enumeracion de versiones de plugins (readme.txt / changelog.txt)
+location ~* ^/wp-content/plugins/.+/(?:readme|changelog|license)\.(?:txt|md|html)$ {
+    deny all;
+}
+
+# 3. Bloquear acceso directo a archivos sensibles y xmlrpc.php
 location ~* (?:/xmlrpc\.php|\.(?:log|zip|rar|tar|tar\.gz|tgz|7z|gz|bak|sql|env|git.*))$ {
     deny all;
 }
 
-# 3. Anti-Hotlinking de imágenes
+# 4. Anti-Hotlinking de imágenes
 location ~* \.(?:jpg|jpeg|png|gif|webp|avif)$ {
     valid_referers none blocked server_names <?php echo esc_html( $site_h ); ?> *.google. *.bing. *.duckduckgo. *.yahoo.;
     if ($invalid_referer) {

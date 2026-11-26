@@ -20,6 +20,8 @@ function bap_get_default_trap_urls() {
         '/c99.php',
         '/wso.php',
         '/alfa.php',
+        '/wp-content/plugins/*/readme.txt',
+        '/wp-content/plugins/*/changelog.txt',
     ] );
 }
 
