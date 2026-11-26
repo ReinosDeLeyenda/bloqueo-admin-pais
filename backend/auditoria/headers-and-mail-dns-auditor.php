@@ -3,6 +3,17 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 
 
+function bap_detect_local_mail_server() {
+    if ( 'WIN' === strtoupper( substr( PHP_OS, 0, 3 ) ) ) { return 'windows'; }
+    $sm_bin = @readlink( '/usr/sbin/sendmail' );
+    $sm_low = strtolower( (string) $sm_bin );
+    if ( false !== strpos( $sm_low, 'postfix' ) || @file_exists( '/usr/sbin/postfix' ) || @is_dir( '/etc/postfix' ) ) { return 'postfix'; }
+    if ( false !== strpos( $sm_low, 'exim' ) || @file_exists( '/usr/sbin/exim4' ) || @is_dir( '/etc/exim4' ) ) { return 'exim4'; }
+    if ( @file_exists( '/etc/mail/sendmail.cf' ) || @file_exists( '/usr/lib/sm.bin/sendmail' ) ) { return 'sendmail'; }
+    if ( false !== strpos( $sm_low, 'msmtp' ) || false !== strpos( $sm_low, 'ssmtp' ) || false !== strpos( $sm_low, 'nullmailer' ) ) { return 'relay'; }
+    return 'unknown';
+}
+
 function bap_audit_mail_dns_records() {
     $domain = bap_get_site_root_domain();
     if ( '' === $domain || in_array( $domain, [ 'localhost', '127.0.0.1' ], true ) ) {
@@ -59,7 +70,41 @@ function bap_audit_mail_dns_records() {
         ];
     }
 
-    return [ 'domain' => $domain, 'records' => $checks ];
+    // 4. Registro DKIM (selectores habituales)
+    $dkim_found = '';
+    foreach ( [ 'default', 'mail', 'dkim', 'selector1', 'google', 's1', 'k1' ] as $sel ) {
+        $dk_recs = @dns_get_record( $sel . '.' . '_domainkey.' . $domain, DNS_TXT );
+        foreach ( (array) $dk_recs as $rec ) {
+            $txt = (string) ( $rec['txt'] ?? '' );
+            if ( false !== stripos( $txt, 'v=DKIM1' ) || false !== stripos( $txt, 'p=' ) ) {
+                $dkim_found = $sel . '.' . '_domainkey (Activo)';
+                break 2;
+            }
+        }
+    }
+    $dkim_hint = 'No detectado en selectores comunes — Gmail envia a SPAM si tienes DMARC p=reject sin firma DKIM (instala OpenDKIM o usa SMTP autenticado).';
+    $checks[]  = [
+        'type'   => 'DKIM (_domainkey)',
+        'status' => '' !== $dkim_found ? 'ok' : 'error',
+        'value'  => '' !== $dkim_found ? $dkim_found : $dkim_hint,
+    ];
+
+    // 5. DNS Inverso / PTR (rDNS) de la IP del servidor
+    $srv_ip = @gethostbyname( $domain );
+    if ( filter_var( $srv_ip, FILTER_VALIDATE_IP ) ) {
+        $ptr     = rtrim( strtolower( (string) @gethostbyaddr( $srv_ip ) ), '.' );
+        $ptr_ok  = ( '' !== $ptr && $ptr !== $srv_ip && false !== strpos( $ptr, $domain ) );
+        $ptr_msg = $ptr_ok
+            ? $srv_ip . ' -> ' . $ptr
+            : $srv_ip . ' -> ' . ( $ptr ?: 'Sin PTR' ) . ' — Gmail penaliza si el rDNS (PTR) en tu proveedor VPS no apunta a ' . $domain;
+        $checks[] = [
+            'type'   => 'PTR / rDNS (IP)',
+            'status' => $ptr_ok ? 'ok' : 'warning',
+            'value'  => $ptr_msg,
+        ];
+    }
+
+    return [ 'domain' => $domain, 'records' => $checks, 'mta' => bap_detect_local_mail_server(), 'dkim_ok' => ( '' !== $dkim_found ) ];
 }
 
 function bap_audit_live_http_headers() {

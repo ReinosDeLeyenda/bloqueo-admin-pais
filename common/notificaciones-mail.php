@@ -47,6 +47,22 @@ add_action( 'update_option_bap_notify_freq', function( $old_val, $new_val ) {
 add_action( 'bap_send_digest_email_event', 'bap_flush_email_digest' );
 
 add_action( 'phpmailer_init', function( $phpmailer ) {
+    $admin_mail = sanitize_email( (string) get_option( 'admin_email', '' ) );
+    $site_host  = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+    if ( '' !== $site_host && 0 === strpos( $site_host, 'www.' ) ) {
+        $site_host = substr( $site_host, 4 );
+    }
+    $aligned_from = ( is_email( $admin_mail ) && '' !== $site_host && false !== stripos( $admin_mail, '@' . $site_host ) )
+        ? $admin_mail
+        : ( '' !== $site_host ? 'no-reply@' . $site_host : $admin_mail );
+    if ( is_email( $aligned_from ) ) {
+        if ( '' === trim( (string) $phpmailer->Sender ) || false !== stripos( $phpmailer->Sender, 'www-data@' ) ) {
+            $phpmailer->Sender = $aligned_from;
+        }
+        if ( false !== stripos( (string) $phpmailer->From, 'wordpress@' ) ) {
+            $phpmailer->From = $aligned_from;
+        }
+    }
     if ( 'text/html' === $phpmailer->ContentType && '' === trim( (string) $phpmailer->AltBody ) ) {
         $plain = preg_replace( '/<style\b[^>]*>.*?<\/style>/is', '', (string) $phpmailer->Body );
         $plain = preg_replace( '/<(br|\/p|\/div|\/tr|\/h[1-6]|\/li)\b[^>]*>/i', "\n", $plain );
