@@ -83,6 +83,7 @@ function bap_run_scheduled_security_audit() {
     if ( function_exists( 'bap_roles_verify_integrity' ) ) { $r_chk = bap_roles_verify_integrity(); if ( $r_chk['changed'] || ! empty( $r_chk['escalations'] ) ) { $alerts[] = 'Roles WP: Alteracion detectada en permisos/capacidades de usuario.'; } }
     if ( function_exists( 'bap_dns_mon_verify' ) ) { $d_chk = bap_dns_mon_verify(); if ( is_array( $d_chk ) && ! empty( $d_chk['changed'] ) ) { $alerts[] = 'DNS Hijack: Cambios detectados en registros (' . implode( ', ', array_keys( $d_chk['diffs'] ) ) . ').'; } }
     if ( function_exists( 'bap_db_schema_verify' ) ) { $s_chk = bap_db_schema_verify(); if ( ! empty( $s_chk['changed'] ) ) { $alerts[] = 'Tablas MySQL: Cambios detectados en el esquema de BD.'; } }
+    if ( function_exists( 'bap_content_guard_verify' ) ) { $c_chk = bap_content_guard_verify(); if ( ! empty( $c_chk['changed'] ) ) { $alerts[] = 'Anti-Defacement: Cambios no aprobados en páginas publicadas.'; } }
     $db_hits = bap_scan_database_injections();
     if ( ! empty( $db_hits ) ) {
         $alerts[] = 'Base de Datos: ' . count( $db_hits ) . ' posible(s) inyección(es) en posts u opciones.';

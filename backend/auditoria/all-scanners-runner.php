@@ -155,5 +155,14 @@ function bap_execute_all_security_scans() {
         ];
     }
 
+    if ( function_exists( 'bap_content_guard_verify' ) ) {
+        $cg       = bap_content_guard_verify();
+        $report[] = [
+            'name'   => 'Integridad de Páginas (Anti-Defacement)',
+            'status' => ! empty( $cg['changed'] ) ? 'warning' : 'ok',
+            'detail' => ! empty( $cg['changed'] ) ? 'Cambios detectados en ' . count( $cg['modified'] ) . ' página(s).' : "{$cg['checked']} páginas/entradas verificadas sin cambios.",
+        ];
+    }
+
     return $report;
 }
