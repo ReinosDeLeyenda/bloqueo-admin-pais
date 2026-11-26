@@ -83,6 +83,7 @@ function bap_render_bloqueos_hub_page() {
             </div>
 
             <?php if ( function_exists( 'bap_render_ip_simulator_box' ) ) { bap_render_ip_simulator_box(); } ?>
+            <?php if ( function_exists( 'bap_render_under_attack_panic_box' ) ) { bap_render_under_attack_panic_box(); } ?>
         <?php endif; ?>
     </div>
     <?php
