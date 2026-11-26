@@ -14,18 +14,18 @@ function bap_handle_stats_actions() {
     if ( isset( $_POST['bap_ban_ip_from_stats'] ) && check_admin_referer( 'bap_logs_action' ) ) {
         $target_ip = trim( sanitize_text_field( wp_unslash( $_POST['bap_target_ip'] ?? '' ) ) );
         if ( ! filter_var( $target_ip, FILTER_VALIDATE_IP ) ) {
-            return '<div class="notice notice-error is-dismissible"><p>Dirección IP no válida.</p></div>';
+            return '<div class="notice notice-error is-dismissible"><p>Direccion IP no valida.</p></div>';
         }
         $my_ip = function_exists( 'bap_get_user_ip' ) ? bap_get_user_ip() : '';
         if ( $target_ip === $my_ip || bap_is_server_ip( $target_ip ) ) {
-            return '<div class="notice notice-error is-dismissible"><p><strong>Seguridad:</strong> No puedes añadir tu propia IP o la del servidor a la Lista Negra.</p></div>';
+            return '<div class="notice notice-error is-dismissible"><p><strong>Seguridad:</strong> No puedes anadir tu propia IP o la del servidor a la Lista Negra.</p></div>';
         }
         $bl = bap_parse_list( get_option( 'bap_blacklist_ips', '' ), false );
         if ( ! in_array( $target_ip, $bl, true ) ) {
             $bl[] = $target_ip;
             update_option( 'bap_blacklist_ips', implode( "\n", $bl ) );
         }
-        return '<div class="notice notice-success is-dismissible"><p><strong>IP bloqueada:</strong> <code>' . esc_html( $target_ip ) . '</code> se ha añadido permanentemente a la Lista Negra.</p></div>';
+        return '<div class="notice notice-success is-dismissible"><p><strong>IP bloqueada:</strong> <code>' . esc_html( $target_ip ) . '</code> se ha anadido permanentemente a la Lista Negra.</p></div>';
     }
     if ( isset( $_POST['bap_clear_logs'] ) && check_admin_referer( 'bap_logs_action' ) ) {
         $wpdb->query( "TRUNCATE TABLE `{$table}`" );
@@ -34,19 +34,19 @@ function bap_handle_stats_actions() {
     if ( isset( $_POST['bap_save_retention'] ) && check_admin_referer( 'bap_logs_action' ) ) {
         $days = max( 0, min( 3650, (int) ( $_POST['bap_logs_retention_days'] ?? 30 ) ) );
         update_option( 'bap_logs_retention_days', $days );
-        return '<div class="notice notice-success is-dismissible"><p>Retención guardada (' . ( $days > 0 ? $days . ' días' : 'Ilimitada' ) . ').</p></div>';
+        return '<div class="notice notice-success is-dismissible"><p>Retencion guardada (' . ( $days > 0 ? $days . ' dias' : 'Ilimitada' ) . ').</p></div>';
     }
     if ( isset( $_POST['bap_import_ip2location'] ) && check_admin_referer( 'bap_logs_action' ) ) {
         $res = function_exists( 'bap_import_ip2location_stats' ) ? bap_import_ip2location_stats() : new WP_Error( 'missing', 'Importador no disponible.' );
         return is_wp_error( $res )
             ? '<div class="notice notice-error is-dismissible"><p><strong>Error al importar:</strong> ' . esc_html( $res->get_error_message() ) . '</p></div>'
-            : '<div class="notice notice-success is-dismissible"><p><strong>¡Migración completada!</strong> Se han importado <strong>' . number_format_i18n( (int) $res['hits'] ) . '</strong> registros históricos desde IP2Location.</p></div>';
+            : '<div class="notice notice-success is-dismissible"><p><strong>Migracion completada:</strong> Se han importado <strong>' . number_format_i18n( (int) $res['hits'] ) . '</strong> registros historicos desde IP2Location.</p></div>';
     }
     if ( isset( $_POST['bap_import_wordfence'] ) && check_admin_referer( 'bap_logs_action' ) ) {
         $res = function_exists( 'bap_import_wordfence_stats' ) ? bap_import_wordfence_stats() : new WP_Error( 'missing', 'Importador no disponible.' );
         return is_wp_error( $res )
             ? '<div class="notice notice-error is-dismissible"><p><strong>Error al importar:</strong> ' . esc_html( $res->get_error_message() ) . '</p></div>'
-            : '<div class="notice notice-success is-dismissible"><p><strong>¡Migración completada!</strong> Se han importado <strong>' . number_format_i18n( (int) $res['hits'] ) . '</strong> registros históricos desde Wordfence.</p></div>';
+            : '<div class="notice notice-success is-dismissible"><p><strong>Migracion completada:</strong> Se han importado <strong>' . number_format_i18n( (int) $res['hits'] ) . '</strong> registros historicos desde Wordfence.</p></div>';
     }
     return '';
 }
@@ -55,14 +55,37 @@ function bap_render_estadisticas_page() {
     global $wpdb;
     bap_maybe_create_logs_table();
 
-    $notice      = bap_handle_stats_actions();
-    $table       = bap_get_logs_table_name();
-    $filter_uri  = isset( $_GET['filter_uri'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_uri'] ) ) : '';
-    $filter_q    = isset( $_GET['filter_q'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_q'] ) ) : '';
+    $notice       = bap_handle_stats_actions();
+    $table        = bap_get_logs_table_name();
     $raw_type     = isset( $_GET['filter_type'] ) ? sanitize_key( wp_unslash( $_GET['filter_type'] ) ) : 'all';
     $filter_type  = in_array( $raw_type, [ 'all', 'admin', 'web' ], true ) ? $raw_type : 'all';
     $raw_abuse    = isset( $_GET['filter_abuse'] ) ? sanitize_key( wp_unslash( $_GET['filter_abuse'] ) ) : 'all';
     $filter_abuse = in_array( $raw_abuse, [ 'all', 'listed', 'unlisted' ], true ) ? $raw_abuse : 'all';
+
+    $filter_rows = [];
+    if ( isset( $_GET['f_uri'] ) || isset( $_GET['f_q'] ) ) {
+        $uris  = (array) wp_unslash( $_GET['f_uri'] ?? [] );
+        $qs    = (array) wp_unslash( $_GET['f_q'] ?? [] );
+        $modes = (array) wp_unslash( $_GET['f_mode'] ?? [] );
+        $max_r = max( count( $uris ), count( $qs ) );
+        for ( $i = 0; $i < $max_r; $i++ ) {
+            $u = trim( sanitize_text_field( (string) ( $uris[ $i ] ?? '' ) ) );
+            $q = trim( sanitize_text_field( (string) ( $qs[ $i ] ?? '' ) ) );
+            $m = ( 'exclude' === ( $modes[ $i ] ?? 'include' ) ) ? 'exclude' : 'include';
+            if ( '' !== $u || '' !== $q ) {
+                $filter_rows[] = [ 'uri' => $u, 'q' => $q, 'mode' => $m ];
+            }
+        }
+    } else {
+        $leg_u = isset( $_GET['filter_uri'] ) ? trim( sanitize_text_field( wp_unslash( $_GET['filter_uri'] ) ) ) : '';
+        $leg_q = isset( $_GET['filter_q'] ) ? trim( sanitize_text_field( wp_unslash( $_GET['filter_q'] ) ) ) : '';
+        if ( '' !== $leg_u || '' !== $leg_q ) {
+            $filter_rows[] = [ 'uri' => $leg_u, 'q' => $leg_q, 'mode' => 'include' ];
+        }
+    }
+    if ( empty( $filter_rows ) ) {
+        $filter_rows[] = [ 'uri' => '', 'q' => '', 'mode' => 'include' ];
+    }
 
     $type_where_sql = '';
     if ( 'admin' === $filter_type ) {
@@ -84,30 +107,18 @@ function bap_render_estadisticas_page() {
         $params[] = $filter_type;
     }
 
-    foreach ( preg_split( '/\s+/', trim( $filter_uri ) ) as $tok ) {
-        if ( '' === $tok ) { continue; }
-        $neg  = ( '-' === $tok[0] && strlen( $tok ) > 1 );
-        $term = $neg ? substr( $tok, 1 ) : $tok;
-        $like = '%' . $wpdb->esc_like( $term ) . '%';
-        if ( $neg ) {
-            $where[]  = 'request_uri NOT LIKE %s';
-            $params[] = $like;
-        } else {
-            $where[]  = 'request_uri LIKE %s';
+    foreach ( $filter_rows as $fr ) {
+        $is_inc = ( 'exclude' !== $fr['mode'] );
+        if ( '' !== $fr['uri'] ) {
+            $like = '%' . $wpdb->esc_like( $fr['uri'] ) . '%';
+            $where[]  = $is_inc ? 'request_uri LIKE %s' : 'request_uri NOT LIKE %s';
             $params[] = $like;
         }
-    }
-
-    foreach ( preg_split( '/\s+/', trim( $filter_q ) ) as $tok ) {
-        if ( '' === $tok ) { continue; }
-        $neg  = ( '-' === $tok[0] && strlen( $tok ) > 1 );
-        $term = $neg ? substr( $tok, 1 ) : $tok;
-        $like = '%' . $wpdb->esc_like( $term ) . '%';
-        if ( $neg ) {
-            $where[] = '(ip_address NOT LIKE %s AND country_code NOT LIKE %s AND asn NOT LIKE %s AND reason NOT LIKE %s AND request_uri NOT LIKE %s)';
-            array_push( $params, $like, $like, $like, $like, $like );
-        } else {
-            $where[] = '(ip_address LIKE %s OR country_code LIKE %s OR asn LIKE %s OR reason LIKE %s OR request_uri LIKE %s)';
+        if ( '' !== $fr['q'] ) {
+            $like = '%' . $wpdb->esc_like( $fr['q'] ) . '%';
+            $where[] = $is_inc
+                ? '(ip_address LIKE %s OR country_code LIKE %s OR asn LIKE %s OR reason LIKE %s OR request_uri LIKE %s)'
+                : '(ip_address NOT LIKE %s AND country_code NOT LIKE %s AND asn NOT LIKE %s AND reason NOT LIKE %s AND request_uri NOT LIKE %s)';
             array_push( $params, $like, $like, $like, $like, $like );
         }
     }
@@ -120,7 +131,7 @@ function bap_render_estadisticas_page() {
     if ( 'all' !== $filter_abuse && ! empty( $logs ) ) {
         $logs = array_values( array_filter( $logs, function( $row ) use ( $filter_abuse ) {
             $ip_v   = trim( (string) $row->ip_address );
-            $in_db  = ( '' !== $ip_v && function_exists( 'bap_get_abuseipdb_score' ) && null !== bap_get_abuseipdb_score( $ip_v ) );
+            $in_db  = ( '' !== $ip_v && function_exists( 'bap_get_abuseipdb_score' ) && null !== bap_get_abuseipdb_score( $ip_v, false ) );
             $in_rsn = ( false !== stripos( (string) $row->reason, 'AbuseIPDB' ) );
             $listed = ( $in_db || $in_rsn );
             return ( 'listed' === $filter_abuse ) ? $listed : ! $listed;
@@ -144,6 +155,6 @@ function bap_render_estadisticas_page() {
         }
     }
 
-    wp_enqueue_script( 'bap-admin-estadisticas', plugin_dir_url( __FILE__ ) . 'admin-estadisticas.js', [], '1.5', true );
+    wp_enqueue_script( 'bap-admin-estadisticas', plugin_dir_url( __FILE__ ) . 'admin-estadisticas.js', [], '1.6', true );
     require plugin_dir_path( __FILE__ ) . 'admin-estadisticas-view.php';
 }

@@ -111,3 +111,56 @@
         });
     });
 })();
+
+(function () {
+    const wrap = document.getElementById('bap-filter-rows-wrap');
+    if (!wrap) return;
+
+    function syncDel() {
+        const rows = wrap.querySelectorAll('.bap-filter-row');
+        rows.forEach(r => {
+            const d = r.querySelector('.bap-del-frow');
+            if (d) d.disabled = (rows.length <= 1);
+        });
+    }
+
+    wrap.addEventListener('click', function (e) {
+        const sw = e.target.closest('.bap-fmode-switch');
+        if (sw) {
+            const row = sw.closest('.bap-filter-row');
+            const inp = row.querySelector('.bap-fmode-val');
+            const dot = sw.querySelector('.bap-fmode-dot');
+            const txt = sw.querySelector('.bap-fmode-txt');
+            const inc = (inp.value !== 'include');
+            inp.value = inc ? 'include' : 'exclude';
+            sw.style.background = inc ? '#2271b1' : '#d63638';
+            txt.textContent = inc ? 'Incluir' : 'Excluir';
+            txt.style.order = inc ? '1' : '2';
+            dot.style.order = inc ? '2' : '1';
+            return;
+        }
+        const add = e.target.closest('.bap-add-frow');
+        if (add) {
+            const row = add.closest('.bap-filter-row');
+            const cl = row.cloneNode(true);
+            cl.querySelectorAll('input[type="text"]').forEach(i => { i.value = ''; });
+            const inp = cl.querySelector('.bap-fmode-val');
+            const sb = cl.querySelector('.bap-fmode-switch');
+            const dot = cl.querySelector('.bap-fmode-dot');
+            const txt = cl.querySelector('.bap-fmode-txt');
+            if (inp) inp.value = 'include';
+            if (sb) sb.style.background = '#2271b1';
+            if (txt) { txt.textContent = 'Incluir'; txt.style.order = '1'; }
+            if (dot) dot.style.order = '2';
+            row.after(cl);
+            syncDel();
+            return;
+        }
+        const del = e.target.closest('.bap-del-frow');
+        if (del && wrap.querySelectorAll('.bap-filter-row').length > 1) {
+            del.closest('.bap-filter-row').remove();
+            syncDel();
+        }
+    });
+    syncDel();
+})();
