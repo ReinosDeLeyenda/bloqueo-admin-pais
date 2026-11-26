@@ -7,7 +7,7 @@ function bap_get_exportable_options( $include_secrets = false ) {
     $keys = [
         // 1. Bases de datos y MySQL externo
         'bap_db_auto_update_freq', 'bap_db_backup_freq', 'bap_logs_retention_days', 'bap_auto_scan_freq', 'bap_custom_dbs',
-        'bap_harden_disable_file_edit', 'bap_harden_hide_wp_version', 'bap_harden_block_uploads_php', 'bap_harden_security_headers', 'bap_harden_disable_app_passwords', 'bap_harden_disable_rss', 'bap_harden_anti_hotlink', 'bap_harden_clean_head_headers', 'bap_harden_user_lockdown', 'bap_harden_upload_magic_bytes', 'bap_vpatch_enabled', 'bap_outbound_audit_enabled', 'bap_outbound_blocked_hosts',
+        'bap_harden_disable_file_edit', 'bap_harden_hide_wp_version', 'bap_harden_block_uploads_php', 'bap_harden_security_headers', 'bap_harden_disable_app_passwords', 'bap_harden_disable_rss', 'bap_harden_anti_hotlink', 'bap_harden_clean_head_headers', 'bap_harden_user_lockdown', 'bap_harden_upload_magic_bytes', 'bap_harden_strip_image_exif', 'bap_vpatch_enabled', 'bap_outbound_audit_enabled', 'bap_outbound_blocked_hosts',
         'bap_ext_db_enabled', 'bap_ext_db_host', 'bap_ext_db_port',
         'bap_ext_db_name', 'bap_ext_db_user', 'bap_ext_db_table',
 

@@ -68,3 +68,65 @@ add_filter( 'wp_handle_upload_prefilter', function( $file ) {
 
     return $file;
 }, 5 );
+
+function bap_strip_image_exif_metadata( $file_path, $mime ) {
+    if ( '' === $file_path || ! is_readable( $file_path ) || ! is_writable( $file_path ) ) {
+        return false;
+    }
+
+    if ( class_exists( 'Imagick' ) ) {
+        try {
+            $img = new Imagick( $file_path );
+            if ( method_exists( $img, 'autoOrient' ) ) {
+                $img->autoOrient();
+            }
+            $img->stripImage();
+            $img->writeImage( $file_path );
+            $img->clear();
+            $img->destroy();
+            return true;
+        } catch ( Throwable $e ) {}
+    }
+
+    if ( 'image/jpeg' === $mime && function_exists( 'imagecreatefromjpeg' ) ) {
+        $orient = 1;
+        if ( function_exists( 'exif_read_data' ) ) {
+            $exif = @exif_read_data( $file_path );
+            if ( is_array( $exif ) && ! empty( $exif['Orientation'] ) ) {
+                $orient = (int) $exif['Orientation'];
+            }
+        }
+        $im = @imagecreatefromjpeg( $file_path );
+        if ( $im ) {
+            if ( function_exists( 'imagerotate' ) ) {
+                if ( 3 === $orient ) { $im = @imagerotate( $im, 180, 0 ); }
+                elseif ( 6 === $orient ) { $im = @imagerotate( $im, -90, 0 ); }
+                elseif ( 8 === $orient ) { $im = @imagerotate( $im, 90, 0 ); }
+            }
+            @imagejpeg( $im, $file_path, 90 );
+            @imagedestroy( $im );
+            return true;
+        }
+    } elseif ( 'image/webp' === $mime && function_exists( 'imagecreatefromwebp' ) && function_exists( 'imagewebp' ) ) {
+        $im = @imagecreatefromwebp( $file_path );
+        if ( $im ) {
+            @imagewebp( $im, $file_path, 90 );
+            @imagedestroy( $im );
+            return true;
+        }
+    }
+
+    return false;
+}
+
+add_filter( 'wp_handle_upload', function( $upload ) {
+    if ( '1' !== (string) get_option( 'bap_harden_strip_image_exif', '0' ) ) {
+        return $upload;
+    }
+    $path = (string) ( $upload['file'] ?? '' );
+    $mime = strtolower( (string) ( $upload['type'] ?? '' ) );
+    if ( '' !== $path && in_array( $mime, [ 'image/jpeg', 'image/webp' ], true ) ) {
+        bap_strip_image_exif_metadata( $path, $mime );
+    }
+    return $upload;
+}, 15 );

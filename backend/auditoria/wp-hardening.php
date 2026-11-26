@@ -171,6 +171,7 @@ function bap_render_hardening_box() {
         $clean_hd = ! empty( $_POST['bap_harden_clean_head_headers'] ) ? '1' : '0';
         $usr_lock = ! empty( $_POST['bap_harden_user_lockdown'] ) ? '1' : '0';
         $up_magic = ! empty( $_POST['bap_harden_upload_magic_bytes'] ) ? '1' : '0';
+        $st_exif  = ! empty( $_POST['bap_harden_strip_image_exif'] ) ? '1' : '0';
 
         update_option( 'bap_harden_disable_file_edit', $no_edit );
         update_option( 'bap_harden_hide_wp_version', $hide_ver );
@@ -182,6 +183,7 @@ function bap_render_hardening_box() {
         update_option( 'bap_harden_clean_head_headers', $clean_hd );
         update_option( 'bap_harden_user_lockdown', $usr_lock );
         update_option( 'bap_harden_upload_magic_bytes', $up_magic );
+        update_option( 'bap_harden_strip_image_exif', $st_exif );
 
         $ok_up  = bap_sync_uploads_php_protection( '1' === $no_php );
         $ok_hl  = bap_sync_hotlink_protection( '1' === $hotlink );
@@ -236,6 +238,8 @@ function bap_render_hardening_box() {
             </label>
 
             <label style="display:block;margin-bottom:14px;"><input type="checkbox" name="bap_harden_upload_magic_bytes" value="1" <?php checked( get_option( 'bap_harden_upload_magic_bytes', '0' ), '1' ); ?> /> <strong>Verificar firma binaria (Magic Bytes) y sanitizar SVG en subidas</strong> (impide subir webshells camuflados como .jpg o SVG con XSS)</label>
+
+            <label style="display:block;margin-bottom:14px;"><input type="checkbox" name="bap_harden_strip_image_exif" value="1" <?php checked( get_option( 'bap_harden_strip_image_exif', '0' ), '1' ); ?> /> <strong>Eliminar metadatos EXIF y GPS al subir imágenes</strong> (re-procesa JPEG/WebP para borrar ubicación GPS, datos de cámara y payloads ocultos)</label>
 
             <button type="submit" name="bap_save_hardening" class="button button-primary">Guardar endurecimiento</button>
         </form>
