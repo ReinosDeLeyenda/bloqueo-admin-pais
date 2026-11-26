@@ -40,12 +40,21 @@ function bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $
     <?php
 }
 
-function bap_render_estadisticas_toolbar( array $filter_rows, $filter_type, $stats_base_url, $filter_abuse = 'all' ) {
-    if ( empty( $filter_rows ) ) { $filter_rows = [ [ 'uri' => '', 'q' => '', 'mode' => 'include' ] ]; }
-    $has_filters = ( 'all' !== $filter_type || 'all' !== $filter_abuse );
+function bap_render_estadisticas_toolbar( array $filter_rows, $filter_type, $stats_base_url ) {
+    if ( empty( $filter_rows ) ) { $filter_rows = [ [ 'val' => '', 'field' => 'any', 'mode' => 'include' ] ]; }
+    $has_filters = ( 'all' !== $filter_type );
     foreach ( $filter_rows as $fr ) {
-        if ( '' !== ( $fr['uri'] ?? '' ) || '' !== ( $fr['q'] ?? '' ) ) { $has_filters = true; break; }
+        if ( '' !== ( $fr['val'] ?? '' ) || 'abuseipdb' === ( $fr['field'] ?? '' ) ) { $has_filters = true; break; }
     }
+    $fields = [
+        'any'       => 'Cualquier campo',
+        'uri'       => 'Ruta (URL)',
+        'ip'        => 'Direccion IP',
+        'country'   => 'Pais (ISO)',
+        'asn'       => 'ASN / Proveedor',
+        'reason'    => 'Motivo',
+        'abuseipdb' => 'AbuseIPDB (% min)',
+    ];
     ?>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 12px 0;flex-wrap:wrap;gap:10px;">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -80,10 +89,15 @@ function bap_render_estadisticas_toolbar( array $filter_rows, $filter_type, $sta
             <div id="bap-filter-rows-wrap" style="display:flex;flex-direction:column;gap:8px;">
                 <?php foreach ( $filter_rows as $fr ) :
                     $is_inc = ( 'exclude' !== ( $fr['mode'] ?? 'include' ) );
+                    $cur_f  = (string) ( $fr['field'] ?? 'any' );
                 ?>
                     <div class="bap-filter-row" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                        <input type="text" name="f_uri[]" value="<?php echo esc_attr( $fr['uri'] ?? '' ); ?>" placeholder="Filtrar por ruta..." class="regular-text" style="width:190px;" />
-                        <input type="text" name="f_q[]" value="<?php echo esc_attr( $fr['q'] ?? '' ); ?>" placeholder="Buscar IP, pais, ASN o motivo..." class="regular-text" style="width:215px;" />
+                        <input type="text" name="f_val[]" value="<?php echo esc_attr( $fr['val'] ?? '' ); ?>" placeholder="Valor (ej. aowow, 8.8.8.8, 90...)" class="regular-text bap-fval-inp" style="width:225px;" />
+                        <select name="f_field[]" class="bap-ffield-sel" style="width:155px;">
+                            <?php foreach ( $fields as $fk => $flbl ) : ?>
+                                <option value="<?php echo esc_attr( $fk ); ?>" <?php selected( $cur_f, $fk ); ?>><?php echo esc_html( $flbl ); ?></option>
+                            <?php endforeach; ?>
+                        </select>
                         <input type="hidden" name="f_mode[]" value="<?php echo $is_inc ? 'include' : 'exclude'; ?>" class="bap-fmode-val" />
                         <button type="button" class="bap-fmode-switch" style="display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:15px;border:1px solid rgba(0,0,0,0.2);background:<?php echo $is_inc ? '#2271b1' : '#d63638'; ?>;color:#fff;font-weight:700;font-size:12px;cursor:pointer;">
                             <span class="bap-fmode-dot" style="width:12px;height:12px;border-radius:50%;background:#fff;display:inline-block;order:<?php echo $is_inc ? '2' : '1'; ?>;"></span>
@@ -94,12 +108,7 @@ function bap_render_estadisticas_toolbar( array $filter_rows, $filter_type, $sta
                     </div>
                 <?php endforeach; ?>
             </div>
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                <select name="filter_abuse">
-                    <option value="all" <?php selected( $filter_abuse, 'all' ); ?>>AbuseIPDB: Todos</option>
-                    <option value="listed" <?php selected( $filter_abuse, 'listed' ); ?>>En AbuseIPDB</option>
-                    <option value="unlisted" <?php selected( $filter_abuse, 'unlisted' ); ?>>No en AbuseIPDB</option>
-                </select>
+            <div style="display:flex;align-items:center;gap:6px;">
                 <button type="submit" class="button button-primary">Filtrar</button>
                 <?php if ( $has_filters ) : ?><a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-estadisticas' ) ); ?>" class="button button-secondary">Limpiar</a><?php endif; ?>
             </div>

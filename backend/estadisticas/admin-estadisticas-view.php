@@ -35,7 +35,7 @@ $stats_base_url = add_query_arg(
     <?php else : ?>
         <?php echo wp_kses_post( $notice ); ?>
 
-        <?php bap_render_estadisticas_toolbar( $filter_rows, $filter_type, $stats_base_url, $filter_abuse ); ?>
+        <?php bap_render_estadisticas_toolbar( $filter_rows, $filter_type, $stats_base_url ); ?>
         <?php bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $top_asns, $top_uris, $stats_base_url ); ?>
         <?php bap_render_estadisticas_charts( $table, $total_blocks, $top_countries, $top_uris, $stats_base_url, $type_where_sql ); ?>
 

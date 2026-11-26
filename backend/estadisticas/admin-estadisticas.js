@@ -116,6 +116,16 @@
     const wrap = document.getElementById('bap-filter-rows-wrap');
     if (!wrap) return;
 
+    const placeholders = {
+        any: 'Valor (ej. aowow, 8.8.8.8, ES...)',
+        uri: 'Ruta (ej. /aowow, /wp-login.php)',
+        ip: 'IP o subred (ej. 8.8.8.8)',
+        country: 'Codigo pais ISO (ej. ES, RU, CN)',
+        asn: 'ASN o proveedor (ej. AS16276, OVH)',
+        reason: 'Motivo (ej. Tor, FireHOL, WAF)',
+        abuseipdb: 'Puntuacion min % (ej. 90 o vacio)'
+    };
+
     function syncDel() {
         const rows = wrap.querySelectorAll('.bap-filter-row');
         rows.forEach(r => {
@@ -123,6 +133,14 @@
             if (d) d.disabled = (rows.length <= 1);
         });
     }
+
+    wrap.addEventListener('change', function (e) {
+        const sel = e.target.closest('.bap-ffield-sel');
+        if (sel) {
+            const inp = sel.closest('.bap-filter-row')?.querySelector('.bap-fval-inp');
+            if (inp) inp.placeholder = placeholders[sel.value] || placeholders.any;
+        }
+    });
 
     wrap.addEventListener('click', function (e) {
         const sw = e.target.closest('.bap-fmode-switch');
@@ -143,12 +161,15 @@
         if (add) {
             const row = add.closest('.bap-filter-row');
             const cl = row.cloneNode(true);
-            cl.querySelectorAll('input[type="text"]').forEach(i => { i.value = ''; });
-            const inp = cl.querySelector('.bap-fmode-val');
+            const vInp = cl.querySelector('.bap-fval-inp');
+            const fSel = cl.querySelector('.bap-ffield-sel');
+            const mInp = cl.querySelector('.bap-fmode-val');
             const sb = cl.querySelector('.bap-fmode-switch');
             const dot = cl.querySelector('.bap-fmode-dot');
             const txt = cl.querySelector('.bap-fmode-txt');
-            if (inp) inp.value = 'include';
+            if (vInp) { vInp.value = ''; vInp.placeholder = placeholders.any; }
+            if (fSel) fSel.value = 'any';
+            if (mInp) mInp.value = 'include';
             if (sb) sb.style.background = '#2271b1';
             if (txt) { txt.textContent = 'Incluir'; txt.style.order = '1'; }
             if (dot) dot.style.order = '2';
