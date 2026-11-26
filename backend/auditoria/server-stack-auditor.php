@@ -8,9 +8,9 @@ function bap_sys_detect_environment() {
     $os_slug = '';
     if ( @is_readable( '/etc/os-release' ) ) {
         $raw_os = (string) @file_get_contents( '/etc/os-release' );
-        if ( preg_match( '/^PRETTY_NAME="([^"]+)"/m', $raw_os, $m ) ) { $os_name = $m; }
-        if ( preg_match( '/^ID=([a-zA-Z0-9_-]+)/m', $raw_os, $mId ) ) { $os_slug = strtolower( $mId ); }
-        if ( preg_match( '/^VERSION_ID="([^"]+)"/m', $raw_os, $mV ) ) { $os_ver = $mV; }
+        if ( preg_match( '/^PRETTY_NAME="([^"]+)"/m', $raw_os, $m ) ) { $os_name = $m[1]; }
+        if ( preg_match( '/^ID=([a-zA-Z0-9_-]+)/m', $raw_os, $mId ) ) { $os_slug = strtolower( $mId[1] ); }
+        if ( preg_match( '/^VERSION_ID="([^"]+)"/m', $raw_os, $mV ) ) { $os_ver = $mV[1]; }
     }
     $kernel  = function_exists( 'php_uname' ) ? php_uname( 'r' ) : '';
     $arch    = function_exists( 'php_uname' ) ? php_uname( 'm' ) : '';
@@ -18,8 +18,8 @@ function bap_sys_detect_environment() {
     $srv_raw = (string) ( $_SERVER['SERVER_SOFTWARE'] ?? '' );
     $web_srv = 'Desconocido'; $web_ver = '';
     if ( preg_match( '/(nginx|apache|litespeed|caddy|iis)(?:\/([0-9]+\.[0-9]+(?:\.[0-9]+)?))?/i', $srv_raw, $mw ) ) {
-        $web_srv = ucfirst( strtolower( $mw ) );
-        $web_ver = $mw ?? '';
+        $web_srv = ucfirst( strtolower( $mw[1] ) );
+        $web_ver = $mw[2] ?? '';
     } elseif ( '' !== $srv_raw ) {
         $web_srv = $srv_raw;
     }
@@ -27,7 +27,7 @@ function bap_sys_detect_environment() {
     $db_raw  = (string) $wpdb->get_var( 'SELECT VERSION()' );
     $is_mar  = ( false !== stripos( $db_raw, 'mariadb' ) );
     $db_type = $is_mar ? 'MariaDB' : 'MySQL';
-    $db_ver  = preg_match( '/^([0-9]+\.[0-9]+\.[0-9]+)/', $db_raw, $md ) ? $md : $wpdb->db_version();
+    $db_ver  = preg_match( '/^([0-9]+\.[0-9]+\.[0-9]+)/', $db_raw, $md ) ? $md[1] : $wpdb->db_version();
 
     return [
         'os_name'  => $os_name,
@@ -46,9 +46,9 @@ function bap_sys_detect_environment() {
 function bap_sys_check_eol( $product, $version ) {
     if ( '' === $product || '' === $version ) { return null; }
     $parts = explode( '.', $version );
-    $cycle = ( count( $parts ) >= 2 ) ? $parts . '.' . $parts : $parts;
+    $cycle = ( count( $parts ) >= 2 ) ? $parts[0] . '.' . $parts[1] : $parts[0];
     if ( in_array( $product, [ 'ubuntu', 'debian', 'almalinux', 'rocky-linux', 'centos' ], true ) ) {
-        $cycle = ( 'ubuntu' === $product && count( $parts ) >= 2 ) ? $parts . '.' . $parts : $parts;
+        $cycle = ( 'ubuntu' === $product && count( $parts ) >= 2 ) ? $parts[0] . '.' . $parts[1] : $parts[0];
     }
     $ckey = 'bap_eol_' . md5( $product . '_' . $cycle );
     $data = get_transient( $ckey );
