@@ -33,10 +33,10 @@ function bap_sys_get_dpkg_package_info( array $pkg_candidates ) {
                 $head = (string) @gzread( $gz, 2048 );
                 @gzclose( $gz );
                 if ( '' === $pkg_ver && preg_match( '/^' . preg_quote( $cand, '/' ) . '\s+\(([^)]+)\)/m', $head, $mv ) ) {
-                    $pkg_ver = trim( $mv );
+                    $pkg_ver = trim( $mv[1] );
                 }
                 if ( preg_match( '/^ -- [^>]+>\s+([A-Za-z]{3},\s+\d{1,2}\s+[A-Za-z]{3}\s+\d{4}\s+\d{2}:\d{2}:\d{2}\s+[+-]\d{4})/m', $head, $md ) ) {
-                    $ts = strtotime( (string) ( $md ?? '' ) );
+                    $ts = strtotime( (string) ( $md[1] ?? '' ) );
                     if ( false !== $ts ) { $rel_date = wp_date( 'Y-m-d', $ts ); }
                 }
             }
@@ -53,23 +53,23 @@ function bap_sys_detect_environment() {
     $os_name = PHP_OS_FAMILY; $os_ver = ''; $os_slug = ''; $codename = '';
     if ( @is_readable( '/etc/os-release' ) ) {
         $raw_os = (string) @file_get_contents( '/etc/os-release' );
-        if ( preg_match( '/^PRETTY_NAME="([^"]+)"/m', $raw_os, $m ) ) { $os_name = $m; }
-        if ( preg_match( '/^ID=([a-zA-Z0-9_-]+)/m', $raw_os, $mId ) ) { $os_slug = strtolower( $mId ); }
-        if ( preg_match( '/^VERSION_ID="([^"]+)"/m', $raw_os, $mV ) ) { $os_ver = $mV; }
-        if ( preg_match( '/^VERSION_CODENAME=([a-z0-9_-]+)/m', $raw_os, $mC ) ) { $codename = strtolower( $mC ); }
+        if ( preg_match( '/^PRETTY_NAME="([^"]+)"/m', $raw_os, $m ) ) { $os_name = $m[1]; }
+        if ( preg_match( '/^ID=([a-zA-Z0-9_-]+)/m', $raw_os, $mId ) ) { $os_slug = strtolower( $mId[1] ); }
+        if ( preg_match( '/^VERSION_ID="([^"]+)"/m', $raw_os, $mV ) ) { $os_ver = $mV[1]; }
+        if ( preg_match( '/^VERSION_CODENAME=([a-z0-9_-]+)/m', $raw_os, $mC ) ) { $codename = strtolower( $mC[1] ); }
     }
     $kernel  = function_exists( 'php_uname' ) ? php_uname( 'r' ) : '';
     $arch    = function_exists( 'php_uname' ) ? php_uname( 'm' ) : '';
     $srv_raw = (string) ( $_SERVER['SERVER_SOFTWARE'] ?? '' );
     $web_srv = 'Desconocido'; $web_ver = '';
     if ( preg_match( '/(nginx|apache|litespeed|caddy|iis)(?:\/([0-9]+\.[0-9]+(?:\.[0-9]+)?))?/i', $srv_raw, $mw ) ) {
-        $web_srv = ucfirst( strtolower( $mw ) );
-        $web_ver = $mw ?? '';
+        $web_srv = ucfirst( strtolower( $mw[1] ) );
+        $web_ver = $mw[2] ?? '';
     } elseif ( '' !== $srv_raw ) { $web_srv = $srv_raw; }
     $db_raw  = (string) $wpdb->get_var( 'SELECT VERSION()' );
     $is_mar  = ( false !== stripos( $db_raw, 'mariadb' ) );
     $db_type = $is_mar ? 'MariaDB' : 'MySQL';
-    $db_ver  = preg_match( '/^([0-9]+\.[0-9]+\.[0-9]+)/', $db_raw, $md ) ? $md : $wpdb->db_version();
+    $db_ver  = preg_match( '/^([0-9]+\.[0-9]+\.[0-9]+)/', $db_raw, $md ) ? $md[1] : $wpdb->db_version();
     return [
         'os_name' => $os_name, 'os_slug' => $os_slug, 'os_ver' => $os_ver, 'codename' => $codename,
         'kernel' => $kernel, 'arch' => $arch, 'web_srv' => $web_srv, 'web_ver' => $web_ver,
@@ -80,9 +80,9 @@ function bap_sys_detect_environment() {
 function bap_sys_check_eol( $product, $version ) {
     if ( '' === $product || '' === $version ) { return null; }
     $parts = explode( '.', $version );
-    $cycle = ( count( $parts ) >= 2 ) ? $parts . '.' . $parts : $parts;
+    $cycle = ( count( $parts ) >= 2 ) ? $parts[0] . '.' . $parts[1] : $parts[0];
     if ( in_array( $product, [ 'ubuntu', 'debian', 'almalinux', 'rocky-linux', 'centos' ], true ) ) {
-        $cycle = ( 'ubuntu' === $product && count( $parts ) >= 2 ) ? $parts . '.' . $parts : $parts;
+        $cycle = ( 'ubuntu' === $product && count( $parts ) >= 2 ) ? $parts[0] . '.' . $parts[1] : $parts[0];
     }
     $ckey = 'bap_eol_' . md5( $product . '_' . $cycle );
     $data = get_transient( $ckey );
@@ -113,13 +113,13 @@ function bap_sys_query_debian_tracker( $src_pkg, $codename, $installed_ver ) {
         $open = [];
         $latest_deb = '';
         if ( preg_match( '/<td>\s*' . preg_quote( $codename, '/' ) . '(?:\s*\(security\))?\s*<\/td>\s*<td>([^<]+)<\/td>/i', $html, $mv ) ) {
-            $latest_deb = trim( $mv );
+            $latest_deb = trim( $mv[1] );
         }
         if ( preg_match_all( '/<tr>\s*<td><a[^>]*>(CVE-\d{4}-\d+)<\/a><\/td>\s*<td>([^<]*)<\/td>\s*<td>\s*' . preg_quote( $codename, '/' ) . '\s*<\/td>\s*<td>([^<]*)<\/td>/is', $html, $mc, PREG_SET_ORDER ) ) {
             foreach ( $mc as $row ) {
-                $st = strtolower( trim( $row ) );
+                $st = strtolower( trim( $row[3] ) );
                 if ( 'open' === $st || 'vulnerable' === $st ) {
-                    $open[] = [ 'id' => trim( $row ), 'summary' => trim( $row ) ?: 'Vulnerabilidad abierta en Debian ' . $codename ];
+                    $open[] = [ 'id' => trim( $row[1] ), 'summary' => trim( $row[2] ) ?: 'Vulnerabilidad abierta en Debian ' . $codename ];
                 }
             }
         }
@@ -144,7 +144,7 @@ function bap_run_server_stack_audit() {
         'deb'       => null,
     ];
 
-    $k_clean = preg_match( '/^([0-9]+\.[0-9]+\.[0-9]+)/', $env['kernel'], $mk ) ? $mk : '';
+    $k_clean = preg_match( '/^([0-9]+\.[0-9]+\.[0-9]+)/', $env['kernel'], $mk ) ? $mk[1] : '';
     $dp_k    = ( 'Linux' === PHP_OS_FAMILY && '' !== $env['kernel'] ) ? bap_sys_get_dpkg_package_info( [ 'linux-image-' . $env['kernel'], 'linux-image-amd64', 'linux-image-arm64' ] ) : null;
     $rows[]  = [
         'component' => 'Kernel del Sistema',
