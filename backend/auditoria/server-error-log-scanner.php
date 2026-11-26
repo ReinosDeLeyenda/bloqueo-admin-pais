@@ -127,6 +127,24 @@ function bap_render_server_error_log_scanner_box() {
         }
     }
 
+    if ( isset( $_POST['bap_ban_all_log_ips'] ) && check_admin_referer( 'bap_srv_log_action', 'bap_srv_log_nonce' ) ) {
+        $raw_p_all = trim( sanitize_text_field( wp_unslash( $_POST['bap_srv_log_path'] ?? '' ) ) );
+        if ( '' !== $raw_p_all ) { $log_path = $raw_p_all; }
+        $res_b   = bap_analyze_server_error_log( $log_path );
+        $added_c = 0;
+        if ( is_array( $res_b ) && ! empty( $res_b['suspects'] ) && function_exists( 'bap_add_ip_to_blacklist' ) ) {
+            $cur_bl_check = bap_parse_list( get_option( 'bap_blacklist_ips', '' ), false );
+            foreach ( $res_b['suspects'] as $sus ) {
+                $sip = $sus['ip'] ?? '';
+                if ( filter_var( $sip, FILTER_VALIDATE_IP ) && ! bap_ip_in_list( $sip, $cur_bl_check ) && bap_add_ip_to_blacklist( $sip, false ) ) {
+                    $added_c++;
+                }
+            }
+        }
+        $notice   = '<div class="notice notice-success inline"><p><strong>Bloqueo masivo completado:</strong> Se han anadido <strong>' . (int) $added_c . '</strong> IP(s) nuevas a la Lista Negra.</p></div>';
+        $scan_res = is_array( $res_b ) ? $res_b : null;
+    }
+
     if ( isset( $_POST['bap_scan_srv_error_log'] ) && check_admin_referer( 'bap_srv_log_action', 'bap_srv_log_nonce' ) ) {
         $raw_p = trim( sanitize_text_field( wp_unslash( $_POST['bap_srv_log_path'] ?? '' ) ) );
         if ( '' !== $raw_p ) {
@@ -155,9 +173,21 @@ function bap_render_server_error_log_scanner_box() {
         <?php elseif ( is_array( $scan_res ) ) : ?>
             <?php if ( empty( $scan_res['suspects'] ) ) : ?>
                 <div class="notice notice-success inline"><p><strong>Sin escaneos sospechosos</strong> en las últimas <?php echo (int) $scan_res['lines_read']; ?> líneas leídas.</p></div>
-            <?php else : ?>
+            <?php else :
+                $unbanned_cnt = count( array_filter( $scan_res['suspects'], fn( $x ) => ! bap_ip_in_list( $x['ip'], $cur_bl ) ) );
+            ?>
+                <div class="notice notice-warning inline" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:8px 12px;">
+                    <span>Se han detectado <strong><?php echo count( $scan_res['suspects'] ); ?></strong> IP(s) con actividad sospechosa en <code>error.log</code>:</span>
+                    <?php if ( $unbanned_cnt > 0 ) : ?>
+                        <form method="post" style="margin:0;" onsubmit="return confirm('Anadir las <?php echo (int) $unbanned_cnt; ?> IPs nuevas a la Lista Negra permanente?');">
+                            <?php wp_nonce_field( 'bap_srv_log_action', 'bap_srv_log_nonce' ); ?>
+                            <input type="hidden" name="bap_srv_log_path" value="<?php echo esc_attr( $log_path ); ?>" />
+                            <button type="submit" name="bap_ban_all_log_ips" class="button button-secondary" style="color:#d63638;border-color:#d63638;">+ Bloquear todas en Lista Negra (<?php echo (int) $unbanned_cnt; ?>)</button>
+                        </form>
+                    <?php endif; ?>
+                </div>
                 <table class="widefat striped" style="margin-top:10px;">
-                    <thead><tr><th>IP Atacante</th><th>País / ASN</th><th style="width:90px;">Eventos</th><th>Rutas buscadas (Muestra)</th><th style="width:135px;">Acción</th></tr></thead>
+                    <thead><tr><th>IP Atacante</th><th>Pais / ASN</th><th style="width:90px;">Eventos</th><th>Rutas buscadas (Muestra)</th><th style="width:135px;">Accion</th></tr></thead>
                     <tbody>
                         <?php foreach ( $scan_res['suspects'] as $s ) :
                             $already = bap_ip_in_list( $s['ip'], $cur_bl );
