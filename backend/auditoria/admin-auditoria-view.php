@@ -36,6 +36,7 @@ function bap_render_auditoria_page() {
             <?php if ( function_exists( 'bap_render_wp_cron_inspector_box' ) ) { bap_render_wp_cron_inspector_box(); } ?>
         <?php elseif ( 'hardening' === $sub ) : ?>
             <?php if ( function_exists( 'bap_render_ssl_and_config_monitor_box' ) ) { bap_render_ssl_and_config_monitor_box(); } ?>
+            <?php if ( function_exists( 'bap_render_server_stack_auditor_box' ) ) { bap_render_server_stack_auditor_box(); } ?>
             <?php if ( function_exists( 'bap_render_headers_and_mail_dns_box' ) ) { bap_render_headers_and_mail_dns_box(); } ?>
             <?php if ( function_exists( 'bap_render_dnsbl_reputation_box' ) ) { bap_render_dnsbl_reputation_box(); } ?>
             <?php if ( function_exists( 'bap_render_dns_hijack_monitor_box' ) ) { bap_render_dns_hijack_monitor_box(); } ?>

@@ -99,6 +99,16 @@ function bap_run_scheduled_security_audit() {
         $alerts[] = 'Base de Datos: ' . count( $db_hits ) . ' posible(s) inyección(es) en posts u opciones.';
     }
 
+    if ( function_exists( 'bap_run_server_stack_audit' ) ) {
+        foreach ( bap_run_server_stack_audit() as $stk ) {
+            $eol_bad = ( is_array( $stk['eol'] ) && ! empty( $stk['eol']['is_eol'] ) );
+            $cve_cnt = count( (array) ( $stk['cves'] ?? [] ) );
+            if ( $eol_bad || $cve_cnt > 0 ) {
+                $alerts[] = 'Stack Servidor (' . $stk['component'] . '): ' . ( $eol_bad ? 'Sin soporte oficial (EOL)' : $cve_cnt . ' CVE(s) conocido(s)' ) . '.';
+            }
+        }
+    }
+
     if ( function_exists( 'bap_check_site_ssl_certificate' ) ) {
         $ssl = bap_check_site_ssl_certificate();
         if ( is_array( $ssl ) && $ssl['days_left'] <= 15 ) {
