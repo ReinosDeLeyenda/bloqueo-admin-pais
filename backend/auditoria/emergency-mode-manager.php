@@ -21,7 +21,7 @@ function bap_install_mu_emergency_loader() {
 /**
  * Plugin Name: Bloqueo Admin - Cargador de Emergencia (Anti-Crash)
  * Description: Protege wp-admin ante errores fatales, permite desactivar el plugin o aislar el archivo roto y actualizar desde GitHub.
- * Version: 1.2.0
+ * Version: 1.2.1
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
@@ -155,9 +155,14 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
         $tg_token = trim( (string) get_option( 'bap_tg_bot_token', '' ) );
         $tg_chats = trim( (string) get_option( 'bap_tg_chat_ids', '' ) );
         if ( '' !== $tg_token && '' !== $tg_chats && function_exists( 'wp_remote_post' ) ) {
-            $text = "ERROR FATAL EN WORDPRESS\n\n" . htmlspecialchars( $msg_detail . "\n\n" . $links_txt, ENT_QUOTES, 'UTF-8' );
+            $e = static function ( $v ) { return htmlspecialchars( (string) $v, ENT_QUOTES, 'UTF-8' ); };
+            $tg_links = ( '' !== $disable_f ? '1) <a href="' . $e( $disable_f ) . '">Renombrar archivo roto</a>' . "\n" : '' )
+                      . ( '' !== $kill_url ? '2) <a href="' . $e( $kill_url ) . '">Desactivar plugin culpable</a>' . "\n" : '' )
+                      . '3) <a href="' . $e( $magic_url ) . '">Entrar en Modo Emergencia</a>' . "\n"
+                      . '4) <a href="' . $e( $upd_bap_url ) . '">Reinstalar Bloqueo Admin desde GitHub</a>';
+            $text = "<b>ERROR FATAL EN WORDPRESS</b>\n\n<pre>" . $e( $msg_detail ) . "</pre>\n\n<b>Acciones rapidas:</b>\n" . $tg_links;
             foreach ( array_unique( array_filter( array_map( 'trim', preg_split( '/[\r\n,;]+/', $tg_chats ) ) ) ) as $cid ) {
-                wp_remote_post( 'https://api.' . 'telegram.org/bot' . rawurlencode( $tg_token ) . '/sendMessage', [ 'timeout' => 5, 'body' => [ 'chat_id' => $cid, 'text' => $text ] ] );
+                wp_remote_post( 'https://api.' . 'telegram.org/bot' . rawurlencode( $tg_token ) . '/sendMessage', [ 'timeout' => 5, 'body' => [ 'chat_id' => $cid, 'text' => $text, 'parse_mode' => 'HTML', 'disable_web_page_preview' => true ] ] );
             }
         }
         $to = trim( (string) get_option( 'bap_notify_emails', '' ) ) ?: (string) get_option( 'admin_email', '' );
@@ -179,7 +184,7 @@ function bap_uninstall_mu_emergency_loader() {
 function bap_mu_emergency_needs_update() {
     if ( ! bap_is_mu_emergency_loader_installed() ) { return false; }
     $content = (string) @file_get_contents( bap_get_mu_emergency_loader_path() );
-    if ( preg_match( '/Version:\s*([0-9.]+)/i', $content, $m ) ) { return version_compare( $m[1], '1.2.0', '<' ); }
+    if ( preg_match( '/Version:\s*([0-9.]+)/i', $content, $m ) ) { return version_compare( $m[1], '1.2.1', '<' ); }
     return true;
 }
 
@@ -197,7 +202,7 @@ add_action( 'admin_notices', function() {
     $done = get_transient( 'bap_mu_upgraded_notice' );
     if ( false !== $done ) {
         delete_transient( 'bap_mu_upgraded_notice' );
-        echo ( 'ok' === $done ) ? '<div class="notice notice-success is-dismissible"><p><strong>Modo Emergencia actualizado a v1.2.0.</strong></p></div>' : '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> ' . esc_html( $done ) . '</p></div>';
+        echo ( 'ok' === $done ) ? '<div class="notice notice-success is-dismissible"><p><strong>Modo Emergencia actualizado a v1.2.1.</strong></p></div>' : '<div class="notice notice-error is-dismissible"><p><strong>Error:</strong> ' . esc_html( $done ) . '</p></div>';
     }
     if ( bap_mu_emergency_needs_update() ) {
         echo '<div class="notice notice-error" style="border-left-width:6px;background:#fef2f2;"><form method="post" style="margin:8px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">';
@@ -220,7 +225,7 @@ function bap_render_emergency_mode_box() {
             $notice = $ok ? '<div class="notice notice-warning inline"><p>Cargador desinstalado.</p></div>' : '<div class="notice notice-error inline"><p>No se pudo eliminar.</p></div>';
         } else {
             $res = bap_install_mu_emergency_loader();
-            $notice = is_wp_error( $res ) ? '<div class="notice notice-error inline"><p>' . esc_html( $res->get_error_message() ) . '</p></div>' : '<div class="notice notice-success inline"><p><strong>Modo Emergencia v1.2.0 instalado.</strong></p></div>';
+            $notice = is_wp_error( $res ) ? '<div class="notice notice-error inline"><p>' . esc_html( $res->get_error_message() ) . '</p></div>' : '<div class="notice notice-success inline"><p><strong>Modo Emergencia v1.2.1 instalado.</strong></p></div>';
         }
     }
     $installed = bap_is_mu_emergency_loader_installed();
