@@ -178,6 +178,39 @@ function bap_render_ssh_auth_log_scanner_box() {
                 echo '</td></tr>';
             }
             echo '</tbody></table>';
+
+            $ips_for_fw = array_map( fn( $x ) => $x['ip'], array_slice( $scan_res['suspects'], 0, 50 ) );
+            $ipset_cmds = "ipset create bap_ssh_ban hash:ip -exist\niptables -C INPUT -m set --match-set bap_ssh_ban src -j DROP 2>/dev/null || iptables -I INPUT -m set --match-set bap_ssh_ban src -j DROP\n";
+            foreach ( $ips_for_fw as $fip ) {
+                if ( filter_var( $fip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+                    $ipset_cmds .= "ipset add bap_ssh_ban " . $fip . " -exist\n";
+                }
+            }
+            echo '<details style="margin-top:16px;background:#f6f7f7;border:1px solid #dcdcde;border-left:4px solid #2271b1;border-radius:4px;padding:12px 16px;">';
+            echo '<summary style="cursor:pointer;font-weight:700;">Recomendacion de bloqueo a nivel de Servidor / Kernel (ipset, Fail2ban, UFW / nftables)</summary>';
+            echo '<p class="description" style="margin:8px 0;">Bloquear aqui solo impide el acceso a WordPress. Para cortar por completo el acceso a toda la maquina (SSH, web, correo) a nivel de kernel:</p>';
+            echo '<p style="margin:8px 0 4px;"><strong>1. Bloqueo masivo instantaneo en kernel con <code>ipset + iptables</code> (con las IPs detectadas arriba):</strong></p>';
+            echo '<pre style="background:#1d2327;color:#e5e7eb;padding:10px;border-radius:4px;font-size:11px;overflow-x:auto;max-height:180px;">' . esc_html( trim( $ipset_cmds ) ) . '</pre>';
+            echo '<p style="margin:10px 0 4px;"><strong>2. Bloqueo automatico permanente con <code>Fail2ban</code> (Debian / Ubuntu):</strong></p>';
+            echo '<pre style="background:#1d2327;color:#e5e7eb;padding:10px;border-radius:4px;font-size:11px;overflow-x:auto;">apt update &amp;&amp; apt install -y fail2ban
+cat &lt;&lt; "EOF" &gt; /etc/fail2ban/jail.d/sshd-hardening.local
+[sshd]
+enabled  = true
+port     = ssh
+backend  = systemd
+maxretry = 3
+findtime = 10m
+bantime  = 7d
+EOF
+systemctl enable --now fail2ban &amp;&amp; fail2ban-client status sshd</pre>';
+            echo '<p style="margin:10px 0 4px;"><strong>3. Alternativa con <code>UFW</code> o bloqueo geografico TCP Wrappers (<code>/etc/hosts.deny</code>):</strong></p>';
+            echo '<pre style="background:#1d2327;color:#e5e7eb;padding:10px;border-radius:4px;font-size:11px;overflow-x:auto;"># Con UFW (limita a 6 conexiones por 30s al puerto 22):
+ufw limit 22/tcp comment "Rate-limit SSH"
+
+# Con nftables nativo (Debian 12/13):
+nft add table inet filter
+nft add set inet filter ssh_blacklist { type ipv4_addr\; flags interval\; }</pre>';
+            echo '</details>';
         }
     }
     echo '</div>';
