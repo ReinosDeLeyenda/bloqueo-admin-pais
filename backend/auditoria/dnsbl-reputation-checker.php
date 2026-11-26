@@ -13,7 +13,7 @@ function bap_resolve_server_public_ipv4() {
 
 function bap_check_ip_against_dnsbls( $ip ) {
     if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
-        return [];
+        return [ 'ip' => $ip, 'results' => [] ];
     }
 
     $rev = implode( '.', array_reverse( explode( '.', $ip ) ) );
@@ -39,7 +39,7 @@ function bap_check_ip_against_dnsbls( $ip ) {
         $rows[] = [ 'name' => $name, 'zone' => $zone, 'listed' => $listed, 'delist' => $cfg['delist'] ];
     }
 
-    return $rows;
+    return [ 'ip' => $ip, 'results' => $rows ];
 }
 
 function bap_render_dnsbl_reputation_box() {
