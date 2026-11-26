@@ -72,7 +72,7 @@ add_filter( 'pre_set_site_transient_update_plugins', function( $transient ) {
 
     if ( $release && ! empty( $release['zip_url'] ) ) {
         $item = (object) [
-            'id'          => '://github.com' . BAP_GITHUB_REPO,
+            'id'          => 'https://github.com' . BAP_GITHUB_REPO,
             'slug'        => $slug,
             'plugin'      => $plugin_slug,
             'new_version' => $release['version'],
@@ -88,8 +88,37 @@ add_filter( 'pre_set_site_transient_update_plugins', function( $transient ) {
         }
     }
 
+    if ( empty( $transient->response[ $plugin_slug ] ) && empty( $transient->no_update[ $plugin_slug ] ) ) {
+        $transient->no_update[ $plugin_slug ] = (object) [
+            'id'           => $plugin_slug,
+            'slug'         => $slug,
+            'plugin'       => $plugin_slug,
+            'new_version'  => $current_ver,
+            'url'          => 'https://github.com/' . BAP_GITHUB_REPO,
+            'package'      => '',
+            'tested'       => get_bloginfo( 'version' ),
+            'requires_php' => '7.4',
+        ];
+    }
     return $transient;
 });
+
+add_filter( 'site_transient_update_plugins', function( $transient ) {
+    if ( ! is_object( $transient ) ) { return $transient; }
+    $plugin_slug = plugin_basename( dirname( __DIR__ ) . '/bloqueo-admin-pais.php' );
+    if ( empty( $transient->response[ $plugin_slug ] ) && empty( $transient->no_update[ $plugin_slug ] ) ) {
+        $slug = dirname( $plugin_slug );
+        $transient->no_update[ $plugin_slug ] = (object) [
+            'id'          => 'https://github.com' . BAP_GITHUB_REPO,
+            'slug'        => ( '.' === $slug ) ? basename( $plugin_slug, '.php' ) : $slug,
+            'plugin'      => $plugin_slug,
+            'new_version' => $transient->checked[ $plugin_slug ] ?? '1.0.0',
+            'url'         => 'https://github.com' . BAP_GITHUB_REPO,
+            'package'     => '',
+        ];
+    }
+    return $transient;
+} );
 
 add_filter( 'auto_update_plugin', function( $update, $item ) {
     $plugin_slug = plugin_basename( dirname( __DIR__ ) . '/bloqueo-admin-pais.php' );
