@@ -51,7 +51,7 @@ function bap_render_db_schema_monitor_box() {
 
     $res = bap_db_schema_verify();
     ?>
-    <div class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-schema" class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Monitor de Tablas en Base de Datos (Schema &amp; Rogue Tables Watcher)</h2>
         <p class="description">Vigila la lista de tablas de MySQL (<code>SHOW TABLES</code>) para detectar la creacion de tablas ocultas maliciosas o la eliminacion inesperada de tablas del sitio.</p>
         <?php echo wp_kses_post( $notice ); ?>

@@ -123,7 +123,7 @@ function bap_render_abandoned_plugins_box() {
         $scan = bap_scan_abandoned_plugins();
     }
     ?>
-    <div class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-abandoned" class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Detector de Plugins Abandonados o Retirados (WordPress.org)</h2>
         <p class="description">Comprueba la fecha de última actualización de tus plugins oficiales en <code>api.wordpress.org</code> para detectar extensiones abandonadas (+2 años sin parches) o cerradas por motivos de seguridad.</p>
 

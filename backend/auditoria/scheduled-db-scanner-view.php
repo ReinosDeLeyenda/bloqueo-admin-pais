@@ -21,7 +21,7 @@ function bap_render_db_injection_and_cron_box() {
     $cur_freq  = (string) get_option( 'bap_auto_scan_freq', 'none' );
     $last_time = (string) get_option( 'bap_last_auto_scan_time', '' );
     ?>
-    <div class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-db-inj" class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Escáner de Inyecciones en Base de Datos y Auditoría Programada</h2>
         <p class="description">Analiza entradas, páginas (<code>wp_posts</code>) y opciones (<code>wp_options</code>) en busca de scripts maliciosos ocultos y programa auditorías automáticas en segundo plano.</p>
 

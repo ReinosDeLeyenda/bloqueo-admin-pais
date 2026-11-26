@@ -81,7 +81,7 @@ function bap_render_content_defacement_box() {
 
     $res = bap_content_guard_verify();
     ?>
-    <div class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-defacement" class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Monitor Anti-Defacement de Páginas y Contenidos (SHA-256)</h2>
         <p class="description">Vigila mediante huella SHA-256 la portada y tus páginas/entradas principales para detectar alteraciones silenciosas, iframes ocultos o desfiguraciones (<em>defacement</em>).</p>
         <?php echo wp_kses_post( $notice ); ?>

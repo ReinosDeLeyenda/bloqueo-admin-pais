@@ -79,7 +79,7 @@ function bap_render_roles_integrity_box() {
 
     $res = bap_roles_verify_integrity();
     ?>
-    <div class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-roles" class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Monitor de Roles y Capacidades (Anti-Escalada de Privilegios)</h2>
         <p class="description">Vigila mediante huella SHA-256 la tabla de roles (<code>wp_user_roles</code>) y el rol por defecto (<code>default_role</code>) para detectar escaladas de privilegios silenciosas.</p>
         <?php echo wp_kses_post( $notice ); ?>

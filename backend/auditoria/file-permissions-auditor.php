@@ -124,7 +124,7 @@ function bap_render_file_permissions_box() {
         $rows = bap_audit_critical_file_permissions();
     }
     ?>
-    <div class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-perms" class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Auditoría de Permisos de Archivos y Carpetas Críticas</h2>
         <p class="description">Comprueba que <code>wp-config.php</code>, <code>.htaccess</code> y los directorios principales de WordPress no tengan permisos inseguros (como <code>0777</code> o <code>0666</code>).</p>
 

@@ -323,7 +323,7 @@ function bap_render_core_integrity_box() {
 
     global $wp_version;
     ?>
-    <div class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-core" class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Escáner de Integridad del Núcleo y Plugins (Checksums + Diff + Restauración)</h2>
         <p class="description">Compara los archivos de WordPress <strong><?php echo esc_html( $wp_version ); ?></strong> y de tus <strong>plugins oficiales de WordPress.org</strong> contra sus hashes MD5 oficiales, permitiendo inspeccionar diferencias (<strong>Diff</strong>) y restaurar el archivo original en 1 clic.</p>
 

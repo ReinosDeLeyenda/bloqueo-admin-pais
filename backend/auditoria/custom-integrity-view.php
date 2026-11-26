@@ -17,7 +17,7 @@ function bap_render_custom_integrity_box() {
         }
     }
     ?>
-    <div class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-custom-base" class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Monitor de Integridad para Temas y Plugins Privados (SHA-256)</h2>
         <p class="description">Guarda una referencia local SHA-256 de tus temas y plugins (incluidos los privados o de pago fuera de WordPress.org) para detectar archivos modificados, añadidos o eliminados.</p>
         <?php echo wp_kses_post( $notice ); ?>

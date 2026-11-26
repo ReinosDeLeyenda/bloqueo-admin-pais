@@ -17,7 +17,7 @@ function bap_render_rogue_admin_box() {
 
     $scan = bap_scan_privileged_admins();
     ?>
-    <div class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-admins" class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Auditoría de Usuarios Administradores (Rogue Admin Detector)</h2>
         <p class="description">Inspecciona directamente <code>wp_usermeta</code> para detectar todas las cuentas con rol <strong>Administrador</strong> o capacidad <code>manage_options</code> (incluidos administradores ocultos inyectados por SQL).</p>
         <?php echo wp_kses_post( $notice ); ?>

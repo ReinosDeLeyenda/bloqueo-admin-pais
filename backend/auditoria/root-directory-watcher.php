@@ -73,7 +73,7 @@ function bap_render_root_directory_watcher_box() {
 
     $res = bap_scan_wp_root_orphan_files();
     ?>
-    <div class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-root" class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Vigilancia de Carpeta Raíz de WordPress (Root Directory Watcher)</h2>
         <p class="description">Analiza el directorio raíz (<code>ABSPATH</code>) en busca de scripts PHP o archivos huérfanos no pertenecientes al núcleo oficial de WordPress.</p>
         <?php echo wp_kses_post( $notice ); ?>

@@ -6,7 +6,8 @@ function bap_execute_all_security_scans() {
         @set_time_limit( 180 );
     }
 
-    $report = [];
+    $report  = [];
+    $aud_url = admin_url( 'admin.php?page=bap-auditoria' );
 
     // 1. Integridad Core y Plugins WP.org
     if ( function_exists( 'bap_run_core_checksum_scan' ) ) {

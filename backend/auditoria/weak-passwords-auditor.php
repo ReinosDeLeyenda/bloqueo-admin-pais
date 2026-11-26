@@ -61,7 +61,7 @@ function bap_render_weak_passwords_auditor_box() {
         $res = bap_audit_privileged_users_weak_passwords();
     }
     ?>
-    <div class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-weak-pwd" class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Auditoria de Contraseñas Debiles en Usuarios</h2>
         <p class="description">Analiza en local los hashes de Administradores, Editores y Autores para detectar claves triviales, predecibles o identicas al nombre de usuario.</p>
         <?php echo wp_kses_post( $notice ); ?>

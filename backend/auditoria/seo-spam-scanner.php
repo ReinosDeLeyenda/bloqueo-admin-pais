@@ -52,7 +52,7 @@ function bap_render_seo_spam_scanner_box() {
     if ( isset( $_POST['bap_run_seo_spam_scan'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_seo_spam_action', 'bap_seo_spam_nonce' ) ) {
         $scan = bap_scan_seo_spam_and_malicious_links();
     }
-    echo '<div class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;"><h2 style="margin-top:0;">Escaner de SEO Spam y Enlaces Salientes Maliciosos</h2>';
+    echo '<div id="bap-box-seo" class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;"><h2 style="margin-top:0;">Escaner de SEO Spam y Enlaces Salientes Maliciosos</h2>';
     echo '<p class="description">Analiza entradas, paginas y comentarios aprobados en busca de enlaces ocultos por CSS, Japanese Keyword Hack y spam Pharma/Casino.</p>';
     echo '<form method="post" style="margin:14px 0;">';
     wp_nonce_field( 'bap_seo_spam_action', 'bap_seo_spam_nonce' );
