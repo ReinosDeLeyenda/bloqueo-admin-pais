@@ -51,17 +51,17 @@ function bap_analyze_ssh_auth_log( $filepath ) {
         if ( false === strpos( $line, 'sshd' ) ) { continue; }
         $ip = ''; $user = '';
         if ( preg_match( '/Failed (?:password|publickey) for (?:invalid user )?([^\s]+) from ([0-9a-fA-F:.]+)/', $line, $m ) ) {
-            $user = $m; $ip = $m;
+            $user = $m[1]; $ip = $m[2];
         } elseif ( preg_match( '/Invalid user ([^\s]+) from ([0-9a-fA-F:.]+)/', $line, $m ) ) {
-            $user = $m; $ip = $m;
+            $user = $m[1]; $ip = $m[2];
         } elseif ( preg_match( '/(?:Disconnected from authenticating user|Connection closed by authenticating user) ([^\s]+) ([0-9a-fA-F:.]+)/', $line, $m ) ) {
-            $user = $m; $ip = $m;
+            $user = $m[1]; $ip = $m[2];
         } elseif ( preg_match( '/maximum authentication attempts exceeded for (?:invalid user )?([^\s]+) from ([0-9a-fA-F:.]+)/', $line, $m ) ) {
-            $user = $m; $ip = $m;
-        } elseif ( preg_match( '/DENY sshd connection from ([0-9a-fA-F:.]+)/i', $line, $m ) ) {
-            $user = '[DENY hosts.deny]'; $ip = $m;
+            $user = $m[1]; $ip = $m[2];
+        } elseif ( preg_match( '/DENY sshd connection from ([0-9a-fA-F:.]+)(?:\s*\(([A-Z]{2})\))?/i', $line, $m ) ) {
+            $user = '[DENY hosts.deny]'; $ip = $m[1];
         } elseif ( preg_match( '/refused connect from (?:[^\s(]+\s*\()?([0-9a-fA-F:.]+)/i', $line, $m ) ) {
-            $user = '[TCP Refused]'; $ip = $m;
+            $user = '[TCP Refused]'; $ip = $m[1];
         }
         if ( '' === $ip || ! filter_var( $ip, FILTER_VALIDATE_IP ) || $ip === $my_ip || bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, $wl ) ) { continue; }
         if ( ! isset( $suspects[ $ip ] ) ) {
