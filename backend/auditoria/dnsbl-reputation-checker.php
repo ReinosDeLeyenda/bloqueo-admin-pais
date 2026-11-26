@@ -1,6 +1,16 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
+function bap_resolve_server_public_ipv4() {
+    $srv_ip = (string) ( $_SERVER['SERVER_ADDR'] ?? '' );
+    if ( filter_var( $srv_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+        return $srv_ip;
+    }
+    $host = (string) wp_parse_url( home_url(), PHP_URL_HOST );
+    $ip   = ( '' !== $host ) ? @gethostbyname( $host ) : '';
+    return filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ? $ip : '';
+}
+
 function bap_check_server_dnsbl_reputation() {
     $host = (string) wp_parse_url( home_url(), PHP_URL_HOST );
     $ip   = ( '' !== $host ) ? @gethostbyname( $host ) : '';
