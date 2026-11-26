@@ -70,18 +70,35 @@ add_filter( 'pre_set_site_transient_update_plugins', function( $transient ) {
     $current_ver = $transient->checked[ $plugin_slug ] ?? '1.0';
     $release     = bap_get_github_latest_release();
 
-    if ( $release && ! empty( $release['zip_url'] ) && version_compare( $release['version'], $current_ver, '>' ) ) {
-        $transient->response[ $plugin_slug ] = (object) [
+    if ( $release && ! empty( $release['zip_url'] ) ) {
+        $item = (object) [
+            'id'          => '://github.com' . BAP_GITHUB_REPO,
             'slug'        => $slug,
             'plugin'      => $plugin_slug,
             'new_version' => $release['version'],
             'url'         => $release['html_url'],
             'package'     => $release['zip_url'],
         ];
+        if ( version_compare( $release['version'], $current_ver, '>' ) ) {
+            $transient->response[ $plugin_slug ] = $item;
+            unset( $transient->no_update[ $plugin_slug ] );
+        } else {
+            $transient->no_update[ $plugin_slug ] = $item;
+            unset( $transient->response[ $plugin_slug ] );
+        }
     }
 
     return $transient;
 });
+
+add_filter( 'auto_update_plugin', function( $update, $item ) {
+    $plugin_slug = plugin_basename( dirname( __DIR__ ) . '/bloqueo-admin-pais.php' );
+    if ( isset( $item->plugin ) && $item->plugin === $plugin_slug ) {
+        $auto_list = (array) get_site_option( 'auto_update_plugins', [] );
+        return in_array( $plugin_slug, $auto_list, true );
+    }
+    return $update;
+}, 10, 2 );
 
 add_filter( 'plugins_api', function( $res, $action, $args ) {
     $plugin_folder = basename( dirname( __DIR__ ) );
