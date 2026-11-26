@@ -70,6 +70,7 @@ Plugin ligero, modular y autónomo de seguridad para WordPress que protege tanto
 * **Redirección personalizada por país y Bots SEO:** Redirige países concretos (`PAÍS => URL`) sin bucles y verifica por doble DNS inverso (`rDNS` + `FCrDNS`) a **Googlebot**, **Bingbot**, **Applebot** y **DuckDuckBot**.
 
 ### 3. Auditoría y Hardening
+* **Índice de Seguridad e Informe Ejecutivo Imprimible / PDF:** Evalúa tus defensas activas con puntuación proporcional (`0–100` y nota `A+` a `D`), enlaces directos a cada control pendiente o parcial, y un informe de inteligencia de amenazas de los últimos 30 días (países y ASNs de origen, objetivo Web vs Backend, clasificación de exploits/vectores y Top 5 URLs más atacadas).
 * **Escáner Gratuito de Vulnerabilidades Conocidas (CVE — Core, Plugins y Temas):** Consulta la API pública de `wpvulnerability.net` (sin registro ni API Key) cruzando la versión exacta de WordPress, plugins y temas instalados para detectar fallos publicados, puntuación CVSS y versiones parcheadas.
 * **Escáner de Integridad (Core + Plugins), Visor Diff y Restauración en 1 clic:** Compara los archivos del núcleo de WordPress y de los plugins oficiales de WordPress.org contra sus hashes MD5 oficiales, muestra el **Diff** línea a línea y permite **restaurar archivos modificados o faltantes en 1 clic** desde el SVN oficial de WordPress.org.
 * **Escáner de Malware y Backdoors (`wp-content`):** Analiza plugins, temas y `mu-plugins` buscando código ofuscado o webshells y detecta archivos `.php` ocultos dentro de `wp-content/uploads/`.

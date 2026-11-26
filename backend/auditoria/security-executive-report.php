@@ -52,6 +52,53 @@ add_action( 'admin_post_bap_executive_security_report', function() {
     $since   = gmdate( 'Y-m-d H:i:s', strtotime( '-30 days' ) );
     $blocks  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$table}` WHERE created_at >= %s", $since ) );
     $uniq_ip = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT ip_address) FROM `{$table}` WHERE created_at >= %s", $since ) );
+
+    // 1. De donde proceden (Top Paises y Top ASNs)
+    $top_countries = $wpdb->get_results( $wpdb->prepare( "SELECT country_code, COUNT(*) AS cnt FROM `{$table}` WHERE created_at >= %s AND country_code != '' GROUP BY country_code ORDER BY cnt DESC LIMIT 5", $since ), ARRAY_A );
+    $top_asns      = $wpdb->get_results( $wpdb->prepare( "SELECT asn, COUNT(*) AS cnt FROM `{$table}` WHERE created_at >= %s AND asn != '' AND asn != 'Sin base de datos ASN' GROUP BY asn ORDER BY cnt DESC LIMIT 5", $since ), ARRAY_A );
+
+    // 2. A donde se dirigen (Web Publica vs Backend / Servidor y Top URIs)
+    $by_target  = $wpdb->get_results( $wpdb->prepare( "SELECT block_type, COUNT(*) AS cnt FROM `{$table}` WHERE created_at >= %s GROUP BY block_type ORDER BY cnt DESC", $since ), ARRAY_A );
+    $top_uris   = $wpdb->get_results( $wpdb->prepare( "SELECT request_uri, COUNT(*) AS cnt FROM `{$table}` WHERE created_at >= %s AND request_uri != '' GROUP BY request_uri ORDER BY cnt DESC LIMIT 5", $since ), ARRAY_A );
+    $web_hits   = 0;
+    $admin_hits = 0;
+    foreach ( (array) $by_target as $bt ) {
+        if ( 'web' === ( $bt['block_type'] ?? '' ) ) { $web_hits += (int) $bt['cnt']; }
+        else { $admin_hits += (int) $bt['cnt']; }
+    }
+
+    // 3. Que intentan atacar (Clasificacion de vectores / exploits)
+    $reason_rows = $wpdb->get_results( $wpdb->prepare( "SELECT reason, COUNT(*) AS cnt FROM `{$table}` WHERE created_at >= %s GROUP BY reason", $since ), ARRAY_A );
+    $vectors     = [
+        'Exploits WAF / SQLi / XSS / LFI / vPatch' => 0,
+        'Fuerza Bruta / Login / Usuarios / 2FA'     => 0,
+        'Escaneo Rutas Trampa / .env / XML-RPC'     => 0,
+        'Redes Maliciosas (Tor / FireHOL / Abuse)'  => 0,
+        'Bloqueo Geografico / Pais / ASN'           => 0,
+        'Bots / Scrapers / Rate Limit / Honeypot'   => 0,
+        'Otros bloqueos perimetrales'               => 0,
+    ];
+    foreach ( (array) $reason_rows as $rr ) {
+        $r_low = strtolower( (string) ( $rr['reason'] ?? '' ) );
+        $c     = (int) ( $rr['cnt'] ?? 0 );
+        if ( false !== strpos( $r_low, 'waf' ) || false !== strpos( $r_low, 'vpatch' ) || false !== strpos( $r_low, 'sqli' ) || false !== strpos( $r_low, 'xss' ) || false !== strpos( $r_low, 'lfi' ) || false !== strpos( $r_low, 'cve' ) ) {
+            $vectors['Exploits WAF / SQLi / XSS / LFI / vPatch'] += $c;
+        } elseif ( false !== strpos( $r_low, 'login' ) || false !== strpos( $r_low, 'usuario' ) || false !== strpos( $r_low, 'captcha' ) || false !== strpos( $r_low, 'magic' ) || false !== strpos( $r_low, 'vacaciones' ) || false !== strpos( $r_low, 'secuestro' ) ) {
+            $vectors['Fuerza Bruta / Login / Usuarios / 2FA'] += $c;
+        } elseif ( false !== strpos( $r_low, 'trampa' ) || false !== strpos( $r_low, 'xml-rpc' ) || false !== strpos( $r_low, 'xmlrpc' ) || false !== strpos( $r_low, 'enumeracion' ) || false !== strpos( $r_low, 'oculta' ) ) {
+            $vectors['Escaneo Rutas Trampa / .env / XML-RPC'] += $c;
+        } elseif ( false !== strpos( $r_low, 'tor' ) || false !== strpos( $r_low, 'firehol' ) || false !== strpos( $r_low, 'abuseipdb' ) || false !== strpos( $r_low, 'lista negra' ) ) {
+            $vectors['Redes Maliciosas (Tor / FireHOL / Abuse)'] += $c;
+        } elseif ( false !== strpos( $r_low, 'pais' ) || false !== strpos( $r_low, 'país' ) || false !== strpos( $r_low, 'asn' ) ) {
+            $vectors['Bloqueo Geografico / Pais / ASN'] += $c;
+        } elseif ( false !== strpos( $r_low, 'user-agent' ) || false !== strpos( $r_low, 'rate limit' ) || false !== strpos( $r_low, 'honeypot' ) || false !== strpos( $r_low, 'spam' ) ) {
+            $vectors['Bots / Scrapers / Rate Limit / Honeypot'] += $c;
+        } else {
+            $vectors['Otros bloqueos perimetrales'] += $c;
+        }
+    }
+    $vectors = array_filter( $vectors, fn( $v ) => $v > 0 );
+    arsort( $vectors );
     ?>
     <!DOCTYPE html>
     <html lang="es">
@@ -112,6 +159,104 @@ add_action( 'admin_post_bap_executive_security_report', function() {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+
+            <?php $safe_total = max( 1, $blocks ); ?>
+            <div style="display:flex;gap:16px;margin-top:24px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:260px;">
+                    <h2 style="font-size:15px;margin:0 0 8px;">1. De donde proceden (Top Paises)</h2>
+                    <table>
+                        <thead><tr><th>Pais</th><th style="width:95px;">Bloqueos</th></tr></thead>
+                        <tbody>
+                            <?php if ( empty( $top_countries ) ) : ?>
+                                <tr><td colspan="2">Sin datos registrados.</td></tr>
+                            <?php else : ?>
+                                <?php foreach ( $top_countries as $tc ) :
+                                    $c_lbl = function_exists( 'bap_dashboard_country_label' ) ? bap_dashboard_country_label( $tc['country_code'] ) : $tc['country_code'];
+                                    $pct   = round( ( (int) $tc['cnt'] / $safe_total ) * 100, 1 );
+                                ?>
+                                    <tr>
+                                        <td><strong><?php echo esc_html( $c_lbl ); ?></strong></td>
+                                        <td><?php echo number_format_i18n( (int) $tc['cnt'] ); ?> <small style="color:#64748b;">(<?php echo esc_html( $pct ); ?>%)</small></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="flex:1;min-width:260px;">
+                    <h2 style="font-size:15px;margin:0 0 8px;">2. A donde se dirigen (Objetivo)</h2>
+                    <table>
+                        <thead><tr><th>Objetivo atacado</th><th style="width:110px;">Peticiones</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Panel Admin / Login / API / Sistema</strong></td>
+                                <td><?php echo number_format_i18n( $admin_hits ); ?> <small style="color:#64748b;">(<?php echo esc_html( round( ( $admin_hits / $safe_total ) * 100, 1 ) ); ?>%)</small></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Web Publica (Frontend)</strong></td>
+                                <td><?php echo number_format_i18n( $web_hits ); ?> <small style="color:#64748b;">(<?php echo esc_html( round( ( $web_hits / $safe_total ) * 100, 1 ) ); ?>%)</small></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <?php if ( ! empty( $top_asns ) ) : ?>
+                        <h3 style="font-size:13px;margin:14px 0 6px;color:#334155;">Principales redes / ASNs de origen</h3>
+                        <table>
+                            <tbody>
+                                <?php foreach ( $top_asns as $ta ) : ?>
+                                    <tr>
+                                        <td style="font-size:12px;"><code><?php echo esc_html( mb_substr( (string) $ta['asn'], 0, 42 ) ); ?></code></td>
+                                        <td style="width:75px;font-weight:700;"><?php echo number_format_i18n( (int) $ta['cnt'] ); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <h2 style="font-size:15px;margin:22px 0 8px;">3. Que intentan atacar (Vectores y Exploits detectados)</h2>
+            <table>
+                <thead><tr><th>Vector de ataque / Amenaza</th><th style="width:180px;">Distribucion</th><th style="width:110px;">Intentos</th></tr></thead>
+                <tbody>
+                    <?php if ( empty( $vectors ) ) : ?>
+                        <tr><td colspan="3">Sin ataques registrados en los ultimos 30 dias.</td></tr>
+                    <?php else : ?>
+                        <?php foreach ( $vectors as $vec_name => $vec_cnt ) :
+                            $v_pct = round( ( $vec_cnt / $safe_total ) * 100, 1 );
+                            $bar_w = max( 3, min( 100, (int) round( $v_pct ) ) );
+                        ?>
+                            <tr>
+                                <td><strong><?php echo esc_html( $vec_name ); ?></strong></td>
+                                <td>
+                                    <div style="width:100%;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;">
+                                        <div style="width:<?php echo (int) $bar_w; ?>%;height:100%;background:#dc2626;"></div>
+                                    </div>
+                                </td>
+                                <td><strong><?php echo number_format_i18n( (int) $vec_cnt ); ?></strong> <small style="color:#64748b;">(<?php echo esc_html( $v_pct ); ?>%)</small></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+
+            <?php if ( ! empty( $top_uris ) ) : ?>
+                <h2 style="font-size:15px;margin:22px 0 8px;">4. Rutas y archivos mas atacados (Top 5 URLs)</h2>
+                <table>
+                    <thead><tr><th>Ruta / Endpoint solicitado</th><th style="width:120px;">Intentos</th></tr></thead>
+                    <tbody>
+                        <?php foreach ( $top_uris as $tu ) :
+                            $u_pct = round( ( (int) $tu['cnt'] / $safe_total ) * 100, 1 );
+                        ?>
+                            <tr>
+                                <td style="word-break:break-all;"><code><?php echo esc_html( (string) $tu['request_uri'] ); ?></code></td>
+                                <td><strong><?php echo number_format_i18n( (int) $tu['cnt'] ); ?></strong> <small style="color:#64748b;">(<?php echo esc_html( $u_pct ); ?>%)</small></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
         </div>
     </body>
     </html>
