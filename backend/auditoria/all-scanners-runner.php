@@ -60,7 +60,7 @@ function bap_execute_all_security_scans() {
             'name'   => 'Escáner de Malware y Uploads',
             'status' => $cnt > 0 ? 'error' : 'ok',
             'detail' => $cnt > 0 ? "{$cnt} archivo(s) sospechoso(s) detectado(s)." : "Analizados {$mal['scanned']} archivos sin firmas maliciosas.",
-            'items'  => array_map( fn( $f ) => $f['type'] . ': ' . $f['file'], $mal['findings'] ?? [] ),
+            'items'  => array_map( fn( $f ) => $f['type'] . ': ' . $f['file'] . ' [' . ( $f['date'] ?? 'N/D' ) . ']', $mal['findings'] ?? [] ),
         ];
     }
 
