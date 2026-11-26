@@ -124,7 +124,7 @@ function bap_execute_all_security_scans() {
         $d_chk = bap_dns_mon_verify();
         if ( is_array( $d_chk ) ) {
             $report[] = [
-                'name'   => 'Registros DNS del Dominio', 'link' => add_query_arg( 'subtab', 'hardening', $aud_url ),
+                'name'   => 'Registros DNS del Dominio', 'link' => add_query_arg( 'subtab', 'infraestructura', $aud_url ),
                 'status' => ! empty( $d_chk['changed'] ) ? 'error' : 'ok',
                 'detail' => ! empty( $d_chk['changed'] ) ? 'Cambios detectados en DNS (' . implode( ', ', array_keys( $d_chk['diffs'] ) ) . ').' : 'Registros NS, A, AAAA y MX verificados sin cambios.',
             ];

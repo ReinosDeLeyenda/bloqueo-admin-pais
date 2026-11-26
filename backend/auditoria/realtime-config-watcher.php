@@ -16,7 +16,7 @@ function bap_dispatch_critical_file_tamper_alert( array $changed_labels ) {
              . "• Dirección IP: {$ip}\n"
              . "• Fecha / Hora: {$time}\n\n"
              . "Revisa el contenido de estos archivos y aprueba la nueva huella SHA-256 en:\n"
-             . admin_url( 'admin.php?page=bap-auditoria&subtab=hardening' ) . "\n";
+             . admin_url( 'admin.php?page=bap-auditoria&subtab=infraestructura' ) . "\n";
 
         $e    = fn( $v ) => htmlspecialchars( (string) $v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' );
     $rich = "<h2>Alerta Critica: Archivo Alterado &mdash; {$e( $site )}</h2><p><b>Archivos:</b> <code>{$e( $files_s )}</code></p><p><b>Usuario:</b> {$e( $actor )} | <b>IP:</b> <code>{$e( $ip )}</code> | <b>Hora:</b> <code>{$e( $time )}</code></p>";
@@ -63,7 +63,7 @@ add_action( 'admin_notices', function() {
         }
     }
     if ( ! empty( $changed ) ) {
-        $url = esc_url( admin_url( 'admin.php?page=bap-auditoria&subtab=hardening' ) );
+        $url = esc_url( admin_url( 'admin.php?page=bap-auditoria&subtab=infraestructura' ) );
         echo '<div class="notice notice-error"><p>'
            . '<strong>Alerta de Integridad (SHA-256):</strong> Se han detectado cambios no aprobados en <code>'
            . esc_html( implode( ', ', $changed ) )
