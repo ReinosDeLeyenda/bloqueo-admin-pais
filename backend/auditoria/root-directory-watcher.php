@@ -118,7 +118,7 @@ function bap_render_root_directory_watcher_box() {
     }
 
     if ( isset( $_POST['bap_approve_root_file'] ) && check_admin_referer( 'bap_root_watch_action', 'bap_root_watch_nonce' ) ) {
-        $fname = basename( sanitize_file_name( wp_unslash( $_POST['bap_root_fname'] ?? '' ) ) );
+        $fname = basename( sanitize_text_field( wp_unslash( $_POST['bap_root_fname'] ?? '' ) ) );
         if ( '' !== $fname ) {
             $app   = get_option( 'bap_approved_root_files', [] );
             $app   = is_array( $app ) ? $app : [];
