@@ -246,3 +246,16 @@ add_action( 'admin_notices', function() {
         wp_kses_post( $notice['msg'] )
     );
 } );
+
+add_filter( 'plugin_auto_update_setting_html', function( $html, $plugin_file, $plugin_data ) {
+    $bap_slug = plugin_basename( dirname( __DIR__ ) . '/bloqueo-admin-pais.php' );
+    if ( $plugin_file !== $bap_slug || ! current_user_can( 'update_plugins' ) ) {
+        return $html;
+    }
+    $auto_updates = (array) get_site_option( 'auto_update_plugins', [] );
+    $enabled      = in_array( $bap_slug, $auto_updates, true );
+    $action       = $enabled ? 'disable-auto-update' : 'enable-auto-update';
+    $text         = $enabled ? 'Desactivar las actualizaciones automáticas' : 'Activar las actualizaciones automáticas';
+    $url          = wp_nonce_url( admin_url( 'plugins.php?action=' . $action . '&plugin=' . rawurlencode( $bap_slug ) ), 'updates' );
+    return '<a href="' . esc_url( $url ) . '" class="toggle-auto-update aria-button-if-js" data-wp-action="' . esc_attr( $enabled ? 'disable' : 'enable' ) . '"><span class="dashicons dashicons-update spin hidden" aria-hidden="true"></span><span class="label">' . esc_html( $text ) . '</span></a>';
+}, 10, 3 );
