@@ -11,11 +11,9 @@ function bap_resolve_server_public_ipv4() {
     return filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ? $ip : '';
 }
 
-function bap_check_server_dnsbl_reputation() {
-    $host = (string) wp_parse_url( home_url(), PHP_URL_HOST );
-    $ip   = ( '' !== $host ) ? @gethostbyname( $host ) : '';
+function bap_check_ip_against_dnsbls( $ip ) {
     if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
-        return new WP_Error( 'no_ipv4', 'No se pudo resolver una IPv4 publica para el servidor.' );
+        return [];
     }
 
     $rev = implode( '.', array_reverse( explode( '.', $ip ) ) );
@@ -41,7 +39,7 @@ function bap_check_server_dnsbl_reputation() {
         $rows[] = [ 'name' => $name, 'zone' => $zone, 'listed' => $listed, 'delist' => $cfg['delist'] ];
     }
 
-    return [ 'ip' => $ip, 'rows' => $rows ];
+    return $rows;
 }
 
 function bap_render_dnsbl_reputation_box() {
