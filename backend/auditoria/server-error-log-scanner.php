@@ -68,7 +68,7 @@ function bap_analyze_server_error_log( $filepath ) {
         if ( ! preg_match( '/client:\s*([0-9a-fA-F:.]+)|\[client\s+([0-9a-fA-F:.]+)(?::\d+)?\]/', $line, $mIp ) ) {
             continue;
         }
-        $ip = trim( (string) ( ! empty( $mIp ) ? $mIp : ( $mIp ?? '' ) ) );
+        $ip = trim( (string) ( ! empty( $mIp[1] ) ? $mIp[1] : ( $mIp[2] ?? '' ) ) );
         if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) || $ip === $my_ip || bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, $wl ) ) {
             continue;
         }
@@ -81,9 +81,9 @@ function bap_analyze_server_error_log( $filepath ) {
 
         $req = '';
         if ( preg_match( '/request:\s*"([^"]+)"/', $line, $mReq ) ) {
-            $req = $mReq;
+            $req = $mReq[1];
         } elseif ( preg_match( '/open\(\)\s*"([^"]+)"/', $line, $mOpen ) ) {
-            $req = basename( dirname( $mOpen ) ) . '/' . basename( $mOpen );
+            $req = basename( dirname( $mOpen[1] ) ) . '/' . basename( $mOpen[1] );
         }
 
         if ( ! isset( $suspects[ $ip ] ) ) {

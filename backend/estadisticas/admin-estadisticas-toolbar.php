@@ -1,12 +1,19 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-function bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $top_asns, $top_uris, $stats_base_url ) {
+function bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $top_asns, $top_uris, $stats_base_url, $excluded_count = 0 ) {
     ?>
     <div style="display:flex;gap:16px;margin:20px 0;flex-wrap:wrap;">
         <div class="card" style="flex:1;min-width:170px;margin:0;">
             <h3>Total Bloqueados</h3>
-            <p style="font-size:28px;font-weight:bold;color:#d63638;margin:0;"><?php echo number_format_i18n( $total_blocks ); ?></p>
+            <p style="font-size:28px;font-weight:bold;color:#d63638;margin:0;">
+                <?php echo number_format_i18n( $total_blocks ); ?>
+                <?php if ( $excluded_count > 0 ) : ?>
+                    <span style="display:inline-block;font-size:12px;font-weight:600;color:#646970;background:#f0f0f1;padding:2px 8px;border-radius:12px;vertical-align:middle;margin-left:6px;">
+                        Excluidas (<?php echo number_format_i18n( $excluded_count ); ?>)
+                    </span>
+                <?php endif; ?>
+            </p>
         </div>
         <div class="card" style="flex:1;min-width:190px;margin:0;">
             <h3>Top Paises</h3>
@@ -120,45 +127,6 @@ function bap_render_estadisticas_toolbar( array $filter_rows, $filter_type, $sta
             <button type="submit" name="bap_save_retention" class="button button-secondary">Guardar</button>
         </form>
     </div>
-    <script>
-    (function(){
-        var w = document.getElementById('bap-filter-rows-wrap');
-        if (!w) return;
-        function sync(){
-            var rs = w.querySelectorAll('.bap-filter-row');
-            rs.forEach(function(r){ var d = r.querySelector('.bap-del-frow'); if(d) d.disabled = (rs.length <= 1); });
-        }
-        w.addEventListener('click', function(e){
-            var sw = e.target.closest('.bap-fmode-switch');
-            if (sw) {
-                var r = sw.closest('.bap-filter-row'), i = r.querySelector('.bap-fmode-val'), d = sw.querySelector('.bap-fmode-dot'), t = sw.querySelector('.bap-fmode-txt');
-                var inc = (i.value !== 'include');
-                i.value = inc ? 'include' : 'exclude';
-                sw.style.background = inc ? '#2271b1' : '#d63638';
-                t.textContent = inc ? 'Incluir' : 'Excluir';
-                t.style.order = inc ? '1' : '2';
-                d.style.order = inc ? '2' : '1';
-                return;
-            }
-            var add = e.target.closest('.bap-add-frow');
-            if (add) {
-                var r = add.closest('.bap-filter-row'), cl = r.cloneNode(true);
-                cl.querySelector('.bap-fval-inp').value = '';
-                cl.querySelector('.bap-ffield-sel').value = 'any';
-                cl.querySelector('.bap-fmode-val').value = 'include';
-                cl.querySelector('.bap-fmode-switch').style.background = '#2271b1';
-                cl.querySelector('.bap-fmode-txt').textContent = 'Incluir';
-                cl.querySelector('.bap-fmode-txt').style.order = '1';
-                cl.querySelector('.bap-fmode-dot').style.order = '2';
-                r.after(cl); sync(); return;
-            }
-            var del = e.target.closest('.bap-del-frow');
-            if (del && w.querySelectorAll('.bap-filter-row').length > 1) {
-                del.closest('.bap-filter-row').remove(); sync();
-            }
-        });
-        sync();
-    })();
-    </script>
+
     <?php
 }

@@ -128,10 +128,25 @@ function bap_render_estadisticas_page() {
         }
     }
 
+    $has_excludes   = false;
+    foreach ( $filter_rows as $fr_chk ) {
+        if ( 'exclude' === ( $fr_chk['mode'] ?? 'include' ) && ( '' !== ( $fr_chk['val'] ?? '' ) || 'abuseipdb' === ( $fr_chk['field'] ?? '' ) ) ) {
+            $has_excludes = true;
+            break;
+        }
+    }
+
     $fetch_limit = ! empty( $abuse_filters ) ? 800 : 100;
     $where_sql   = ! empty( $where ) ? 'WHERE ' . implode( ' AND ', $where ) : '';
-    $sql         = "SELECT * FROM `{$table}` {$where_sql} ORDER BY id DESC LIMIT {$fetch_limit}";
-    $logs        = ! empty( $params ) ? $wpdb->get_results( $wpdb->prepare( $sql, $params ) ) : $wpdb->get_results( $sql );
+    $filtered_total = $total_blocks;
+    if ( ! empty( $where ) ) {
+        $cnt_sql        = "SELECT COUNT(*) FROM `{$table}` {$where_sql}";
+        $filtered_total = (int) ( ! empty( $params ) ? $wpdb->get_var( $wpdb->prepare( $cnt_sql, $params ) ) : $wpdb->get_var( $cnt_sql ) );
+    }
+    $excluded_count = $has_excludes ? max( 0, $total_blocks - $filtered_total ) : 0;
+
+    $sql  = "SELECT * FROM `{$table}` {$where_sql} ORDER BY id DESC LIMIT {$fetch_limit}";
+    $logs = ! empty( $params ) ? $wpdb->get_results( $wpdb->prepare( $sql, $params ) ) : $wpdb->get_results( $sql );
 
     if ( ! empty( $abuse_filters ) && ! empty( $logs ) ) {
         $logs = array_values( array_filter( $logs, function( $row ) use ( $abuse_filters ) {
