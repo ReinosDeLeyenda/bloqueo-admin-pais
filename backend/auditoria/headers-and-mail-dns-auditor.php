@@ -104,6 +104,17 @@ function bap_audit_mail_dns_records() {
         ];
     }
 
+    // 7. Alineacion de remitente WordPress (admin_email) con el dominio propio
+    $wp_admin_mail = strtolower( trim( (string) get_option( 'admin_email', '' ) ) );
+    $from_aligned  = ( '' !== $wp_admin_mail && false !== stripos( $wp_admin_mail, '@' . $domain ) );
+    $checks[]      = [
+        'type'   => 'Remitente WP (From)',
+        'status' => $from_aligned ? 'ok' : 'warning',
+        'value'  => $from_aligned
+            ? $wp_admin_mail . ' (Alineado con ' . $domain . ')'
+            : ( $wp_admin_mail ?: 'No definido' ) . ' — Usa una cuenta @' . $domain . ' en Ajustes > Generales (y el plugin auto-alineara a no-reply@' . $domain . ' para cumplir DMARC).',
+    ];
+
     return [ 'domain' => $domain, 'records' => $checks, 'mta' => bap_detect_local_mail_server(), 'dkim_ok' => ( '' !== $dkim_found ) ];
 }
 
