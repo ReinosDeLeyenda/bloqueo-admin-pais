@@ -87,6 +87,7 @@ function bap_render_auditoria_page() {
             <?php if ( function_exists( 'bap_render_custom_integrity_box' ) ) { bap_render_custom_integrity_box(); } ?>
             <?php if ( function_exists( 'bap_render_cve_scanner_box' ) ) { bap_render_cve_scanner_box(); } ?>
             <?php if ( function_exists( 'bap_render_malware_scanner_box' ) ) { bap_render_malware_scanner_box(); } ?>
+            <?php if ( function_exists( 'bap_render_quarantine_vault_box' ) ) { bap_render_quarantine_vault_box(); } ?>
             <?php if ( function_exists( 'bap_render_abandoned_plugins_box' ) ) { bap_render_abandoned_plugins_box(); } ?>
             <?php if ( function_exists( 'bap_render_db_injection_and_cron_box' ) ) { bap_render_db_injection_and_cron_box(); } ?>
             <?php if ( function_exists( 'bap_render_seo_spam_scanner_box' ) ) { bap_render_seo_spam_scanner_box(); } ?>
