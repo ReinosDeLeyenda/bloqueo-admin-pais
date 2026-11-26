@@ -38,6 +38,59 @@ function bap_cron_resolve_hook_origin( $hook ) {
     ];
 }
 
+function bap_cron_describe_hook( $hook ) {
+    $known = [
+        'wp_version_check'                      => 'Comprueba si hay nuevas versiones del nucleo de WordPress.',
+        'wp_update_plugins'                     => 'Busca actualizaciones disponibles para los plugins instalados.',
+        'wp_update_themes'                      => 'Busca actualizaciones disponibles para los temas instalados.',
+        'wp_scheduled_delete'                   => 'Vacia la papelera de entradas, paginas y comentarios antiguos.',
+        'wp_scheduled_auto_draft_delete'        => 'Elimina borradores automaticos antiguos sin guardar.',
+        'wp_privacy_delete_old_export_files'    => 'Borra archivos temporales de exportacion de datos personales (RGPD).',
+        'delete_expired_transients'             => 'Limpia de wp_options los transients caducados.',
+        'recovery_mode_clean_expired_keys'      => 'Elimina claves caducadas del Modo de Recuperacion de WordPress.',
+        'wp_site_health_scheduled_check'        => 'Ejecuta las pruebas automaticas de Salud del Sitio.',
+        'do_pings'                              => 'Envia pingbacks y trackbacks pendientes a enlaces externos.',
+        'publish_future_post'                   => 'Publica una entrada o pagina programada para una fecha futura.',
+        'wp_https_detection'                    => 'Verifica si el sitio soporta HTTPS correctamente.',
+        'bap_auto_update_dbs_event'             => 'Actualiza automaticamente las bases de datos GeoIP, ASN, AbuseIPDB, Tor y FireHOL.',
+        'bap_daily_logs_cleanup'                => 'Purga registros antiguos de bloqueos segun los dias de retencion.',
+        'bap_purge_autobans_event'              => 'Libera IPs de la Lista Negra cuya expulsion temporal ha caducado.',
+        'bap_scheduled_security_scan_event'     => 'Ejecuta la auditoria automatica de seguridad (CVEs, malware, integridad y SSL).',
+        'bap_send_telegram_digest_event'        => 'Envia por Telegram el resumen agrupado de ataques bloqueados.',
+        'bap_send_digest_email_event'           => 'Envia por correo electronico el resumen agrupado de ataques bloqueados.',
+        'bap_auto_db_backup_telegram_event'     => 'Genera una copia SQL comprimida (.sql.gz) y la envia a Telegram.',
+        'action_scheduler_run_queue'            => 'Procesa tareas en segundo plano (WooCommerce / plugins con Action Scheduler).',
+        'woocommerce_cleanup_sessions'          => 'Elimina sesiones y carritos caducados de clientes en WooCommerce.',
+        'woocommerce_cleanup_logs'              => 'Borra archivos de registro antiguos de WooCommerce.',
+        'woocommerce_scheduled_sales'           => 'Activa o finaliza precios rebajados programados en productos.',
+    ];
+    if ( isset( $known[ $hook ] ) ) {
+        return $known[ $hook ];
+    }
+    global $wp_filter;
+    if ( empty( $wp_filter[ $hook ] ) ) {
+        return 'Evento huerfano: ningun plugin o tema activo escucha esta tarea (seguro de borrar).';
+    }
+    foreach ( $wp_filter[ $hook ]->callbacks as $items ) {
+        foreach ( $items as $cb ) {
+            $fn = $cb['function'] ?? null;
+            try {
+                $ref = null;
+                if ( is_string( $fn ) && function_exists( $fn ) ) { $ref = new ReflectionFunction( $fn ); }
+                elseif ( is_array( $fn ) && count( $fn ) === 2 ) { $ref = new ReflectionMethod( $fn[0], $fn[1] ); }
+                if ( $ref && ( $doc = $ref->getDocComment() ) ) {
+                    $clean = trim( preg_replace( '/^\s*\/\*+|\*+\/\s*$|\s*\*\s?/m', ' ', $doc ) );
+                    $first = trim( strtok( $clean, "\r\n." ) );
+                    if ( '' !== $first && 0 !== strpos( $first, '@' ) ) {
+                        return mb_substr( $first, 0, 140 ) . '.';
+                    }
+                }
+            } catch ( Throwable $e ) {}
+        }
+    }
+    return 'Tarea programada personalizada registrada por el componente indicado en Origen.';
+}
+
 function bap_get_scheduled_cron_events_list() {
     $crons = function_exists( '_get_cron_array' ) ? _get_cron_array() : [];
     if ( ! is_array( $crons ) ) { return []; }
@@ -46,16 +99,18 @@ function bap_get_scheduled_cron_events_list() {
         if ( ! is_array( $hooks ) ) { continue; }
         foreach ( $hooks as $hook => $instances ) {
             $info = bap_cron_resolve_hook_origin( $hook );
+            $desc = bap_cron_describe_hook( $hook );
             foreach ( (array) $instances as $sig => $cfg ) {
                 $list[] = [
-                    'ts'         => (int) $ts,
-                    'next_run'   => wp_date( 'Y-m-d H:i:s', (int) $ts ),
-                    'hook'       => (string) $hook,
-                    'sig'        => (string) $sig,
-                    'args'       => (array) ( $cfg['args'] ?? [] ),
-                    'schedule'   => (string) ( $cfg['schedule'] ?: 'Una vez' ),
-                    'origin'     => $info['origin'],
-                    'suspicious' => $info['suspicious'],
+                    'ts'          => (int) $ts,
+                    'next_run'    => wp_date( 'Y-m-d H:i:s', (int) $ts ),
+                    'hook'        => (string) $hook,
+                    'description' => $desc,
+                    'sig'         => (string) $sig,
+                    'args'        => (array) ( $cfg['args'] ?? [] ),
+                    'schedule'    => (string) ( $cfg['schedule'] ?: 'Una vez' ),
+                    'origin'      => $info['origin'],
+                    'suspicious'  => $info['suspicious'],
                 ];
             }
         }
@@ -115,6 +170,9 @@ function bap_render_wp_cron_inspector_box() {
                                 <code><?php echo esc_html( $ev['hook'] ); ?></code>
                                 <?php if ( $ev['suspicious'] ) : ?>
                                     <span style="background:#d63638;color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;font-weight:700;">REVISAR</span>
+                                <?php endif; ?>
+                                <?php if ( ! empty( $ev['description'] ) ) : ?>
+                                    <br><small style="color:#50575e;"><?php echo esc_html( $ev['description'] ); ?></small>
                                 <?php endif; ?>
                             </td>
                             <td><small><?php echo esc_html( $ev['origin'] ); ?></small></td>
