@@ -59,8 +59,10 @@ function bap_render_estadisticas_page() {
     $table       = bap_get_logs_table_name();
     $filter_uri  = isset( $_GET['filter_uri'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_uri'] ) ) : '';
     $filter_q    = isset( $_GET['filter_q'] ) ? sanitize_text_field( wp_unslash( $_GET['filter_q'] ) ) : '';
-    $raw_type    = isset( $_GET['filter_type'] ) ? sanitize_key( wp_unslash( $_GET['filter_type'] ) ) : 'all';
-    $filter_type = in_array( $raw_type, [ 'all', 'admin', 'web' ], true ) ? $raw_type : 'all';
+    $raw_type     = isset( $_GET['filter_type'] ) ? sanitize_key( wp_unslash( $_GET['filter_type'] ) ) : 'all';
+    $filter_type  = in_array( $raw_type, [ 'all', 'admin', 'web' ], true ) ? $raw_type : 'all';
+    $raw_abuse    = isset( $_GET['filter_abuse'] ) ? sanitize_key( wp_unslash( $_GET['filter_abuse'] ) ) : 'all';
+    $filter_abuse = in_array( $raw_abuse, [ 'all', 'listed', 'unlisted' ], true ) ? $raw_abuse : 'all';
 
     $type_where_sql = '';
     if ( 'admin' === $filter_type ) {
@@ -81,19 +83,50 @@ function bap_render_estadisticas_page() {
         $where[]  = 'block_type = %s';
         $params[] = $filter_type;
     }
-    if ( '' !== $filter_uri ) {
-        $where[]  = 'request_uri LIKE %s';
-        $params[] = '%' . $wpdb->esc_like( $filter_uri ) . '%';
-    }
-    if ( '' !== $filter_q ) {
-        $like     = '%' . $wpdb->esc_like( $filter_q ) . '%';
-        $where[]  = '(ip_address LIKE %s OR country_code LIKE %s OR asn LIKE %s OR reason LIKE %s OR request_uri LIKE %s)';
-        array_push( $params, $like, $like, $like, $like, $like );
+
+    foreach ( preg_split( '/\s+/', trim( $filter_uri ) ) as $tok ) {
+        if ( '' === $tok ) { continue; }
+        $neg  = ( '-' === $tok[0] && strlen( $tok ) > 1 );
+        $term = $neg ? substr( $tok, 1 ) : $tok;
+        $like = '%' . $wpdb->esc_like( $term ) . '%';
+        if ( $neg ) {
+            $where[]  = 'request_uri NOT LIKE %s';
+            $params[] = $like;
+        } else {
+            $where[]  = 'request_uri LIKE %s';
+            $params[] = $like;
+        }
     }
 
-    $where_sql = ! empty( $where ) ? 'WHERE ' . implode( ' AND ', $where ) : '';
-    $sql       = "SELECT * FROM `{$table}` {$where_sql} ORDER BY id DESC LIMIT 100";
-    $logs      = ! empty( $params ) ? $wpdb->get_results( $wpdb->prepare( $sql, $params ) ) : $wpdb->get_results( $sql );
+    foreach ( preg_split( '/\s+/', trim( $filter_q ) ) as $tok ) {
+        if ( '' === $tok ) { continue; }
+        $neg  = ( '-' === $tok[0] && strlen( $tok ) > 1 );
+        $term = $neg ? substr( $tok, 1 ) : $tok;
+        $like = '%' . $wpdb->esc_like( $term ) . '%';
+        if ( $neg ) {
+            $where[] = '(ip_address NOT LIKE %s AND country_code NOT LIKE %s AND asn NOT LIKE %s AND reason NOT LIKE %s AND request_uri NOT LIKE %s)';
+            array_push( $params, $like, $like, $like, $like, $like );
+        } else {
+            $where[] = '(ip_address LIKE %s OR country_code LIKE %s OR asn LIKE %s OR reason LIKE %s OR request_uri LIKE %s)';
+            array_push( $params, $like, $like, $like, $like, $like );
+        }
+    }
+
+    $fetch_limit = ( 'all' !== $filter_abuse ) ? 600 : 100;
+    $where_sql   = ! empty( $where ) ? 'WHERE ' . implode( ' AND ', $where ) : '';
+    $sql         = "SELECT * FROM `{$table}` {$where_sql} ORDER BY id DESC LIMIT {$fetch_limit}";
+    $logs        = ! empty( $params ) ? $wpdb->get_results( $wpdb->prepare( $sql, $params ) ) : $wpdb->get_results( $sql );
+
+    if ( 'all' !== $filter_abuse && ! empty( $logs ) ) {
+        $logs = array_values( array_filter( $logs, function( $row ) use ( $filter_abuse ) {
+            $ip_v   = trim( (string) $row->ip_address );
+            $in_db  = ( '' !== $ip_v && function_exists( 'bap_get_abuseipdb_score' ) && null !== bap_get_abuseipdb_score( $ip_v ) );
+            $in_rsn = ( false !== stripos( (string) $row->reason, 'AbuseIPDB' ) );
+            $listed = ( $in_db || $in_rsn );
+            return ( 'listed' === $filter_abuse ) ? $listed : ! $listed;
+        } ) );
+        $logs = array_slice( $logs, 0, 100 );
+    }
 
     $ip_history = [];
     if ( ! empty( $logs ) ) {

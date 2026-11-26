@@ -42,7 +42,7 @@ function bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $
     <?php
 }
 
-function bap_render_estadisticas_toolbar( $filter_uri, $filter_q, $filter_type, $stats_base_url ) {
+function bap_render_estadisticas_toolbar( $filter_uri, $filter_q, $filter_type, $stats_base_url, $filter_abuse = 'all' ) {
     ?>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 12px 0;flex-wrap:wrap;gap:10px;">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -81,10 +81,15 @@ function bap_render_estadisticas_toolbar( $filter_uri, $filter_q, $filter_type, 
         <form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <input type="hidden" name="page" value="bap-admin-estadisticas" />
             <input type="hidden" name="filter_type" value="<?php echo esc_attr( $filter_type ); ?>" />
-            <input type="text" name="filter_uri" value="<?php echo esc_attr( $filter_uri ); ?>" placeholder="Filtrar por ruta..." class="regular-text" style="width:210px;" />
-            <input type="text" name="filter_q" value="<?php echo esc_attr( $filter_q ); ?>" placeholder="Buscar IP, país, ASN o motivo..." class="regular-text" style="width:220px;" />
+            <input type="text" name="filter_uri" value="<?php echo esc_attr( $filter_uri ); ?>" placeholder="Ruta (ej. /aowow -/admin)" class="regular-text" style="width:195px;" title="Usa -termino para excluir" />
+            <input type="text" name="filter_q" value="<?php echo esc_attr( $filter_q ); ?>" placeholder="Buscar (ej. aowow -Tor)" class="regular-text" style="width:215px;" title="Separa terminos por espacios; antepon - para excluir" />
+            <select name="filter_abuse" aria-label="Filtrar por AbuseIPDB">
+                <option value="all" <?php selected( $filter_abuse, 'all' ); ?>>AbuseIPDB: Todos</option>
+                <option value="listed" <?php selected( $filter_abuse, 'listed' ); ?>>En AbuseIPDB</option>
+                <option value="unlisted" <?php selected( $filter_abuse, 'unlisted' ); ?>>No en AbuseIPDB</option>
+            </select>
             <button type="submit" class="button button-primary">Filtrar</button>
-            <?php if ( '' !== $filter_uri || '' !== $filter_q || 'all' !== $filter_type ) : ?>
+            <?php if ( '' !== $filter_uri || '' !== $filter_q || 'all' !== $filter_type || 'all' !== $filter_abuse ) : ?>
                 <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-estadisticas' ) ); ?>" class="button button-secondary">Limpiar</a>
             <?php endif; ?>
         </form>
