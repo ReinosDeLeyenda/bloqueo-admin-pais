@@ -30,7 +30,24 @@ function bap_render_notificaciones_page() {
             </form>
         </div>
 
-        <form id="bap_test_email_form" method="post" style="display:none;">
+        <script>
+document.addEventListener("DOMContentLoaded", function() {
+  var testForm = document.getElementById("bap_test_email_form");
+  var mainForm = document.querySelector("form[action=\"options.php\"]");
+  if (!testForm || !mainForm) return;
+  testForm.addEventListener("submit", function() {
+    testForm.querySelectorAll(".bap-live-cloned").forEach(function(el){ el.remove(); });
+    var fd = new FormData(mainForm);
+    fd.forEach(function(val, key) {
+      if (key === "_wpnonce" || key === "_wp_http_referer" || key === "option_page" || key === "action") return;
+      var inp = document.createElement("input");
+      inp.type = "hidden"; inp.name = key; inp.value = val; inp.className = "bap-live-cloned";
+      testForm.appendChild(inp);
+    });
+  });
+});
+</script>
+<form id="bap_test_email_form" method="post" style="display:none;">
             <?php wp_nonce_field( 'bap_test_email_action' ); ?>
         </form>
     </div>
