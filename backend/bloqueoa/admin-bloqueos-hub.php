@@ -58,8 +58,6 @@ function bap_render_bloqueos_hub_page() {
                     <?php submit_button( 'Guardar reglas de Backend' ); ?>
                 </form>
             </div>
-
-            <?php if ( function_exists( 'bap_render_active_sessions_box' ) ) { bap_render_active_sessions_box(); } ?>
             <?php if ( function_exists( 'bap_render_vacation_mode_box' ) ) { bap_render_vacation_mode_box(); } ?>
 
         <?php elseif ( 'frontend' === $sub ) :

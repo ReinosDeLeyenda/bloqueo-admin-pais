@@ -8,6 +8,7 @@ $sub   = isset( $_GET['subtab'] ) ? sanitize_key( wp_unslash( $_GET['subtab'] ) 
 $valid = [
     'acciones'      => 'Acciones',
     'configuracion' => 'Configuración',
+    'sesiones'      => 'Sesiones Activas',
 ];
 if ( ! isset( $valid[ $sub ] ) ) {
     $sub = 'acciones';

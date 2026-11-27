@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 add_action( 'admin_menu', function() {
         add_menu_page( 'Bloqueo Admin y Web', 'Bloqueo Admin', 'manage_options', 'bap-admin-db', 'bap_render_db_page', 'dashicons-shield', 81 );
-    add_submenu_page( 'bap-admin-db', 'Bases de Datos', 'Bases de Datos', 'manage_options', 'bap-admin-db', 'bap_render_db_page' );
+    add_submenu_page( 'bap-admin-db', 'Datos y Sesiones', 'Datos y Sesiones', 'manage_options', 'bap-admin-db', 'bap_render_db_page' );
     add_submenu_page( 'bap-admin-db', 'Bloqueos', 'Bloqueos', 'manage_options', 'bap-bloqueos', 'bap_render_bloqueos_hub_page' );
     add_submenu_page( 'bap-admin-db', 'Auditoría y Hardening', 'Auditoría y Hardening', 'manage_options', 'bap-auditoria', 'bap_render_auditoria_page' );
     add_submenu_page( 'bap-admin-db', 'Plantillas', 'Plantillas', 'manage_options', 'bap-plantillas', 'bap_render_plantillas_hub_page' );
@@ -21,7 +21,7 @@ add_filter( 'plugin_action_links_' . plugin_basename( dirname( __DIR__, 2 ) . '/
 
 function bap_render_tabs( $active_slug ) {
                 $tabs = [
-        'bap-admin-db'           => '1. Bases de Datos',
+        'bap-admin-db'           => '1. Datos y Sesiones',
         'bap-bloqueos'           => '2. Bloqueos',
         'bap-auditoria'          => '3. Auditoría y Hardening',
         'bap-plantillas'         => '4. Plantillas',
