@@ -9,6 +9,7 @@ $valid = [
     'acciones'      => 'Acciones',
     'configuracion' => 'Configuración',
     'sesiones'      => 'Sesiones Activas',
+    'sesiones'      => 'Sesiones Activas',
 ];
 if ( ! isset( $valid[ $sub ] ) ) {
     $sub = 'acciones';
@@ -67,7 +68,9 @@ if ( $all_missing ) {
     <?php echo $notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
     <?php echo $ext_test_notice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
-    <?php if ( 'configuracion' === $sub ) : ?>
+    <?php if ( 'sesiones' === $sub ) : ?>
+        <?php if ( function_exists( 'bap_render_active_sessions_box' ) ) { bap_render_active_sessions_box(); } ?>
+    <?php elseif ( 'configuracion' === $sub ) : ?>
         <?php bap_render_db_settings_card( $db_freq ); ?>
         <?php bap_render_json_backup_card(); if ( function_exists( 'bap_render_db_backup_telegram_card' ) ) { bap_render_db_backup_telegram_card(); } ?>
     <?php else : ?>
