@@ -47,7 +47,7 @@ function bap_execute_all_security_scans() {
         $report[] = [
             'name'   => 'Vulnerabilidades Conocidas (CVE)', 'link' => $aud_url . '#bap-box-cve',
             'status' => $cnt > 0 ? 'error' : 'ok',
-            'detail' => $cnt > 0 ? "{$cnt} vulnerabilidad(es) CVE detectada(s)." : "Analizados {$cve['checked']} componentes sin CVEs conocidos.",
+            'detail' => $cnt > 0 ? "{$cnt} vulnerabilidad(es) CVE detectada(s)." . ( '1' === (string) get_option( 'bap_vpatch_enabled', '0' ) ? ' [Nota: Parcheo Virtual ACTIVADO]' : '' ) : "Analizados {$cve['checked']} componentes sin CVEs conocidos.",
             'items'  => array_map( fn( $f ) => $f['component'] . ' v' . $f['version'] . ' (' . implode( ', ', $f['cves'] ) . ')', $cve['findings'] ?? [] ),
         ];
     }
