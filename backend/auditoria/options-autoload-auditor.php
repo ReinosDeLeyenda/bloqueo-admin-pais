@@ -92,7 +92,10 @@ function bap_render_options_autoload_auditor_box() {
             </form>
         </div>
 
-        <table class="widefat striped" style="margin-top:10px;">
+        <details open style="margin-top:12px;border:1px solid #dcdcde;border-radius:6px;padding:10px 14px;background:#fff;">
+<summary style="cursor:pointer;font-weight:700;user-select:none;">&#9662; Mostrar / Ocultar opciones Autoload m&aacute;s pesadas</summary>
+<div style="margin-top:10px;max-height:400px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:4px;">
+<table class="widefat striped" style="border:0;width:100%;table-layout:fixed;">
             <thead><tr><th>Opcion (<code>option_name</code>)</th><th style="width:100px;">Peso</th><th style="width:100px;">Autoload</th><th style="width:160px;">Accion</th></tr></thead>
             <tbody>
                 <?php foreach ( $data['top_options'] as $r ) :
@@ -118,7 +121,35 @@ function bap_render_options_autoload_auditor_box() {
                     </tr>
                 <?php endforeach; ?>
             </tbody>
-        </table>
+        </table></div></details>
     </div>
+    <script>
+    (function() {
+      var box = document.getElementById("bap-box-autoload");
+      if (!box || !window.fetch || box.dataset.bapAjaxBound) return;
+      box.dataset.bapAjaxBound = "1";
+      var lastBtn = null;
+      box.addEventListener("click", function(e){ var b = e.target.closest("button[type=submit]"); if (b) lastBtn = b; });
+      box.addEventListener("submit", function(e) {
+        var form = e.target;
+        if (!form || form.tagName !== "FORM") return;
+        e.preventDefault();
+        var y = window.scrollY;
+        var btn = lastBtn || form.querySelector("button[type=submit]");
+        var fd = new FormData(form);
+        if (btn && btn.name) fd.append(btn.name, btn.value || "1");
+        var orig = btn ? btn.textContent : "";
+        if (btn) { btn.disabled = true; btn.textContent = "Procesando..."; }
+        fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+          .then(function(r){ return r.text(); })
+          .then(function(html){
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var fresh = doc.getElementById("bap-box-autoload");
+            if (fresh) { box.innerHTML = fresh.innerHTML; window.scrollTo(0, y); }
+          })
+          .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
+      });
+    })();
+    </script>
     <?php
 }
