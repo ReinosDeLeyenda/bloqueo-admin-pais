@@ -145,3 +145,37 @@ function bap_render_bloqueos_rules_fields( $bl_raw ) {
     </tr>
     <?php
 }
+
+add_action( 'admin_footer', function() {
+    if ( 'bap-bloqueos' !== ( $_GET['page'] ?? '' ) ) { return; }
+    ?>
+    <style>
+    tbody.bap-exclusive-group { display: table-row-group; box-shadow: 0 0 0 1px rgba(148,163,184,0.45); border-radius: 10px; background: rgba(148,163,184,0.04); }
+    tbody.bap-exclusive-group tr.bap-group-header td { padding: 8px 12px 2px 12px; }
+    .bap-exclusive-pill { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; padding: 2px 9px; border-radius: 999px; background: rgba(56,189,248,0.15); color: #38bdf8; }
+    </style>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      function groupExclusiveRows(labelA, labelB, title) {
+        var ths = Array.from(document.querySelectorAll(".form-table th"));
+        var thA = ths.find(function(el){ return el.textContent.indexOf(labelA) !== -1; });
+        var thB = ths.find(function(el){ return el.textContent.indexOf(labelB) !== -1; });
+        if (!thA || !thB) return;
+        var trA = thA.closest("tr"), trB = thB.closest("tr");
+        var table = trA.closest("table");
+        var tbody = document.createElement("tbody");
+        tbody.className = "bap-exclusive-group";
+        var hdrTr = document.createElement("tr");
+        hdrTr.className = "bap-group-header";
+        hdrTr.innerHTML = "<td colspan=\"2\"><span class=\"bap-exclusive-pill\">" + title + "</span></td>";
+        table.insertBefore(tbody, trA.parentNode);
+        tbody.appendChild(hdrTr);
+        tbody.appendChild(trA);
+        tbody.appendChild(trB);
+      }
+      groupExclusiveRows("Países PERMITIDOS", "Países BLOQUEADOS", "Filtro de Países (Elige una opción u otra)");
+      groupExclusiveRows("ASNs PERMITIDOS", "ASNs BLOQUEADOS", "Filtro de ASNs (Elige una opción u otra)");
+    });
+    </script>
+    <?php
+} );
