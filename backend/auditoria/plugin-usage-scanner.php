@@ -5,6 +5,8 @@ function bap_map_shortcodes_to_plugins() {
     global $shortcode_tags;
     $plugins_dir = wp_normalize_path( WP_PLUGIN_DIR ) . '/';
     $map         = [];
+
+    // 1. Shortcodes registrados en memoria
     foreach ( (array) $shortcode_tags as $tag => $cb ) {
         try {
             $ref = null;
@@ -13,8 +15,32 @@ function bap_map_shortcodes_to_plugins() {
                 if ( method_exists( $cls, $mth ) ) { $ref = new ReflectionMethod( $cls, $mth ); }
             } elseif ( is_string( $cb ) && function_exists( $cb ) ) {
                 $ref = new ReflectionFunction( $cb );
-            } elseif ( is_array( $cb ) && isset( $cb[0], $cb[1] ) && method_exists( $cb[0], $cb[1] ) ) {
-                $ref = new ReflectionMethod( $cb[0], $cb[1] );
+            } elseif ( is_array( $cb ) && isset( $cb
+[
+0
+]
+, $cb
+[
+1
+]
+ ) && method_exists( $cb
+[
+0
+]
+, $cb
+[
+1
+]
+ ) ) {
+                $ref = new ReflectionMethod( $cb
+[
+0
+]
+, $cb
+[
+1
+]
+ );
             } elseif ( is_object( $cb ) && $cb instanceof Closure ) {
                 $ref = new ReflectionFunction( $cb );
             }
@@ -30,11 +56,32 @@ function bap_map_shortcodes_to_plugins() {
             }
         } catch ( Throwable $e ) {}
     }
+
+    // 2. Analisis estatico de add_shortcode() en archivos PHP de cada plugin
+    $dirs = @glob( WP_PLUGIN_DIR . '/*', GLOB_ONLYDIR );
+    foreach ( (array) $dirs as $dir ) {
+        $folder = basename( $dir );
+        if ( 'bloqueo-admin-pais' === $folder ) { continue; }
+        $php_files = array_merge( (array) @glob( $dir . '/*.php' ), (array) @glob( $dir . '/includes/*.php' ), (array) @glob( $dir . '/inc/*.php' ) );
+        foreach ( $php_files as $pf ) {
+            if ( ! @is_file( $pf ) || @filesize( $pf ) > 524288 ) { continue; }
+            $src = (string) @file_get_contents( $pf );
+            if ( preg_match_all( '/\badd_shortcode\s*\(\s*[\x27"]([a-zA-Z0-9_-]+)[\x27"]/i', $src, $ms ) ) {
+                foreach ( $ms
+[
+1
+]
+ as $st ) {
+                    $map[ $folder ][] = (string) $st;
+                }
+            }
+        }
+    }
     return $map;
 }
 
 function bap_scan_plugins_content_usage( $force = false ) {
-    $cache_key = 'bap_plugin_usage_scan_v1';
+    $cache_key = 'bap_plugin_usage_scan_v2';
     if ( ! $force ) {
         $cached = get_transient( $cache_key );
         if ( is_array( $cached ) ) { return $cached; }
@@ -44,13 +91,14 @@ function bap_scan_plugins_content_usage( $force = false ) {
     $all_plugins = get_plugins();
     $sc_map      = bap_map_shortcodes_to_plugins();
     $posts       = $wpdb->get_results( "SELECT ID, post_title, post_type, post_status, post_content FROM {$wpdb->posts} WHERE post_status IN ('publish','draft','private') AND post_type NOT IN ('revision','nav_menu_item','attachment') AND (post_content LIKE '%[%' OR post_content LIKE '%<!-- wp:%')" );
+    $meta_rows   = $wpdb->get_results( "SELECT pm.post_id, pm.meta_value, p.post_title, p.post_type, p.post_status FROM {$wpdb->postmeta} pm INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id WHERE p.post_status IN ('publish','draft','private') AND pm.meta_key IN ('_elementor_data','_panels_data','_fl_builder_data') AND pm.meta_value LIKE '%[%'" );
     $usage       = [];
 
     foreach ( $all_plugins as $pfile => $pdata ) {
         $folder = dirname( $pfile );
         if ( '.' === $folder || 'bloqueo-admin-pais' === $folder ) { continue; }
         $tags    = array_unique( $sc_map[ $folder ] ?? [] );
-        $matches = [];
+        $by_post = [];
         foreach ( (array) $posts as $p ) {
             $found_tokens = [];
             foreach ( $tags as $t ) {
@@ -59,10 +107,14 @@ function bap_scan_plugins_content_usage( $force = false ) {
                 }
             }
             if ( preg_match_all( '/<!--\s+wp:(' . preg_quote( $folder, '/' ) . '\/[a-z0-9_-]+)/i', $p->post_content, $mb ) ) {
-                foreach ( array_unique( $mb[1] ) as $blk ) { $found_tokens[] = 'Bloque: ' . $blk; }
+                foreach ( array_unique( $mb
+[
+1
+]
+ ) as $blk ) { $found_tokens[] = 'Bloque: ' . $blk; }
             }
             if ( ! empty( $found_tokens ) ) {
-                $matches[] = [
+                $by_post[ (int) $p->ID ] = [
                     'id'     => (int) $p->ID,
                     'title'  => $p->post_title ?: '(Sin titulo #' . $p->ID . ')',
                     'type'   => $p->post_type,
@@ -71,19 +123,37 @@ function bap_scan_plugins_content_usage( $force = false ) {
                 ];
             }
         }
+        foreach ( (array) $meta_rows as $mr ) {
+            $pid = (int) $mr->post_id;
+            foreach ( $tags as $t ) {
+                if ( false !== stripos( (string) $mr->meta_value, '[' . $t ) ) {
+                    if ( ! isset( $by_post[ $pid ] ) ) {
+                        $by_post[ $pid ] = [
+                            'id'     => $pid,
+                            'title'  => $mr->post_title ?: '(Sin titulo #' . $pid . ')',
+                            'type'   => $mr->post_type,
+                            'status' => $mr->post_status,
+                            'tokens' => [],
+                        ];
+                    }
+                    $by_post[ $pid ]['tokens'][] = '[' . $t . '] (Builder)';
+                    $by_post[ $pid ]['tokens']   = array_unique( $by_post[ $pid ]['tokens'] );
+                }
+            }
+        }
         $usage[ $pfile ] = [
             'name'    => (string) ( $pdata['Name'] ?? $pfile ),
             'folder'  => $folder,
             'active'  => is_plugin_active( $pfile ),
             'tags'    => $tags,
-            'matches' => $matches,
+            'matches' => array_values( $by_post ),
         ];
     }
     set_transient( $cache_key, $usage, 30 * MINUTE_IN_SECONDS );
     return $usage;
 }
 
-add_action( 'save_post', function() { delete_transient( 'bap_plugin_usage_scan_v1' ); } );
+add_action( 'save_post', function() { delete_transient( 'bap_plugin_usage_scan_v2' ); } );
 
 // Advertencia preventiva en Plugins -> Plugins instalados si el plugin tiene shortcodes/bloques en uso
 add_filter( 'plugin_action_links', function( $actions, $plugin_file ) {
@@ -116,7 +186,7 @@ function bap_render_plugin_usage_scanner_box() {
                 $res_upd  = wp_update_post( [ 'ID' => $pid, 'post_content' => wp_slash( $new_body ) ], true );
                 if ( ! is_wp_error( $res_upd ) ) { $updated_cnt++; }
             }
-            delete_transient( 'bap_plugin_usage_scan_v1' );
+            delete_transient( 'bap_plugin_usage_scan_v2' );
             $replace_notice = '<div class="notice notice-success inline"><p><strong>Reemplazo completado:</strong> Se actualizo <code>' . esc_html( $search_sc ) . '</code> en ' . (int) $updated_cnt . ' pagina(s) (revision de WordPress guardada automaticamente).</p></div>';
         }
     }
