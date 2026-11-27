@@ -186,14 +186,14 @@ function bap_render_server_error_log_scanner_box() {
                         </form>
                     <?php endif; ?>
                 </div>
-                <table class="widefat striped" style="margin-top:10px;">
+                <table class="widefat striped" style="margin-top:10px;width:100%;table-layout:fixed;">
                     <thead><tr><th>IP Atacante</th><th>Pais / ASN</th><th style="width:90px;">Eventos</th><th>Rutas buscadas (Muestra)</th><th style="width:135px;">Accion</th></tr></thead>
                     <tbody>
                         <?php foreach ( $scan_res['suspects'] as $s ) :
                             $already = bap_ip_in_list( $s['ip'], $cur_bl );
                         ?>
                             <tr>
-                                <td><code><?php echo esc_html( $s['ip'] ); ?></code></td>
+                                <td style="word-break:break-all;overflow-wrap:anywhere;"><code><?php echo esc_html( $s['ip'] ); ?></code></td>
                                 <td><strong><?php echo esc_html( $s['country'] ); ?></strong><br><small><?php echo esc_html( $s['asn'] ); ?></small></td>
                                 <td><?php echo bap_render_status_badge( $s['count'] . ' hits', '#d63638' ); ?></td>
                                 <td><small><code><?php echo esc_html( implode( ' | ', $s['samples'] ) ?: 'Errores 404 repetidos' ); ?></code></small></td>
