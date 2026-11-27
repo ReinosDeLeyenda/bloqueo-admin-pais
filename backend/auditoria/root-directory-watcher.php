@@ -254,7 +254,30 @@ function bap_render_root_directory_watcher_box() {
                     <?php endforeach; ?>
                 </tbody>
             </table>
-            <form id="bap-root-bulk-form" method="post" style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <form id="bap-root-bulk-form" method="post" action="#bap-box-root" style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  var form = document.getElementById("bap-root-bulk-form");
+  if (!form) return;
+  var clickedBtn = null;
+  form.querySelectorAll("button[type=submit]").forEach(function(b){ b.addEventListener("click", function(){ clickedBtn = b; }); });
+  form.addEventListener("submit", function(e) {
+    if (!clickedBtn || !window.fetch) return;
+    e.preventDefault();
+    var fd = new FormData(form);
+    fd.append(clickedBtn.name, "1");
+    var origText = clickedBtn.textContent;
+    clickedBtn.disabled = true; clickedBtn.textContent = "Procesando...";
+    fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+      .then(function(){
+        document.querySelectorAll(".bap-root-cb:checked").forEach(function(cb){ var tr = cb.closest("tr"); if (tr) tr.remove(); });
+        var allCb = document.getElementById("bap-root-select-all"); if (allCb) allCb.checked = false;
+        clickedBtn.disabled = false; clickedBtn.textContent = origText;
+      })
+      .catch(function(){ form.submit(); });
+  });
+});
+</script>
                 <?php wp_nonce_field( 'bap_root_watch_action', 'bap_root_watch_nonce' ); ?>
                 <button type="submit" name="bap_bulk_approve_root_files" class="button button-secondary" onclick="return document.querySelectorAll('.bap-root-cb:checked').length > 0 || (alert('Selecciona al menos un archivo.'), false);">Aprobar seleccionados</button>
                 <button type="submit" name="bap_bulk_delete_root_files" class="button button-secondary" style="color:#d63638;border-color:#d63638;" onclick="var n=document.querySelectorAll('.bap-root-cb:checked').length; if(!n){alert('Selecciona al menos un archivo.');return false;} return confirm('¿BORRAR PERMANENTEMENTE los ' + n + ' archivo(s) seleccionado(s) de la carpeta raiz?');">Borrar seleccionados</button>
