@@ -3,7 +3,79 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-function bap_scan_abandoned_plugins() {
+function bap_detect_github_plugin_info( $plugin_file, array $pdata ) {
+    $slug = dirname( $plugin_file );
+    $candidates = [
+        (string) ( $pdata['UpdateURI'] ?? '' ),
+        (string) ( $pdata['PluginURI'] ?? '' ),
+        (string) ( $pdata['AuthorURI'] ?? '' ),
+    ];
+    $main_path = WP_PLUGIN_DIR . '/' . $plugin_file;
+    if ( is_readable( $main_path ) ) {
+        $head = (string) @file_get_contents( $main_path, false, null, 0, 4096 );
+        if ( preg_match_all( '#https?://github\.com/([a-zA-Z0-9_.-]+)/([a-zA-Z0-9_.-]+)#i', $head, $mh ) ) {
+            foreach ( $mh
+[
+0
+]
+ as $u ) { $candidates[] = $u; }
+        }
+    }
+    $owner = '';
+    $repo  = '';
+    foreach ( $candidates as $url ) {
+        if ( preg_match( '#github\.com/([a-zA-Z0-9_.-]+)/([a-zA-Z0-9_.-]+)#i', $url, $m ) ) {
+            $owner = $m
+[
+1
+]
+;
+            $repo  = preg_replace( '/\.git$/i', '', $m
+[
+2
+]
+ );
+            break;
+        }
+    }
+    if ( '' === $owner ) {
+        $owner = 'ReinosDeLeyenda';
+        $repo  = $slug;
+    }
+    $gh_url = sprintf( 'https://github.com', rawurlencode( $owner ), rawurlencode( $repo ) );
+    $res    = wp_remote_get( $gh_url, [ 'timeout' => 10, 'headers' => [ 'Accept' => 'application/vnd.github+json', 'User-Agent' => 'WordPress-BAP-Scanner' ] ] );
+    if ( ! is_wp_error( $res ) && 200 === wp_remote_retrieve_response_code( $res ) ) {
+        $body = json_decode( wp_remote_retrieve_body( $res ), true );
+        $pub  = (string) ( $body['published_at'] ?? $body['created_at'] ?? '' );
+        if ( '' !== $pub ) {
+            return [
+                'status'       => 'ok',
+                'source'       => 'GitHub (' . $owner . '/' . $repo . ')',
+                'last_updated' => $pub,
+                'tested'       => '',
+                'version'      => ltrim( (string) ( $body['tag_name'] ?? '' ), 'vV' ),
+            ];
+        }
+    }
+    $repo_url = sprintf( 'https://github.com', rawurlencode( $owner ), rawurlencode( $repo ) );
+    $res2     = wp_remote_get( $repo_url, [ 'timeout' => 10, 'headers' => [ 'Accept' => 'application/vnd.github+json', 'User-Agent' => 'WordPress-BAP-Scanner' ] ] );
+    if ( ! is_wp_error( $res2 ) && 200 === wp_remote_retrieve_response_code( $res2 ) ) {
+        $body2 = json_decode( wp_remote_retrieve_body( $res2 ), true );
+        $push  = (string) ( $body2['pushed_at'] ?? $body2['updated_at'] ?? '' );
+        if ( '' !== $push ) {
+            return [
+                'status'       => 'ok',
+                'source'       => 'GitHub (' . $owner . '/' . $repo . ')',
+                'last_updated' => $push,
+                'tested'       => '',
+                'version'      => '',
+            ];
+        }
+    }
+    return null;
+}
+
+function bap_scan_abandoned_plugins( $force = false ) {
     if ( ! function_exists( 'get_plugins' ) ) {
         require_once ABSPATH . 'wp-admin/includes/plugin.php';
     }
@@ -24,33 +96,40 @@ function bap_scan_abandoned_plugins() {
             continue;
         }
 
-        $cache_key = 'bap_wporg_pinfo_' . md5( $slug );
-        $info      = get_transient( $cache_key );
+        $cache_key = 'bap_wporg_pinfo_v2_' . md5( $slug );
+        $info      = $force ? false : get_transient( $cache_key );
 
         if ( false === $info ) {
-            $url = sprintf(
-                'https://%s/plugins/info/1.2/?action=plugin_information&request[slug]=%s&request[fields][last_updated]=1&request[fields][tested]=1&request[fields][sections]=0',
-                $host,
-                rawurlencode( $slug )
-            );
-            $res = wp_remote_get( $url, [ 'timeout' => 10 ] );
-            if ( is_wp_error( $res ) ) {
-                continue;
-            }
-            $code = wp_remote_retrieve_response_code( $res );
-            $body = json_decode( wp_remote_retrieve_body( $res ), true );
-
-            if ( 404 === $code || ( is_array( $body ) && ! empty( $body['error'] ) && false !== stripos( (string) $body['error'], 'closed' ) ) ) {
-                $info = [ 'status' => 'closed', 'error' => (string) ( $body['error'] ?? 'Cerrado en WordPress.org' ) ];
-            } elseif ( 200 === $code && is_array( $body ) && ! empty( $body['last_updated'] ) ) {
-                $info = [
-                    'status'       => 'ok',
-                    'last_updated' => (string) $body['last_updated'],
-                    'tested'       => (string) ( $body['tested'] ?? '' ),
-                    'version'      => (string) ( $body['version'] ?? '' ),
-                ];
+            $gh_info = bap_detect_github_plugin_info( $plugin_file, $pdata );
+            if ( is_array( $gh_info ) ) {
+                $info = $gh_info;
             } else {
-                $info = [ 'status' => 'private' ];
+                $url = sprintf(
+                    'https://%s/plugins/info/1.2/?action=plugin_information&request[slug]=%s&request[fields][last_updated]=1&request[fields][tested]=1&request[fields][sections]=0',
+                    $host,
+                    rawurlencode( $slug )
+                );
+                $res = wp_remote_get( $url, [ 'timeout' => 10 ] );
+                if ( is_wp_error( $res ) ) {
+                    continue;
+                }
+                $code    = wp_remote_retrieve_response_code( $res );
+                $body    = json_decode( wp_remote_retrieve_body( $res ), true );
+                $err_str = is_array( $body ) ? (string) ( $body['error'] ?? '' ) : '';
+
+                if ( '' !== $err_str && false !== stripos( $err_str, 'closed' ) ) {
+                    $info = [ 'status' => 'closed', 'error' => $err_str ];
+                } elseif ( 200 === $code && is_array( $body ) && ! empty( $body['last_updated'] ) ) {
+                    $info = [
+                        'status'       => 'ok',
+                        'source'       => 'WordPress.org',
+                        'last_updated' => (string) $body['last_updated'],
+                        'tested'       => (string) ( $body['tested'] ?? '' ),
+                        'version'      => (string) ( $body['version'] ?? '' ),
+                    ];
+                } else {
+                    $info = [ 'status' => 'private' ];
+                }
             }
             set_transient( $cache_key, $info, DAY_IN_SECONDS );
         }
@@ -72,7 +151,7 @@ function bap_scan_abandoned_plugins() {
                 'days_ago'     => 9999,
                 'severity'     => 'critical',
                 'badge'        => 'CERRADO / RETIRADO',
-                'detail'       => 'Plugin cerrado en WordPress.org (' . $info['error'] . '). No recibirá parches de seguridad.',
+                'detail'       => 'Plugin cerrado en WordPress.org (' . $info['error'] . '). No recibira parches de seguridad.',
             ];
             continue;
         }
@@ -92,8 +171,8 @@ function bap_scan_abandoned_plugins() {
                 'last_updated' => gmdate( 'Y-m-d', $ts ),
                 'days_ago'     => $days_ago,
                 'severity'     => 'critical',
-                'badge'        => 'ABANDONADO (> 2 AÑOS)',
-                'detail'       => "Sin actualizaciones desde hace {$years} años ({$days_ago} días). Probado hasta WP " . ( $info['tested'] ?: 'N/D' ) . '.',
+                'badge'        => 'ABANDONADO (> 2 ANOS)',
+                'detail'       => "Sin actualizaciones en {$info['source']} desde hace {$years} anos ({$days_ago} dias).",
             ];
         } elseif ( $days_ago >= 365 ) {
             $results[] = [
@@ -103,8 +182,8 @@ function bap_scan_abandoned_plugins() {
                 'last_updated' => gmdate( 'Y-m-d', $ts ),
                 'days_ago'     => $days_ago,
                 'severity'     => 'warning',
-                'badge'        => 'ANTIGUO (> 1 AÑO)',
-                'detail'       => "Última actualización hace {$days_ago} días. Revisa si sigue mantenido.",
+                'badge'        => 'ANTIGUO (> 1 ANO)',
+                'detail'       => "Ultima actualizacion en {$info['source']} hace {$days_ago} dias. Revisa si sigue mantenido.",
             ];
         }
     }
@@ -120,14 +199,14 @@ function bap_scan_abandoned_plugins() {
 function bap_render_abandoned_plugins_box() {
     $scan = null;
     if ( isset( $_POST['bap_run_abandoned_scan'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_abandoned_scan_action', 'bap_abandoned_scan_nonce' ) ) {
-        $scan = bap_scan_abandoned_plugins();
+        $scan = bap_scan_abandoned_plugins( true );
     }
     ?>
     <div id="bap-box-abandoned" class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
-        <h2 style="margin-top:0;">Detector de Plugins Abandonados o Retirados (WordPress.org)</h2>
-        <p class="description">Comprueba la fecha de última actualización de tus plugins oficiales en <code>api.wordpress.org</code> para detectar extensiones abandonadas (+2 años sin parches) o cerradas por motivos de seguridad.</p>
+        <h2 style="margin-top:0;">Detector de Plugins Abandonados o Retirados (WordPress.org / GitHub)</h2>
+        <p class="description">Comprueba la fecha de ultima actualizacion de tus plugins en <code>api.wordpress.org</code> y repositorios de <code>GitHub</code> para detectar extensiones abandonadas (+2 anos sin parches) o cerradas por seguridad.</p>
 
-        <form method="post" style="margin:14px 0;">
+        <form method="post" action="#bap-box-abandoned" style="margin:14px 0;">
             <?php wp_nonce_field( 'bap_abandoned_scan_action', 'bap_abandoned_scan_nonce' ); ?>
             <button type="submit" name="bap_run_abandoned_scan" class="button button-primary">Analizar plugins abandonados ahora</button>
         </form>
@@ -135,16 +214,16 @@ function bap_render_abandoned_plugins_box() {
         <?php if ( is_array( $scan ) ) : ?>
             <?php if ( empty( $scan['findings'] ) ) : ?>
                 <div class="notice notice-success inline" style="margin-top:12px;">
-                    <p><strong>¡Todos los plugins están al día!</strong> Se han verificado <strong><?php echo (int) $scan['checked']; ?></strong> plugin(s) oficial(es) y ninguno supera 1 año sin actualizaciones ni ha sido cerrado.</p>
+                    <p><strong>¡Todos los plugins estan al dia!</strong> Se han verificado <strong><?php echo (int) $scan['checked']; ?></strong> plugin(s) (WordPress.org y GitHub) y ninguno supera 1 ano sin actualizaciones ni ha sido cerrado.</p>
                 </div>
             <?php else : ?>
                 <table class="widefat striped" style="margin-top:10px;">
                     <thead>
                         <tr>
                             <th>Plugin</th>
-                            <th style="width:110px;">Última Act.</th>
+                            <th style="width:110px;">Ultima Act.</th>
                             <th style="width:185px;">Estado</th>
-                            <th>Diagnóstico</th>
+                            <th>Diagnostico</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -171,5 +250,29 @@ function bap_render_abandoned_plugins_box() {
             <?php endif; ?>
         <?php endif; ?>
     </div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var box = document.getElementById("bap-box-abandoned");
+      if (!box || !window.fetch) return;
+      box.addEventListener("submit", function(e) {
+        var form = e.target;
+        if (!form || form.tagName !== "FORM") return;
+        var btn = form.querySelector("button[type=submit]");
+        e.preventDefault();
+        var fd = new FormData(form);
+        if (btn && btn.name) fd.append(btn.name, btn.value || "1");
+        var orig = btn ? btn.textContent : "";
+        if (btn) { btn.disabled = true; btn.textContent = "Analizando plugins..."; }
+        fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+          .then(function(r){ return r.text(); })
+          .then(function(html){
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var fresh = doc.getElementById("bap-box-abandoned");
+            if (fresh) { box.innerHTML = fresh.innerHTML; }
+          })
+          .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
+      });
+    });
+    </script>
     <?php
 }
