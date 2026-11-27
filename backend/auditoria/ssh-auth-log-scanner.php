@@ -184,7 +184,10 @@ function bap_render_ssh_auth_log_scanner_box() {
                 echo '<button type="submit" name="bap_ban_all_ssh_ips" class="button button-secondary" style="color:#d63638;border-color:#d63638;">+ Bloquear todas en Lista Negra (' . (int) $unbanned_cnt . ')</button></form>';
             }
             echo '</div>';
-            echo '<table class="widefat striped" style="margin-top:10px;"><thead><tr><th>IP Atacante</th><th>País / ASN</th><th style="width:95px;">Fallos SSH</th><th>Usuarios probados</th><th style="width:135px;">Acción</th></tr></thead><tbody>';
+            echo '<details open style="margin-top:12px;border:1px solid #dcdcde;border-radius:6px;padding:10px 14px;background:#fff;">
+<summary style="cursor:pointer;font-weight:700;user-select:none;">&#9662; Mostrar / Ocultar lista de IPs atacantes SSH detectadas</summary>
+<div style="margin-top:10px;max-height:400px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:4px;">
+<table class="widefat striped" style="border:0;width:100%;table-layout:fixed;"><thead><tr><th>IP Atacante</th><th>País / ASN</th><th style="width:95px;">Fallos SSH</th><th>Usuarios probados</th><th style="width:135px;">Acción</th></tr></thead><tbody>';
             foreach ( $scan_res['suspects'] as $s ) {
                 $already = bap_ip_in_list( $s['ip'], $cur_bl );
                 echo '<tr><td><code>' . esc_html( $s['ip'] ) . '</code></td>';
@@ -202,7 +205,7 @@ function bap_render_ssh_auth_log_scanner_box() {
                 }
                 echo '</td></tr>';
             }
-            echo '</tbody></table>';
+            echo '</tbody></table></div></details>';
 
             $ips_for_fw = array_map( fn( $x ) => $x['ip'], array_slice( $scan_res['suspects'], 0, 50 ) );
             $ipset_cmds = "ipset create bap_ssh_ban hash:ip -exist\niptables -C INPUT -m set --match-set bap_ssh_ban src -j DROP 2>/dev/null || iptables -I INPUT -m set --match-set bap_ssh_ban src -j DROP\n";
@@ -244,3 +247,32 @@ nft add set inet filter ssh_blacklist { type ipv4_addr\; flags interval\; }</pre
     }
     echo '</div>';
 }
+add_action( 'admin_footer', function() {
+    if ( 'bap-auditoria' !== ( $_GET['page'] ?? '' ) ) { return; }
+    ?>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var box = document.getElementById("bap-box-ssh-log");
+      if (!box || !window.fetch) return;
+      box.addEventListener("submit", function(e) {
+        var form = e.target;
+        if (!form || form.tagName !== "FORM") return;
+        var btn = form.querySelector("button[type=submit]");
+        e.preventDefault();
+        var fd = new FormData(form);
+        if (btn && btn.name) fd.append(btn.name, btn.value || "1");
+        var orig = btn ? btn.textContent : "";
+        if (btn) { btn.disabled = true; btn.textContent = "Procesando..."; }
+        fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+          .then(function(r){ return r.text(); })
+          .then(function(html){
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var fresh = doc.getElementById("bap-box-ssh-log");
+            if (fresh) { box.innerHTML = fresh.innerHTML; }
+          })
+          .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
+      });
+    });
+    </script>
+    <?php
+} );
