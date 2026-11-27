@@ -3,15 +3,16 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 function bap_render_custom_integrity_box() {
     $notice = '';
-    $res    = null;
+    $res    = $GLOBALS['bap_all_scans_custom'] ?? get_transient( 'bap_last_custom_integrity_res' );
+    if ( ! is_array( $res ) ) { $res = null; }
 
     if ( isset( $_POST['bap_refresh_custom_baseline'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_custom_base_action', 'bap_custom_base_nonce' ) ) {
-        $saved  = bap_refresh_custom_integrity_baseline();
+        $saved  = bap_refresh_custom_integrity_baseline(); delete_transient( 'bap_last_custom_integrity_res' ); $res = null;
         $notice = '<div class="notice notice-success inline"><p><strong>Huella base SHA-256 guardada:</strong> Se han indexado <strong>' . number_format_i18n( $saved['count'] ) . '</strong> archivos de temas y plugins.</p></div>';
     }
 
     if ( isset( $_POST['bap_check_custom_baseline'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_custom_base_action', 'bap_custom_base_nonce' ) ) {
-        $res = bap_verify_custom_integrity_baseline();
+        $res = bap_verify_custom_integrity_baseline(); if ( is_array( $res ) ) { set_transient( 'bap_last_custom_integrity_res', $res, 30 * MINUTE_IN_SECONDS ); }
         if ( null === $res ) {
             $notice = '<div class="notice notice-warning inline"><p>Aún no has creado ninguna huella base. Pulsa <strong>Crear / Aprobar huella base SHA-256</strong> primero.</p></div>';
         }
@@ -35,7 +36,7 @@ function bap_render_custom_integrity_box() {
                 <div class="notice notice-success inline"><p><strong>¡Sin cambios detectados!</strong> Se han verificado <strong><?php echo number_format_i18n( $res['checked'] ); ?></strong> archivos respecto a la referencia del <code><?php echo esc_html( $res['created_at'] ); ?></code>.</p></div>
             <?php else : ?>
                 <div class="notice notice-error inline"><p><strong>¡Atención! Se han detectado <?php echo (int) $total_diff; ?> cambio(s)</strong> respecto a la huella base del <code><?php echo esc_html( $res['created_at'] ); ?></code>:</p></div>
-                <table class="widefat striped" style="margin-top:10px;">
+                <details open style="margin-top:10px;border:1px solid #dcdcde;border-radius:6px;padding:10px 14px;background:#fff;"><summary style="cursor:pointer;font-weight:700;user-select:none;">&#9662; Mostrar / Ocultar lista de archivos modificados o nuevos (<?php echo (int) $total_diff; ?>)</summary><div style="margin-top:10px;max-height:360px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:4px;"><table class="widefat striped" style="border:0;">
                     <thead><tr><th style="width:140px;">Estado</th><th>Archivo</th></tr></thead>
                     <tbody>
                         <?php foreach ( $res['modified'] as $f ) : ?>
@@ -48,7 +49,7 @@ function bap_render_custom_integrity_box() {
                             <tr><td><?php echo bap_render_status_badge( 'ELIMINADO', '#646970' ); ?></td><td><code><?php echo esc_html( $f ); ?></code></td></tr>
                         <?php endforeach; ?>
                     </tbody>
-                </table>
+                </table></div></details>
             <?php endif; ?>
         <?php endif; ?>
     </div>
