@@ -221,29 +221,33 @@ function bap_render_server_error_log_scanner_box() {
     </div>
     <?php
 }
-?>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-  var box = document.getElementById("bap-box-server-log");
-  if (!box || !window.fetch) return;
-  box.addEventListener("submit", function(e) {
-    var form = e.target;
-    if (!form || form.tagName !== "FORM") return;
-    var btn = form.querySelector("button[type=submit]");
-    e.preventDefault();
-    var fd = new FormData(form);
-    if (btn && btn.name) fd.append(btn.name, btn.value || "1");
-    var orig = btn ? btn.textContent : "";
-    if (btn) { btn.disabled = true; btn.textContent = "Procesando..."; }
-    fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
-      .then(function(r){ return r.text(); })
-      .then(function(html){
-        var doc = new DOMParser().parseFromString(html, "text/html");
-        var fresh = doc.getElementById("bap-box-server-log");
-        if (fresh) { box.innerHTML = fresh.innerHTML; }
-      })
-      .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
-  });
-});
-</script>
-<?php
+
+add_action( 'admin_footer', function() {
+    if ( wp_doing_ajax() || 'bap-auditoria' !== ( $_GET['page'] ?? '' ) ) { return; }
+    ?>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var box = document.getElementById("bap-box-server-log");
+      if (!box || !window.fetch) return;
+      box.addEventListener("submit", function(e) {
+        var form = e.target;
+        if (!form || form.tagName !== "FORM") return;
+        var btn = form.querySelector("button[type=submit]");
+        e.preventDefault();
+        var fd = new FormData(form);
+        if (btn && btn.name) fd.append(btn.name, btn.value || "1");
+        var orig = btn ? btn.textContent : "";
+        if (btn) { btn.disabled = true; btn.textContent = "Procesando..."; }
+        fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+          .then(function(r){ return r.text(); })
+          .then(function(html){
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var fresh = doc.getElementById("bap-box-server-log");
+            if (fresh) { box.innerHTML = fresh.innerHTML; }
+          })
+          .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
+      });
+    });
+    </script>
+    <?php
+} );
