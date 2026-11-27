@@ -3,7 +3,7 @@
  * Plugin Name: Bloqueo Admin por País e IP
  * Plugin URI: https://github.com/ReinosDeLeyenda/bloqueo-admin-pais
  * Description: Bloquea wp-admin, wp-login.php y el frontend por país, ASN, AbuseIPDB, Tor, FireHOL e IP usando bases de datos locales.
- * Version: 1.4.30
+ * Version: 1.4.31
  * Author: ReinosDeLeyenda
  * License: GPLv2 or later
  */
@@ -37,16 +37,27 @@ $bap_files = [
     'common/github-updater.php',
     // Frontend - Cortafuegos público
     'frontend/block-page-403.php',
+    'frontend/anti-spam-forms-guard.php',
     'frontend/seo-bots-helper.php',
+    'frontend/anti-spam-forms-guard.php',
     'frontend/country-redirects.php',
+    'frontend/anti-spam-forms-guard.php',
     'frontend/frontend-firewall.php',
+    'frontend/anti-spam-forms-guard.php',
     'frontend/rate-limiter.php',
+    'frontend/anti-spam-forms-guard.php',
     'frontend/user-agent-blocker.php',
+    'frontend/anti-spam-forms-guard.php',
     'frontend/honeypot-protector.php',
+    'frontend/anti-spam-forms-guard.php',
     'frontend/waf-payload-inspector.php',
+    'frontend/anti-spam-forms-guard.php',
     'frontend/trap-urls-blocker.php',
+    'frontend/anti-spam-forms-guard.php',
     'frontend/js-browser-challenge.php',
+    'frontend/anti-spam-forms-guard.php',
     'frontend/under-attack-mode.php',
+    'frontend/anti-spam-forms-guard.php',
         // Backend - 1. Bases de Datos
     'backend/admindb/admin-db.php',
     'backend/admindb/admin-custom-dbs.php',
