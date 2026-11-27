@@ -1,9 +1,3 @@
-<style>
-.bap-exclusive-group { border: 1px solid rgba(148,163,184,0.45); border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; background: rgba(148,163,184,0.05); }
-.bap-exclusive-badge { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; padding: 2px 8px; border-radius: 999px; background: rgba(34,113,177,0.15); color: #38bdf8; margin-bottom: 8px; }
-.bap-exclusive-group .form-table { margin-top: 0; }
-.bap-exclusive-group .form-table tr:last-child th, .bap-exclusive-group .form-table tr:last-child td { padding-bottom: 4px; }
-</style>
 <?php
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
