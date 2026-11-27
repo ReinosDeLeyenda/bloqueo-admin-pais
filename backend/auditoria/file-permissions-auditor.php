@@ -134,7 +134,10 @@ function bap_render_file_permissions_box() {
         </form>
 
         <?php if ( is_array( $rows ) ) : ?>
-            <table class="widefat striped" style="margin-top:10px;">
+            <details open style="margin-top:12px;border:1px solid #dcdcde;border-radius:6px;padding:10px 14px;background:#fff;">
+<summary style="cursor:pointer;font-weight:700;user-select:none;">&#9662; Mostrar / Ocultar lista de permisos auditados</summary>
+<div style="margin-top:10px;max-height:400px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:4px;">
+<table class="widefat striped" style="border:0;width:100%;table-layout:fixed;">
                 <thead>
                     <tr>
                         <th>Recurso</th>
@@ -161,7 +164,7 @@ function bap_render_file_permissions_box() {
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
-            </table>
+            </table></div></details>
         <?php endif; ?>
     </div>
     <?php
