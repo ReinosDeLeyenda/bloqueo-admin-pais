@@ -129,6 +129,9 @@ function bap_run_core_checksum_scan( $include_plugins = true ) {
             $norm_file = wp_normalize_path( $file_info->getPathname() );
             $rel_file  = ltrim( substr( $norm_file, strlen( $root ) ), '/' );
             if ( ! isset( $checksums[ $rel_file ] ) ) {
+                $ignored_core = (array) get_option( 'bap_core_ignored_files', [] );
+                $bname        = strtolower( basename( $rel_file ) );
+                if ( in_array( $rel_file, $ignored_core, true ) || in_array( $bname, [ 'error_log', 'php_errorlog', '.ds_store', 'thumbs.db' ], true ) ) { continue; }
                 $extra[] = [ 'file' => $rel_file, 'source' => 'core', 'slug' => 'wordpress', 'version' => $wp_version, 'rel' => $rel_file ];
             }
         }
