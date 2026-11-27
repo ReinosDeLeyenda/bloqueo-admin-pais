@@ -47,19 +47,29 @@ function bap_render_post_db_recommendations_box() {
     $th_on = ( '1' === (string) get_option( 'bap_block_tor', '0' ) || '1' === (string) get_option( 'bap_block_hosting', '0' ) );
 
     echo '<div class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;border-left:4px solid #00a32a;">';
-    echo '<h2 style="margin-top:0;">Sugerencias de Proteccion Recomendadas (Bases de Datos Listas)</h2>';
+    echo '<h2 style="margin-top:0;">Sugerencias de Proteccion Recomendadas (Elige una opcion)</h2>';
     if ( '' !== $notice ) {
         echo '<div class="notice notice-success inline"><p>' . wp_kses_post( $notice ) . '</p></div>';
     }
-    echo '<p class="description">Las bases de datos locales ya estan instaladas. Puedes aplicar estas protecciones seguras en 1 clic sin riesgo de autobloqueo (tu IP <code>' . esc_html( $my_ip ?: 'actual' ) . '</code> se anadira automaticamente a la Lista Blanca):</p>';
-    echo '<form method="post" style="margin-top:12px;">';
+    echo '<p class="description">Las bases de datos locales ya estan instaladas. Elige <strong>una de estas dos modalidades</strong> (tu IP <code>' . esc_html( $my_ip ?: 'actual' ) . '</code> se blinda automaticamente en Lista Blanca):</p>';
+    echo '<form method="post" style="margin-top:14px;">';
     wp_nonce_field( 'bap_preset_action', 'bap_preset_nonce' );
-    echo '<table class="widefat striped"><thead><tr><th>Recomendacion</th><th>Impacto</th><th style="width:210px;">Accion</th></tr></thead><tbody>';
-    echo '<tr><td><strong>1. Restringir acceso al Panel Admin solo a tu pais ' . ( '' !== $my_cc && 'XX' !== $my_cc ? '(<code>' . esc_html( $my_cc ) . '</code>)' : '' ) . '</strong></td>';
-    echo '<td>Bloquea ataques a <code>wp-login.php</code> y <code>wp-admin</code> desde el extranjero sin afectar a los visitantes de tu web.</td>';
-    echo '<td>' . ( $be_on ? '<span style="color:#00a32a;font-weight:700;">&#10003; Ya configurado</span>' : '<button type="submit" name="bap_apply_recommended_preset" value="backend_country" class="button button-primary">Aplicar en Backend</button>' ) . '</td></tr>';
-    echo '<tr><td><strong>2. Bloquear redes automatizadas (Tor, Hosting/Datacenters ASN y Proxies)</strong></td>';
-    echo '<td>Detiene bots de fuerza bruta y spam que operan desde servidores cloud y nodos de salida Tor.</td>';
-    echo '<td>' . ( $th_on ? '<span style="color:#00a32a;font-weight:700;">&#10003; Ya activo</span>' : '<button type="submit" name="bap_apply_recommended_preset" value="threat_lists" class="button button-secondary">Activar Proteccion Bots/ASN</button>' ) . '</td></tr>';
-    echo '</tbody></table></form></div>';
+    echo '<div style="border:1px solid #cbd5e1;border-radius:12px;padding:16px;background:#f1f5f9;">';
+    echo '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:16px;align-items:stretch;">';
+
+    echo '<div style="border:2px solid #2271b1;border-radius:10px;padding:16px 18px;background:#fff;display:flex;flex-direction:column;justify-content:space-between;">';
+    echo '<div><span style="display:inline-block;background:#2271b1;color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;margin-bottom:8px;">OPCION A &middot; RECOMENDADA PARA WEBS LOCALES</span>';
+    echo '<h3 style="margin:4px 0 8px 0;font-size:15px;">Restringir Panel Admin solo a tu pais ' . ( '' !== $my_cc && 'XX' !== $my_cc ? '(<code>' . esc_html( $my_cc ) . '</code>)' : '' ) . '</h3>';
+    echo '<p style="margin:0 0 14px 0;color:#475569;font-size:13px;">Bloquea todos los intentos a <code>wp-login.php</code> y <code>wp-admin</code> desde el extranjero sin afectar a los visitantes de tu web.</p></div>';
+    echo '<div>' . ( $be_on ? '<span style="color:#00a32a;font-weight:700;">&#10003; Opcion A activa</span>' : '<button type="submit" name="bap_apply_recommended_preset" value="backend_country" class="button button-primary">Elegir Opcion A (Solo mi pais)</button>' ) . '</div>';
+    echo '</div>';
+
+    echo '<div style="border:2px solid #64748b;border-radius:10px;padding:16px 18px;background:#fff;display:flex;flex-direction:column;justify-content:space-between;">';
+    echo '<div><span style="display:inline-block;background:#475569;color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;margin-bottom:8px;">OPCION B &middot; ALTERNATIVA GLOBAL (SIN BLOQUEO PAIS)</span>';
+    echo '<h3 style="margin:4px 0 8px 0;font-size:15px;">Bloquear redes automatizadas (Tor, Hosting/ASN y Proxies)</h3>';
+    echo '<p style="margin:0 0 14px 0;color:#475569;font-size:13px;">Ideal si administras la web desde varios paises: permite cualquier pais pero frena bots de datacenter, nodos Tor y proxies.</p></div>';
+    echo '<div>' . ( $th_on ? '<span style="color:#00a32a;font-weight:700;">&#10003; Opcion B activa</span>' : '<button type="submit" name="bap_apply_recommended_preset" value="threat_lists" class="button button-secondary">Elegir Opcion B (Bots y ASN)</button>' ) . '</div>';
+    echo '</div>';
+
+    echo '</div></div></form></div>';
 }
