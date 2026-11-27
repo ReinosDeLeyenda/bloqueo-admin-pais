@@ -1,3 +1,9 @@
+<style>
+.bap-exclusive-group { border: 1px solid rgba(148,163,184,0.45); border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; background: rgba(148,163,184,0.05); }
+.bap-exclusive-badge { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; padding: 2px 8px; border-radius: 999px; background: rgba(34,113,177,0.15); color: #38bdf8; margin-bottom: 8px; }
+.bap-exclusive-group .form-table { margin-top: 0; }
+.bap-exclusive-group .form-table tr:last-child th, .bap-exclusive-group .form-table tr:last-child td { padding-bottom: 4px; }
+</style>
 <?php
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -88,7 +94,7 @@ function bap_render_bloqueos_rules_fields( $bl_raw ) {
     <tr>
         <th><label style="display:flex;justify-content:space-between;cursor:pointer;"><span>ASNs BLOQUEADOS</span><input type="radio" name="bap_asn_mode" value="block" <?php checked( $asn_mode, 'block' ); ?> /></label></th>
         <td><input type="text" id="bap_blocked_asns" name="bap_blocked_asns" value="<?php echo esc_attr( get_option( 'bap_blocked_asns', '' ) ); ?>" class="regular-text code" placeholder="Ej: AS16276, AS14061 (vacío = desactivado)" /></td>
-    </tr>
+    </tr></table></div><table class="form-table">
     <tr>
         <th>Auto-bloquear riesgo AbuseIPDB &ge;</th>
         <td><input type="number" min="0" max="100" name="bap_abuseipdb_min_risk" value="<?php echo (int) get_option( 'bap_abuseipdb_min_risk', 90 ); ?>" class="small-text" /> % <span class="description">(0 = desactivar)</span></td>
