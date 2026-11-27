@@ -32,6 +32,12 @@ function bap_collect_custom_code_hashes() {
             if ( 0 === strpos( $full, $own_plugin . '/' ) ) {
                 continue;
             }
+            if ( preg_match( '#/(temp|cache|tmp|logs|template-cache|fusion-styles|fusion-scripts)/#i', $full ) ) {
+                continue;
+            }
+            if ( 'independent-analytics/iawp-click-config.php' === substr( $full, -46 ) ) {
+                continue;
+            }
             $size = $f->getSize();
             if ( $size <= 0 || $size > 2097152 ) {
                 continue;
@@ -97,3 +103,10 @@ function bap_verify_custom_integrity_baseline() {
         'deleted'    => $deleted,
     ];
 }
+
+add_action( 'upgrader_process_complete', function( $upgrader, $options ) {
+    if ( in_array( $options['type'] ?? '', [ 'plugin', 'theme' ], true ) && file_exists( bap_get_custom_baseline_path() ) ) {
+        bap_refresh_custom_integrity_baseline();
+        delete_transient( 'bap_last_custom_integrity_res' );
+    }
+}, 20, 2 );
