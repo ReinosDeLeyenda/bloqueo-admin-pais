@@ -192,7 +192,7 @@ function bap_render_hardening_box() {
             : '<div class="notice notice-warning inline"><p>Ajustes guardados, pero alguna regla <code>.htaccess</code> no se pudo escribir (revisa permisos o configuración Nginx).</p></div>';
     }
     ?>
-    <div class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-wp-hardening" class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Endurecimiento de WordPress (Hardening en 1 Clic)</h2>
         <p class="description">Aplica medidas preventivas recomendadas para reducir la superficie de ataque de tu instalación WordPress.</p>
 
@@ -281,5 +281,33 @@ location ~* \.(?:jpg|jpeg|png|gif|webp|avif)$ {
 }</textarea>
         </details>
     </div>
+    <script>
+    (function() {
+      var box = document.getElementById("bap-box-wp-hardening");
+      if (!box || !window.fetch || box.dataset.bapAjaxBound) return;
+      box.dataset.bapAjaxBound = "1";
+      var lastBtn = null;
+      box.addEventListener("click", function(e){ var b = e.target.closest("button[type=submit]"); if (b) lastBtn = b; });
+      box.addEventListener("submit", function(e) {
+        var form = e.target;
+        if (!form || form.tagName !== "FORM") return;
+        e.preventDefault();
+        var y = window.scrollY;
+        var btn = lastBtn || form.querySelector("button[type=submit]");
+        var fd = new FormData(form);
+        if (btn && btn.name) fd.append(btn.name, btn.value || "1");
+        var orig = btn ? btn.textContent : "";
+        if (btn) { btn.disabled = true; btn.textContent = "Procesando..."; }
+        fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+          .then(function(r){ return r.text(); })
+          .then(function(html){
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var fresh = doc.getElementById("bap-box-wp-hardening");
+            if (fresh) { box.innerHTML = fresh.innerHTML; window.scrollTo(0, y); }
+          })
+          .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
+      });
+    })();
+    </script>
     <?php
 }

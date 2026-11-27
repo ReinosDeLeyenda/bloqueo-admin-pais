@@ -153,7 +153,7 @@ function bap_render_wp_cron_inspector_box() {
     $events = bap_get_scheduled_cron_events_list();
     $core_protected = [ 'wp_version_check', 'wp_update_plugins', 'wp_update_themes', 'wp_scheduled_delete', 'wp_privacy_delete_old_export_files' ];
     ?>
-    <div class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-wp-cron-inspector" class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Inspector de Tareas Programadas (WP-Cron)</h2>
         <p class="description">Audita todas las tareas programadas en WordPress, identifica que plugin o tema las ejecuta y elimina eventos huerfanos o maliciosos ocultos.</p>
         <?php echo wp_kses_post( $notice ); ?>
@@ -196,5 +196,33 @@ function bap_render_wp_cron_inspector_box() {
             </table>
         </div>
     </div>
+    <script>
+    (function() {
+      var box = document.getElementById("bap-box-wp-cron-inspector");
+      if (!box || !window.fetch || box.dataset.bapAjaxBound) return;
+      box.dataset.bapAjaxBound = "1";
+      var lastBtn = null;
+      box.addEventListener("click", function(e){ var b = e.target.closest("button[type=submit]"); if (b) lastBtn = b; });
+      box.addEventListener("submit", function(e) {
+        var form = e.target;
+        if (!form || form.tagName !== "FORM") return;
+        e.preventDefault();
+        var y = window.scrollY;
+        var btn = lastBtn || form.querySelector("button[type=submit]");
+        var fd = new FormData(form);
+        if (btn && btn.name) fd.append(btn.name, btn.value || "1");
+        var orig = btn ? btn.textContent : "";
+        if (btn) { btn.disabled = true; btn.textContent = "Procesando..."; }
+        fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+          .then(function(r){ return r.text(); })
+          .then(function(html){
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var fresh = doc.getElementById("bap-box-wp-cron-inspector");
+            if (fresh) { box.innerHTML = fresh.innerHTML; window.scrollTo(0, y); }
+          })
+          .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
+      });
+    })();
+    </script>
     <?php
 }

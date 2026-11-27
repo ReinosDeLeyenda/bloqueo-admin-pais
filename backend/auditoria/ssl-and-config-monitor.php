@@ -131,7 +131,7 @@ function bap_render_ssl_and_config_monitor_box() {
 
     $cfg_rows = bap_verify_critical_config_hashes();
     ?>
-    <div class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-ssl-and-config-monitor" class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Monitor de Certificado SSL y Vigilancia de Archivos Críticos</h2>
         <p class="description">Supervisa la caducidad del certificado HTTPS (<strong>SSL/TLS</strong>) y detecta cambios no autorizados (SHA-256) en <code>wp-config.php</code> y <code>.htaccess</code>.</p>
 
@@ -185,5 +185,33 @@ function bap_render_ssl_and_config_monitor_box() {
             </tbody>
         </table>
     </div>
+    <script>
+    (function() {
+      var box = document.getElementById("bap-box-ssl-and-config-monitor");
+      if (!box || !window.fetch || box.dataset.bapAjaxBound) return;
+      box.dataset.bapAjaxBound = "1";
+      var lastBtn = null;
+      box.addEventListener("click", function(e){ var b = e.target.closest("button[type=submit]"); if (b) lastBtn = b; });
+      box.addEventListener("submit", function(e) {
+        var form = e.target;
+        if (!form || form.tagName !== "FORM") return;
+        e.preventDefault();
+        var y = window.scrollY;
+        var btn = lastBtn || form.querySelector("button[type=submit]");
+        var fd = new FormData(form);
+        if (btn && btn.name) fd.append(btn.name, btn.value || "1");
+        var orig = btn ? btn.textContent : "";
+        if (btn) { btn.disabled = true; btn.textContent = "Procesando..."; }
+        fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+          .then(function(r){ return r.text(); })
+          .then(function(html){
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var fresh = doc.getElementById("bap-box-ssl-and-config-monitor");
+            if (fresh) { box.innerHTML = fresh.innerHTML; window.scrollTo(0, y); }
+          })
+          .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
+      });
+    })();
+    </script>
     <?php
 }

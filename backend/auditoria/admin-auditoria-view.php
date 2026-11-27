@@ -47,7 +47,7 @@ function bap_render_auditoria_page() {
             <?php if ( function_exists( 'bap_render_outbound_firewall_box' ) ) { bap_render_outbound_firewall_box(); } ?>
         <?php else : ?>
             <?php if ( function_exists( 'bap_render_executive_report_card' ) ) { bap_render_executive_report_card(); } ?>
-            <div class="card" style="max-width:980px;padding:16px 22px;margin-bottom:20px;">
+            <div id="bap-box-admin-auditoria-view" class="card" style="max-width:980px;padding:16px 22px;margin-bottom:20px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
                     <div>
                         <h2 style="margin:0;">Auditoría Completa de Seguridad</h2>
@@ -116,5 +116,33 @@ function bap_render_auditoria_page() {
             
         <?php endif; ?>
     </div>
+    <script>
+    (function() {
+      var box = document.getElementById("bap-box-admin-auditoria-view");
+      if (!box || !window.fetch || box.dataset.bapAjaxBound) return;
+      box.dataset.bapAjaxBound = "1";
+      var lastBtn = null;
+      box.addEventListener("click", function(e){ var b = e.target.closest("button[type=submit]"); if (b) lastBtn = b; });
+      box.addEventListener("submit", function(e) {
+        var form = e.target;
+        if (!form || form.tagName !== "FORM") return;
+        e.preventDefault();
+        var y = window.scrollY;
+        var btn = lastBtn || form.querySelector("button[type=submit]");
+        var fd = new FormData(form);
+        if (btn && btn.name) fd.append(btn.name, btn.value || "1");
+        var orig = btn ? btn.textContent : "";
+        if (btn) { btn.disabled = true; btn.textContent = "Procesando..."; }
+        fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+          .then(function(r){ return r.text(); })
+          .then(function(html){
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var fresh = doc.getElementById("bap-box-admin-auditoria-view");
+            if (fresh) { box.innerHTML = fresh.innerHTML; window.scrollTo(0, y); }
+          })
+          .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
+      });
+    })();
+    </script>
     <?php
 }

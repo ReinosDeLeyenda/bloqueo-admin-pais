@@ -11,7 +11,7 @@ function bap_render_headers_and_mail_dns_box() {
         $hdr_res = bap_audit_live_http_headers();
     }
     ?>
-    <div class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-headers-and-mail-dns-view" class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Auditoría de Correo (SPF / DMARC / MX) y Cabeceras HTTP</h2>
         <p class="description">Verifica que tu dominio tiene configurados los registros DNS <strong>SPF, DMARC y MX</strong> para que las alertas por correo no caigan en SPAM, y analiza las cabeceras de seguridad HTTP activas.</p>
 
@@ -141,5 +141,33 @@ m4 /etc/mail/sendmail.mc &gt; /etc/mail/sendmail.cf &amp;&amp; systemctl restart
             <?php endif; ?>
         <?php endif; ?>
     </div>
+    <script>
+    (function() {
+      var box = document.getElementById("bap-box-headers-and-mail-dns-view");
+      if (!box || !window.fetch || box.dataset.bapAjaxBound) return;
+      box.dataset.bapAjaxBound = "1";
+      var lastBtn = null;
+      box.addEventListener("click", function(e){ var b = e.target.closest("button[type=submit]"); if (b) lastBtn = b; });
+      box.addEventListener("submit", function(e) {
+        var form = e.target;
+        if (!form || form.tagName !== "FORM") return;
+        e.preventDefault();
+        var y = window.scrollY;
+        var btn = lastBtn || form.querySelector("button[type=submit]");
+        var fd = new FormData(form);
+        if (btn && btn.name) fd.append(btn.name, btn.value || "1");
+        var orig = btn ? btn.textContent : "";
+        if (btn) { btn.disabled = true; btn.textContent = "Procesando..."; }
+        fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+          .then(function(r){ return r.text(); })
+          .then(function(html){
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var fresh = doc.getElementById("bap-box-headers-and-mail-dns-view");
+            if (fresh) { box.innerHTML = fresh.innerHTML; window.scrollTo(0, y); }
+          })
+          .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
+      });
+    })();
+    </script>
     <?php
 }

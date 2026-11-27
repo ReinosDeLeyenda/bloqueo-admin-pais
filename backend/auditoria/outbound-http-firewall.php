@@ -97,7 +97,7 @@ function bap_render_outbound_firewall_box() {
     $logs    = get_option( 'bap_outbound_http_logs', [] );
     if ( ! is_array( $logs ) ) { $logs = []; }
     ?>
-    <div class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-outbound-http-firewall" class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Firewall y Auditoria de Peticiones Salientes (HTTP Outbound)</h2>
         <p class="description">Audita a que dominios externos se conectan tus plugins o temas desde PHP y bloquea conexiones no autorizadas.</p>
         <?php echo wp_kses_post( $notice ); ?>
@@ -147,5 +147,33 @@ function bap_render_outbound_firewall_box() {
             </table>
         <?php endif; ?>
     </div>
+    <script>
+    (function() {
+      var box = document.getElementById("bap-box-outbound-http-firewall");
+      if (!box || !window.fetch || box.dataset.bapAjaxBound) return;
+      box.dataset.bapAjaxBound = "1";
+      var lastBtn = null;
+      box.addEventListener("click", function(e){ var b = e.target.closest("button[type=submit]"); if (b) lastBtn = b; });
+      box.addEventListener("submit", function(e) {
+        var form = e.target;
+        if (!form || form.tagName !== "FORM") return;
+        e.preventDefault();
+        var y = window.scrollY;
+        var btn = lastBtn || form.querySelector("button[type=submit]");
+        var fd = new FormData(form);
+        if (btn && btn.name) fd.append(btn.name, btn.value || "1");
+        var orig = btn ? btn.textContent : "";
+        if (btn) { btn.disabled = true; btn.textContent = "Procesando..."; }
+        fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+          .then(function(r){ return r.text(); })
+          .then(function(html){
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var fresh = doc.getElementById("bap-box-outbound-http-firewall");
+            if (fresh) { box.innerHTML = fresh.innerHTML; window.scrollTo(0, y); }
+          })
+          .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
+      });
+    })();
+    </script>
     <?php
 }

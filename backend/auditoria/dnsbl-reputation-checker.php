@@ -51,7 +51,7 @@ function bap_render_dnsbl_reputation_box() {
         $check_res = bap_check_ip_against_dnsbls( $target_ip );
     }
     ?>
-    <div class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-dnsbl-reputation-checker" class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Reputación del Servidor en Listas Negras (DNSBL)</h2>
         <p class="description">Comprueba si la IP pública de tu servidor web o de correo (SMTP) figura en listas negras internacionales de spam o malware (<strong>Spamhaus, Barracuda, SpamCop y SORBS</strong>).</p>
 
@@ -103,5 +103,33 @@ function bap_render_dnsbl_reputation_box() {
             </table>
         <?php endif; ?>
     </div>
+    <script>
+    (function() {
+      var box = document.getElementById("bap-box-dnsbl-reputation-checker");
+      if (!box || !window.fetch || box.dataset.bapAjaxBound) return;
+      box.dataset.bapAjaxBound = "1";
+      var lastBtn = null;
+      box.addEventListener("click", function(e){ var b = e.target.closest("button[type=submit]"); if (b) lastBtn = b; });
+      box.addEventListener("submit", function(e) {
+        var form = e.target;
+        if (!form || form.tagName !== "FORM") return;
+        e.preventDefault();
+        var y = window.scrollY;
+        var btn = lastBtn || form.querySelector("button[type=submit]");
+        var fd = new FormData(form);
+        if (btn && btn.name) fd.append(btn.name, btn.value || "1");
+        var orig = btn ? btn.textContent : "";
+        if (btn) { btn.disabled = true; btn.textContent = "Procesando..."; }
+        fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+          .then(function(r){ return r.text(); })
+          .then(function(html){
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var fresh = doc.getElementById("bap-box-dnsbl-reputation-checker");
+            if (fresh) { box.innerHTML = fresh.innerHTML; window.scrollTo(0, y); }
+          })
+          .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
+      });
+    })();
+    </script>
     <?php
 }

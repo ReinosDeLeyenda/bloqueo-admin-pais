@@ -231,7 +231,7 @@ function bap_render_emergency_mode_box() {
     $installed = bap_is_mu_emergency_loader_installed();
     $secret    = trim( (string) get_option( 'bap_secret_key', '' ) );
     ?>
-    <div class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-emergency-mode-manager" class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Modo Emergencia Anti-Crash (mu-plugins)</h2>
         <p class="description">Permite renombrar el archivo roto, desactivar el plugin culpable, entrar en Modo Seguro o forzar una actualizacion desde GitHub incluso si un plugin falla.</p>
         <?php echo wp_kses_post( $notice ); ?>
@@ -244,5 +244,33 @@ function bap_render_emergency_mode_box() {
             <button type="submit" name="bap_toggle_mu_emergency" class="button <?php echo $installed ? 'button-secondary' : 'button-primary'; ?>"><?php echo $installed ? 'Desinstalar cargador de emergencia' : 'Instalar Modo Emergencia en 1 clic'; ?></button>
         </form>
     </div>
+    <script>
+    (function() {
+      var box = document.getElementById("bap-box-emergency-mode-manager");
+      if (!box || !window.fetch || box.dataset.bapAjaxBound) return;
+      box.dataset.bapAjaxBound = "1";
+      var lastBtn = null;
+      box.addEventListener("click", function(e){ var b = e.target.closest("button[type=submit]"); if (b) lastBtn = b; });
+      box.addEventListener("submit", function(e) {
+        var form = e.target;
+        if (!form || form.tagName !== "FORM") return;
+        e.preventDefault();
+        var y = window.scrollY;
+        var btn = lastBtn || form.querySelector("button[type=submit]");
+        var fd = new FormData(form);
+        if (btn && btn.name) fd.append(btn.name, btn.value || "1");
+        var orig = btn ? btn.textContent : "";
+        if (btn) { btn.disabled = true; btn.textContent = "Procesando..."; }
+        fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+          .then(function(r){ return r.text(); })
+          .then(function(html){
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var fresh = doc.getElementById("bap-box-emergency-mode-manager");
+            if (fresh) { box.innerHTML = fresh.innerHTML; window.scrollTo(0, y); }
+          })
+          .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
+      });
+    })();
+    </script>
     <?php
 }

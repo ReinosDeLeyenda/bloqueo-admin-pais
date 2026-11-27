@@ -99,7 +99,7 @@ function bap_render_dns_hijack_monitor_box() {
 
     $res = bap_dns_mon_verify();
     ?>
-    <div class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
+    <div id="bap-box-dns-hijack-monitor" class="card" style="max-width:920px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Monitor de Cambios DNS del Dominio (Anti-DNS Hijacking)</h2>
         <p class="description">Vigila los registros publicos <code>NS</code>, <code>A</code>, <code>AAAA</code> y <code>MX</code> de tu dominio para detectar secuestros de DNS o cambios no autorizados en el registrador.</p>
         <?php echo wp_kses_post( $notice ); ?>
@@ -150,5 +150,33 @@ function bap_render_dns_hijack_monitor_box() {
             </form>
         <?php endif; ?>
     </div>
+    <script>
+    (function() {
+      var box = document.getElementById("bap-box-dns-hijack-monitor");
+      if (!box || !window.fetch || box.dataset.bapAjaxBound) return;
+      box.dataset.bapAjaxBound = "1";
+      var lastBtn = null;
+      box.addEventListener("click", function(e){ var b = e.target.closest("button[type=submit]"); if (b) lastBtn = b; });
+      box.addEventListener("submit", function(e) {
+        var form = e.target;
+        if (!form || form.tagName !== "FORM") return;
+        e.preventDefault();
+        var y = window.scrollY;
+        var btn = lastBtn || form.querySelector("button[type=submit]");
+        var fd = new FormData(form);
+        if (btn && btn.name) fd.append(btn.name, btn.value || "1");
+        var orig = btn ? btn.textContent : "";
+        if (btn) { btn.disabled = true; btn.textContent = "Procesando..."; }
+        fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+          .then(function(r){ return r.text(); })
+          .then(function(html){
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var fresh = doc.getElementById("bap-box-dns-hijack-monitor");
+            if (fresh) { box.innerHTML = fresh.innerHTML; window.scrollTo(0, y); }
+          })
+          .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
+      });
+    })();
+    </script>
     <?php
 }
