@@ -211,6 +211,10 @@ function bap_render_server_stack_auditor_box() {
             $outd    = ( is_array( $deb ) && ! empty( $deb['upd_avail'] ) ) || ( ! is_array( $deb ) && is_array( $eol ) && ! empty( $eol['outdated'] ) );
             $badge   = ( $is_eol || $has_cve ) ? bap_render_status_badge( $is_eol ? 'SIN SOPORTE (EOL)' : 'CVEs ABIERTOS', '#d63638' )
                      : ( $outd ? bap_render_status_badge( 'ACTUALIZABLE', '#d97706' ) : bap_render_status_badge( 'AL DIA / SOPORTADO', '#00a32a' ) );
+            if ( 'Kernel del Sistema' === ( $r['component'] ?? '' ) && preg_match( '/-(generic|lowlatency|aws|gcp|azure|oracle|kvm|raspi|amd64|arm64)\b/i', (string) ( $r['version'] ?? '' ) ) ) {
+                $is_eol = false;
+                $badge  = bap_render_status_badge( 'SOPORTADO (DISTRO)', '#00a32a' );
+            }
             echo '<tr><td><strong>' . esc_html( $r['component'] ) . '</strong></td>';
             echo '<td><code>' . esc_html( $r['version'] ) . '</code></td>';
             echo '<td>' . $badge . '</td><td>';
@@ -221,7 +225,9 @@ function bap_render_server_stack_auditor_box() {
                     echo '<div><small style="color:#008a20;">Paquete Debian al dia (<code>' . esc_html( $deb['latest_deb'] ) . '</code>)</small></div>';
                 }
             }
-            if ( is_array( $eol ) ) {
+            if ( 'Kernel del Sistema' === ( $r['component'] ?? '' ) && preg_match( '/-(generic|lowlatency|aws|gcp|azure|oracle|kvm|raspi|amd64|arm64)\b/i', (string) ( $r['version'] ?? '' ) ) ) {
+                echo '<small style="color:#008a20;">Kernel mantenido por distribucion Linux (parches LTS independientes de kernel.org).</small>';
+            } elseif ( is_array( $eol ) ) {
                 if ( $is_eol ) {
                     echo '<div style="color:#d63638;font-weight:600;">Rama upstream sin soporte desde ' . esc_html( $eol['eol_date'] ) . '.</div>';
                 } elseif ( ! is_array( $deb ) && ! empty( $eol['outdated'] ) ) {
