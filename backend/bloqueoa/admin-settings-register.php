@@ -96,30 +96,32 @@ add_action( 'admin_init', function() {
         'bap_block_firehol'           => '1',
     ];
 
+    $login_bools = [ 'bap_session_hijack_shield', 'bap_magic_login_enabled', 'bap_2fa_enabled', 'bap_2fa_enforce_admins', 'bap_2fa_remember_device', 'bap_hibp_enabled', 'bap_hibp_check_login', 'bap_block_nonexistent_users' ];
     foreach ( $booleans as $opt => $def ) {
-        register_setting( 'bap_settings_group', $opt, [
+        $grp = in_array( $opt, $login_bools, true ) ? 'bap_login_settings_group' : 'bap_settings_group';
+        register_setting( $grp, $opt, [
             'sanitize_callback' => $bool_cb,
             'default'           => $def,
         ] );
     }
-    register_setting( 'bap_settings_group', 'bap_hibp_login_action', [ 'sanitize_callback' => fn( $i ) => ( 'block' === $i ) ? 'block' : 'warn', 'default' => 'warn' ] );
-    register_setting( 'bap_settings_group', 'bap_captcha_provider', [
+    register_setting( 'bap_login_settings_group', 'bap_hibp_login_action', [ 'sanitize_callback' => fn( $i ) => ( 'block' === $i ) ? 'block' : 'warn', 'default' => 'warn' ] );
+    register_setting( 'bap_login_settings_group', 'bap_captcha_provider', [
         'sanitize_callback' => fn( $i ) => in_array( $i, [ 'none', 'math', 'altcha', 'recaptcha_v3', 'recaptcha_v2', 'turnstile', 'hcaptcha', 'friendly', 'mtcaptcha' ], true ) ? $i : 'none',
         'default'           => 'none',
     ] );
-    register_setting( 'bap_settings_group', 'bap_captcha_site_key', [
+    register_setting( 'bap_login_settings_group', 'bap_captcha_site_key', [
         'sanitize_callback' => fn( $i ) => trim( sanitize_text_field( (string) $i ) ),
         'default'           => '',
     ] );
-    register_setting( 'bap_settings_group', 'bap_captcha_secret_key', [
+    register_setting( 'bap_login_settings_group', 'bap_captcha_secret_key', [
         'sanitize_callback' => fn( $i ) => trim( sanitize_text_field( (string) $i ) ),
         'default'           => '',
     ] );
-    register_setting( 'bap_settings_group', 'bap_recaptcha_v3_score', [
+    register_setting( 'bap_login_settings_group', 'bap_recaptcha_v3_score', [
         'sanitize_callback' => fn( $i ) => max( 0.1, min( 0.9, round( (float) $i, 1 ) ) ),
         'default'           => 0.5,
     ] );
-    register_setting( 'bap_settings_group', 'bap_captcha_scopes', [
+    register_setting( 'bap_login_settings_group', 'bap_captcha_scopes', [
         'sanitize_callback' => function( $i ) {
             $valid = [ 'login', 'register', 'lostpassword', 'comments' ];
             return array_values( array_intersect( $valid, array_map( 'sanitize_key', (array) $i ) ) );
@@ -127,32 +129,32 @@ add_action( 'admin_init', function() {
         'default'           => [ 'login', 'register', 'lostpassword' ],
     ] );
 
-    register_setting( 'bap_settings_group', 'bap_pwd_policy_enabled', [
+    register_setting( 'bap_login_settings_group', 'bap_pwd_policy_enabled', [
         'sanitize_callback' => $bool_cb,
         'default'           => '0',
     ] );
-    register_setting( 'bap_settings_group', 'bap_pwd_policy_scope', [
+    register_setting( 'bap_login_settings_group', 'bap_pwd_policy_scope', [
         'sanitize_callback' => fn( $i ) => in_array( $i, [ 'admins', 'admins_editors', 'all' ], true ) ? $i : 'admins_editors',
         'default'           => 'admins_editors',
     ] );
-    register_setting( 'bap_settings_group', 'bap_pwd_min_length', [
+    register_setting( 'bap_login_settings_group', 'bap_pwd_min_length', [
         'sanitize_callback' => fn( $i ) => max( 8, min( 64, (int) $i ) ),
         'default'           => 12,
     ] );
-    register_setting( 'bap_settings_group', 'bap_pwd_require_complexity', [
+    register_setting( 'bap_login_settings_group', 'bap_pwd_require_complexity', [
         'sanitize_callback' => $bool_cb,
         'default'           => '1',
     ] );
-    register_setting( 'bap_settings_group', 'bap_pwd_prevent_reuse', [
+    register_setting( 'bap_login_settings_group', 'bap_pwd_prevent_reuse', [
         'sanitize_callback' => $bool_cb,
         'default'           => '1',
     ] );
-    register_setting( 'bap_settings_group', 'bap_pwd_expiry_days', [
+    register_setting( 'bap_login_settings_group', 'bap_pwd_expiry_days', [
         'sanitize_callback' => fn( $i ) => max( 0, min( 730, (int) $i ) ),
         'default'           => 0,
     ] );
 
-    register_setting( 'bap_settings_group', 'bap_custom_login_slug', [
+    register_setting( 'bap_login_settings_group', 'bap_custom_login_slug', [
         'sanitize_callback' => function( $i ) {
             $slug     = sanitize_title( trim( (string) $i, " \t\n\r\0\x0B/" ) );
             $reserved = [ 'wp-admin', 'wp-login', 'wp-login.php', 'wp-content', 'wp-includes', 'wp-json', 'feed', 'xmlrpc.php' ];
