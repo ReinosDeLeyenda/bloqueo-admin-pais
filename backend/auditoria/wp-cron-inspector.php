@@ -118,6 +118,69 @@ function bap_get_scheduled_cron_events_list() {
     usort( $list, fn( $a, $b ) => $a['ts'] <=> $b['ts'] );
     return $list;
 }
+function bap_cron_inspect_hook_details( $hook ) {
+    global $wp_filter;
+    if ( empty( $wp_filter
+[
+ $hook 
+]
+ ) ) {
+        return "Hook sin callbacks registrados en PHP (evento huerfano en tabla cron).";
+    }
+    $lines = [];
+    foreach ( $wp_filter
+[
+ $hook 
+]
+->callbacks as $prio => $items ) {
+        foreach ( $items as $cb ) {
+            $fn = $cb
+[
+'function'
+]
+ ?? null;
+            try {
+                if ( is_string( $fn ) && function_exists( $fn ) ) {
+                    $ref = new ReflectionFunction( $fn );
+                    $lines[] = "Prioridad {$prio}: funcion {$fn}() -> " . wp_normalize_path( $ref->getFileName() ) . ":" . $ref->getStartLine();
+                } elseif ( is_array( $fn ) && count( $fn ) === 2 ) {
+                    $cls = is_object( $fn
+[
+0
+]
+ ) ? get_class( $fn
+[
+0
+]
+ ) : (string) $fn
+[
+0
+]
+;
+                    $ref = new ReflectionMethod( $fn
+[
+0
+]
+, $fn
+[
+1
+]
+ );
+                    $lines[] = "Prioridad {$prio}: {$cls}::" . $fn
+[
+1
+]
+ . "() -> " . wp_normalize_path( $ref->getFileName() ) . ":" . $ref->getStartLine();
+                } elseif ( $fn instanceof Closure ) {
+                    $ref = new ReflectionFunction( $fn );
+                    $lines[] = "Prioridad {$prio}: Closure -> " . wp_normalize_path( $ref->getFileName() ) . ":" . $ref->getStartLine();
+                }
+            } catch ( Throwable $e ) {}
+        }
+    }
+    return ! empty( $lines ) ? implode( "\n", $lines ) : "Callback dinamico no inspeccionable.";
+}
+
 function bap_render_wp_cron_inspector_box() {
     if ( ! current_user_can( 'manage_options' ) ) { return; }
     $notice = '';
@@ -130,7 +193,7 @@ function bap_render_wp_cron_inspector_box() {
             $notice = '<div class="notice notice-warning inline"><p>Tarea cron <code>' . esc_html( $hook ) . '</code> eliminada.</p></div>';
         }
     }
-        if ( isset( $_POST['bap_run_all_crons_now'] ) && check_admin_referer( 'bap_cron_insp_action', 'bap_cron_insp_nonce' ) ) {
+     $inspect_output = '';     $inspect_hook   = '';     if ( isset( $_POST['bap_view_cron_detail'] ) && check_admin_referer( 'bap_cron_insp_action', 'bap_cron_insp_nonce' ) ) {         $inspect_hook   = sanitize_text_field( wp_unslash( $_POST['bap_cron_hook'] ?? '' ) );         $raw_args       = (string) wp_unslash( $_POST['bap_cron_args'] ?? '[]' );         $inspect_output = bap_cron_inspect_hook_details( $inspect_hook ) . "\nArgumentos: " . $raw_args;     }     if ( isset( $_POST['bap_pause_all_crons'] ) && check_admin_referer( 'bap_cron_insp_action', 'bap_cron_insp_nonce' ) ) {         $all_evs = bap_get_scheduled_cron_events_list();         $paused  = [];         foreach ( $all_evs as $ev_item ) {             if ( in_array( $ev_item['hook'], $core_protected, true ) || 0 === strpos( $ev_item['hook'], 'bap_' ) ) { continue; }             $paused[] = $ev_item;             wp_unschedule_event( $ev_item['ts'], $ev_item['hook'], $ev_item['args'] );         }         if ( ! empty( $paused ) ) { update_option( 'bap_paused_crons_backup', $paused, false ); }         $notice = '<div class="notice notice-warning inline"><p><strong>Tareas detenidas:</strong> Se han pausado <strong>' . count( $paused ) . '</strong> tarea(s) no esenciales.</p></div>';     }     if ( isset( $_POST['bap_resume_paused_crons'] ) && check_admin_referer( 'bap_cron_insp_action', 'bap_cron_insp_nonce' ) ) {         $paused = (array) get_option( 'bap_paused_crons_backup', [] );         $rest   = 0;         foreach ( $paused as $p_item ) {             $hk = (string) ( $p_item['hook'] ?? '' );             $sc = (string) ( $p_item['schedule'] ?? '' );             $ar = (array) ( $p_item['args'] ?? [] );             if ( '' !== $hk && ! wp_next_scheduled( $hk, $ar ) ) {                 if ( '' !== $sc && 'Una vez' !== $sc ) { wp_schedule_event( time() + 60, $sc, $hk, $ar ); }                 else { wp_schedule_single_event( time() + 60, $hk, $ar ); }                 $rest++;             }         }         delete_option( 'bap_paused_crons_backup' );         $notice = '<div class="notice notice-success inline"><p><strong>Tareas reanudadas:</strong> Se han reprogramado <strong>' . (int) $rest . '</strong> tarea(s).</p></div>';     }     if ( isset( $_POST['bap_delete_all_crons'] ) && check_admin_referer( 'bap_cron_insp_action', 'bap_cron_insp_nonce' ) ) {         $all_evs = bap_get_scheduled_cron_events_list();         $del_c   = 0;         foreach ( $all_evs as $ev_item ) {             if ( in_array( $ev_item['hook'], $core_protected, true ) || 0 === strpos( $ev_item['hook'], 'bap_' ) ) { continue; }             wp_unschedule_event( $ev_item['ts'], $ev_item['hook'], $ev_item['args'] );             $del_c++;         }         delete_option( 'bap_paused_crons_backup' );         $notice = '<div class="notice notice-success inline"><p><strong>Limpieza masiva completada:</strong> Se han eliminado <strong>' . (int) $del_c . '</strong> tarea(s) cron no esenciales.</p></div>';     }         if ( isset( $_POST['bap_run_all_crons_now'] ) && check_admin_referer( 'bap_cron_insp_action', 'bap_cron_insp_nonce' ) ) {
         $all_evs = bap_get_scheduled_cron_events_list();
         $ran     = 0;
         foreach ( $all_evs as $ev_item ) {
@@ -151,15 +214,34 @@ function bap_render_wp_cron_inspector_box() {
     }
 
     $events = bap_get_scheduled_cron_events_list();
-    $core_protected = [ 'wp_version_check', 'wp_update_plugins', 'wp_update_themes', 'wp_scheduled_delete', 'wp_privacy_delete_old_export_files' ];
+
     ?>
     <div id="bap-box-wp-cron-inspector" class="card" style="max-width:980px;margin-top:20px;padding:18px 22px;">
         <h2 style="margin-top:0;">Inspector de Tareas Programadas (WP-Cron)</h2>
         <p class="description">Audita todas las tareas programadas en WordPress, identifica que plugin o tema las ejecuta y elimina eventos huerfanos o maliciosos ocultos.</p>
+        <?php $paused_list = (array) get_option( 'bap_paused_crons_backup', [] ); ?>
+        <form method="post" style="margin:12px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <?php wp_nonce_field( 'bap_cron_insp_action', 'bap_cron_insp_nonce' ); ?>
+            <button type="submit" name="bap_run_all_crons_now" class="button button-primary" onclick="return confirm('¿Ejecutar todas las tareas programadas ahora?');">Ejecutar todas</button>
+            <button type="submit" name="bap_pause_all_crons" class="button button-secondary" onclick="return confirm('¿Detener temporalmente todas las tareas no esenciales?');">Detener todas</button>
+            <?php if ( ! empty( $paused_list ) ) : ?>
+                <button type="submit" name="bap_resume_paused_crons" class="button button-secondary" style="border-color:#00a32a;color:#008a20;">Reanudar pausadas (<?php echo count( $paused_list ); ?>)</button>
+            <?php endif; ?>
+            <button type="submit" name="bap_delete_all_crons" class="button button-secondary" style="color:#d63638;border-color:#d63638;" onclick="return confirm('¿BORRAR TODAS las tareas programadas no esenciales (huerfanas y de plugins)?');">Borrar todas</button>
+        </form>
+        <?php if ( '' !== $inspect_output ) : ?>
+            <div style="margin:12px 0;padding:12px 14px;background:#1d2327;color:#e5e7eb;border:1px solid #3c434a;border-radius:6px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <strong style="color:#72aee6;">Inspeccion de Hook: <?php echo esc_html( $inspect_hook ); ?></strong>
+                    <a href="#" onclick="this.parentElement.parentElement.remove();return false;" style="color:#f87171;text-decoration:none;font-weight:700;">Cerrar &times;</a>
+                </div>
+                <pre style="margin:0;white-space:pre-wrap;word-break:break-all;font-size:12px;"><?php echo esc_html( $inspect_output ); ?></pre>
+            </div>
+        <?php endif; ?>
         <?php echo wp_kses_post( $notice ); ?>
         <div style="overflow-x:auto;margin-top:12px;">
             <table class="widefat striped">
-                <thead><tr><th>Hook / Evento</th><th>Origen</th><th>Frecuencia</th><th>Proxima ejecucion</th><th style="width:155px;">Acciones</th></tr></thead>
+                <thead><tr><th>Hook / Evento</th><th>Origen</th><th>Frecuencia</th><th>Proxima ejecucion</th><th style="width:70px;">Ver</th><th style="width:155px;">Acciones</th></tr></thead>
                 <tbody>
                     <?php foreach ( $events as $ev ) :
                         $is_prot = in_array( $ev['hook'], $core_protected, true ) || 0 === strpos( $ev['hook'], 'bap_' );
@@ -178,6 +260,14 @@ function bap_render_wp_cron_inspector_box() {
                             <td><small><?php echo esc_html( $ev['origin'] ); ?></small></td>
                             <td><code><?php echo esc_html( $ev['schedule'] ); ?></code></td>
                             <td><code><?php echo esc_html( $ev['next_run'] ); ?></code></td>
+                            <td>
+                                <form method="post" style="display:inline;">
+                                    <?php wp_nonce_field( 'bap_cron_insp_action', 'bap_cron_insp_nonce' ); ?>
+                                    <input type="hidden" name="bap_cron_hook" value="<?php echo esc_attr( $ev['hook'] ); ?>" />
+                                    <input type="hidden" name="bap_cron_args" value="<?php echo esc_attr( $args_j ); ?>" />
+                                    <button type="submit" name="bap_view_cron_detail" class="button button-small">Ver</button>
+                                </form>
+                            </td>
                             <td style="white-space:nowrap;">
                                 <form method="post" style="display:inline;">
                                     <?php wp_nonce_field( 'bap_cron_insp_action', 'bap_cron_insp_nonce' ); ?>
