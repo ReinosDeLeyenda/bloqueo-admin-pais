@@ -53,7 +53,11 @@ function bap_scan_single_plugin_checksums( $slug, $version, $plugin_dir, $root )
             $norm = wp_normalize_path( $f_info->getPathname() );
             $rel  = ltrim( substr( $norm, strlen( $base_dir ) ), '/' );
             if ( ! isset( $files_map[ $rel ] ) ) {
-                $disp    = ltrim( substr( $norm, strlen( $root ) ), '/' );
+                $disp         = ltrim( substr( $norm, strlen( $root ) ), '/' );
+                $ignored_core = (array) get_option( 'bap_core_ignored_files', [] );
+                if ( in_array( $disp, $ignored_core, true ) ) { continue; }
+                if ( 'independent-analytics' === $slug && ( 'iawp-click-config.php' === $rel || 0 === strpos( $rel, 'temp/' ) ) ) { continue; }
+                if ( '.bladec' === substr( strtolower( $rel ), -7 ) ) { continue; }
                 $extra[] = [ 'file' => $disp, 'source' => 'plugin', 'slug' => $slug, 'version' => $version, 'rel' => $rel ];
             }
         }
@@ -342,6 +346,14 @@ function bap_render_core_integrity_box() {
         }
         $restore_notice = '<div class="notice notice-success inline"><p><strong>Cuarentena masiva completada:</strong> Se han aislado <strong>' . (int) $moved . '</strong> archivo(s) en la Boveda.</p></div>';
         $scan_res       = bap_run_core_checksum_scan( true );
+    } elseif ( isset( $_POST['bap_bulk_ignore_core'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_core_scan_action', 'bap_core_scan_nonce' ) ) {
+        $selected = array_filter( array_map( fn( $x ) => ltrim( str_replace( '\\', '/', sanitize_text_field( wp_unslash( (string) $x ) ) ), '/' ), (array) ( $_POST['bap_core_selected'] ?? [] ) ) );
+        if ( ! empty( $selected ) ) {
+            $ign = (array) get_option( 'bap_core_ignored_files', [] );
+            update_option( 'bap_core_ignored_files', array_values( array_unique( array_merge( $ign, $selected ) ) ), false );
+            $restore_notice = '<div class="notice notice-info inline"><p>Se han ignorado <strong>' . count( $selected ) . '</strong> archivo(s) como falsos positivos.</p></div>';
+        }
+        $scan_res = bap_run_core_checksum_scan( true );
     } elseif ( isset( $_POST['bap_bulk_delete_core'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_core_scan_action', 'bap_core_scan_nonce' ) ) {
         $selected = array_filter( array_map( fn( $x ) => ltrim( str_replace( '\\', '/', sanitize_text_field( wp_unslash( (string) $x ) ) ), '/' ), (array) ( $_POST['bap_core_selected'] ?? [] ) ) );
         $root     = wp_normalize_path( ABSPATH );
@@ -493,6 +505,7 @@ function bap_render_core_integrity_box() {
                     <?php wp_nonce_field( 'bap_core_scan_action', 'bap_core_scan_nonce' ); ?>
                     <button type="submit" name="bap_bulk_quarantine_core" class="button button-primary" onclick="var n=document.querySelectorAll('.bap-core-cb:checked').length; if(!n){alert('Selecciona al menos un archivo.');return false;} return confirm('¿Mover a Cuarentena los ' + n + ' archivo(s) seleccionado(s)?');">Mover a Cuarentena seleccionados</button>
                     <button type="submit" name="bap_bulk_delete_core" class="button button-secondary" style="color:#d63638;border-color:#d63638;" onclick="var n=document.querySelectorAll('.bap-core-cb:checked').length; if(!n){alert('Selecciona al menos un archivo.');return false;} return confirm('¿BORRAR PERMANENTEMENTE los ' + n + ' archivo(s) seleccionado(s)?');">Borrar seleccionados</button>
+                    <button type="submit" name="bap_bulk_ignore_core" class="button button-secondary" onclick="return document.querySelectorAll('.bap-core-cb:checked').length > 0 || (alert('Selecciona al menos un archivo.'), false);">Ignorar seleccionados</button>
                 </form></details>
                 <script>document.addEventListener("DOMContentLoaded",function(){var f=document.getElementById("bap-core-bulk-form");if(!f)return;var btn=null;f.querySelectorAll("button[type=submit]").forEach(function(b){b.addEventListener("click",function(){btn=b;});});f.addEventListener("submit",function(e){if(!btn||!window.fetch)return;e.preventDefault();var fd=new FormData(f);fd.append(btn.name,"1");var t=btn.textContent;btn.disabled=true;btn.textContent="Procesando...";fetch(window.location.href,{method:"POST",body:fd,credentials:"same-origin"}).then(function(){document.querySelectorAll(".bap-core-cb:checked").forEach(function(cb){var tr=cb.closest("tr");if(tr)tr.remove();});var all=document.getElementById("bap-core-select-all");if(all)all.checked=false;btn.disabled=false;btn.textContent=t;}).catch(function(){f.submit();});});});</script>
             <?php endif; ?>
