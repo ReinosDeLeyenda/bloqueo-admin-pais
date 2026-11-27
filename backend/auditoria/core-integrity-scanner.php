@@ -77,6 +77,13 @@ function bap_run_core_checksum_scan( $include_plugins = true ) {
     }
 
     $body = json_decode( wp_remote_retrieve_body( $res ), true );
+    if ( ( empty( $body['checksums'] ) || ! is_array( $body['checksums'] ) ) && 'en_US' !== $locale ) {
+        $url_en = sprintf( 'https://%s/core/checksums/1.0/?version=%s&locale=en_US', $host, rawurlencode( (string) $wp_version ) );
+        $res_en = wp_remote_get( $url_en, [ 'timeout' => 20 ] );
+        if ( ! is_wp_error( $res_en ) ) {
+            $body = json_decode( wp_remote_retrieve_body( $res_en ), true );
+        }
+    }
     if ( empty( $body['checksums'] ) || ! is_array( $body['checksums'] ) ) {
         return new WP_Error( 'no_checksums', 'No se encontraron hashes oficiales para WordPress ' . esc_html( $wp_version ) . '.' );
     }
@@ -227,6 +234,12 @@ function bap_restore_official_file_from_svn( $source, $slug, $version, $rel_path
         $chk_res  = wp_remote_get( $chk_url, [ 'timeout' => 15 ] );
         if ( ! is_wp_error( $chk_res ) && 200 === wp_remote_retrieve_response_code( $chk_res ) ) {
             $chk_data = json_decode( wp_remote_retrieve_body( $chk_res ), true );
+            if ( empty( $chk_data['checksums'] ) && 'en_US' !== $locale ) {
+                $chk_en = wp_remote_get( sprintf( 'https://%s/core/checksums/1.0/?version=%s&locale=en_US', $chk_host, rawurlencode( (string) $version ) ), [ 'timeout' => 15 ] );
+                if ( ! is_wp_error( $chk_en ) && 200 === wp_remote_retrieve_response_code( $chk_en ) ) {
+                    $chk_data = json_decode( wp_remote_retrieve_body( $chk_en ), true );
+                }
+            }
             $expected = $chk_data['checksums'][ ltrim( $rel_path, '/' ) ] ?? null;
             if ( is_string( $expected ) && '' !== $expected && ! hash_equals( strtolower( $expected ), $dl_md5 ) ) {
                 return new WP_Error( 'hash_mismatch', 'El archivo descargado de SVN no coincide con el hash oficial de WordPress.' );
