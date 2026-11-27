@@ -102,3 +102,4 @@ if ( $all_missing ) {
         <?php if ( function_exists( 'bap_render_custom_dbs_section' ) ) { bap_render_custom_dbs_section(); } ?>
     <?php endif; ?>
 </div>
+<?php if ( function_exists( 'bap_render_post_db_recommendations_box' ) ) { bap_render_post_db_recommendations_box(); } ?>

@@ -3,7 +3,7 @@
  * Plugin Name: Bloqueo Admin por País e IP
  * Plugin URI: https://github.com/ReinosDeLeyenda/bloqueo-admin-pais
  * Description: Bloquea wp-admin, wp-login.php y el frontend por país, ASN, AbuseIPDB, Tor, FireHOL e IP usando bases de datos locales.
- * Version: 1.4.31
+ * Version: 1.4.32
  * Author: ReinosDeLeyenda
  * License: GPLv2 or later
  */
@@ -30,6 +30,7 @@ $bap_files = [
     'common/email-digest-template.php',
     'common/notificaciones-mail.php',
     'common/self-lockout-guard.php',
+    'backend/comun/post-db-setup-wizard.php',
     'common/telegram-template-renderer.php',
     'common/telegram-notifier.php',
     'common/webhook-notifier.php',
@@ -295,3 +296,33 @@ register_deactivation_hook( __FILE__, function() {
         wp_mail( array_unique( $recipients ), $subject, $body );
     }
 });
+
+
+register_activation_hook( __FILE__, function() {
+    // 1. Iniciar en modo seguro: ningun bloqueo activo hasta cargar las bases de datos
+    $safe_defaults = [
+        'bap_country_mode'            => 'off',
+        'bap_fe_country_mode'         => 'off',
+        'bap_block_tor'               => '0',
+        'bap_block_vpn'               => '0',
+        'bap_block_hosting'           => '0',
+        'bap_block_proxies'           => '0',
+        'bap_fe_block_tor'            => '0',
+        'bap_fe_block_hosting'        => '0',
+        'bap_fe_form_antispam_enabled'=> '1',
+    ];
+    foreach ( $safe_defaults as $opt_key => $opt_val ) {
+        if ( false === get_option( $opt_key, false ) ) {
+            add_option( $opt_key, $opt_val );
+        }
+    }
+    // 2. Blindar automaticamente la IP del administrador que activa el plugin
+    $admin_ip = function_exists( 'bap_get_client_ip' ) ? (string) bap_get_client_ip() : (string) ( $_SERVER['REMOTE_ADDR'] ?? '' );
+    if ( '' !== $admin_ip && filter_var( $admin_ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+        $wl = trim( (string) get_option( 'bap_whitelist_ips', '' ) );
+        if ( false === strpos( $wl, $admin_ip ) ) {
+            $new_wl = ( '' !== $wl ? $wl . "\n" : '' ) . $admin_ip . ' # IP inicial del administrador al activar';
+            update_option( 'bap_whitelist_ips', $new_wl );
+        }
+    }
+} );
