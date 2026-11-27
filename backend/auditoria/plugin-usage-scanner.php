@@ -215,11 +215,14 @@ function bap_render_plugin_usage_scanner_box() {
         if ( '' !== $filter_plugin && $pf !== $filter_plugin ) { continue; }
         if ( empty( $inf['matches'] ) ) { continue; }
         $shown++;
-        echo '<div style="margin-top:12px;border:1px solid #dcdcde;border-radius:4px;padding:12px 14px;background:#fff;">';
-        echo '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
-        echo '<strong>' . esc_html( $inf['name'] ) . '</strong> <code>' . esc_html( implode( ', ', $inf['tags'] ) ?: 'Bloques Gutenberg' ) . '</code>';
+        $is_open = ( '' !== $filter_plugin ) ? ' open' : '';
+        $tags_preview = implode( ', ', array_slice( $inf['tags'], 0, 4 ) ) . ( count( $inf['tags'] ) > 4 ? ' (+' . ( count( $inf['tags'] ) - 4 ) . ' mas)' : '' );
+        echo '<details' . $is_open . ' style="margin-top:10px;border:1px solid #dcdcde;border-radius:6px;padding:10px 14px;background:#fff;">';
+        echo '<summary style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;list-style:none;">';
+        echo '<span><strong>&#9656; ' . esc_html( $inf['name'] ) . '</strong> <code style="font-size:11px;">' . esc_html( $tags_preview ?: 'Bloques Gutenberg' ) . '</code></span>';
         echo bap_render_status_badge( count( $inf['matches'] ) . ' pagina(s)', '#2271b1' );
-        echo '</div><table class="widefat striped"><thead><tr><th>Titulo</th><th style="width:90px;">Tipo</th><th style="width:180px;">Etiqueta detectada</th><th style="width:140px;">Acciones</th></tr></thead><tbody>';
+        echo '</summary><div style="margin-top:10px;max-height:360px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:4px;">';
+        echo '<table class="widefat striped" style="border:0;"><thead><tr><th>Titulo</th><th style="width:80px;">Tipo</th><th style="width:180px;">Etiqueta detectada</th><th style="width:130px;">Acciones</th></tr></thead><tbody>';
         foreach ( $inf['matches'] as $m ) {
             $edit_u = get_edit_post_link( $m['id'], '' );
             $view_u = get_permalink( $m['id'] );
@@ -242,7 +245,7 @@ function bap_render_plugin_usage_scanner_box() {
         echo '<span>&rarr;</span>';
         echo '<input type="text" name="bap_sc_replace" value="" placeholder="[shortcode_nuevo] (o vacio para borrar)" class="regular-text" style="max-width:230px;" />';
         echo '<button type="submit" name="bap_bulk_replace_shortcode" class="button button-secondary">Reemplazar en ' . count( $ids_csv ) . ' pagina(s)</button>';
-        echo '</form></div>';
+        echo '</div></form></details>';
     }
     if ( 0 === $shown ) {
         echo '<p style="color:#008a20;font-weight:600;">No se han encontrado shortcodes ni bloques incrustados para el filtro seleccionado.</p>';
