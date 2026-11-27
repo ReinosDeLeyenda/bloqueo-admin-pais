@@ -161,7 +161,7 @@ function bap_render_server_error_log_scanner_box() {
         <p class="description">Lee las últimas 4.000 líneas del registro de errores del servidor web para detectar IPs que escanean archivos sensibles (<code>readme.txt</code>, <code>.env</code>, <code>wp-config</code>, 404 masivos) y banearlas en 1 clic.</p>
         <?php echo wp_kses_post( $notice ); ?>
 
-        <form method="post" action="#bap-box-server-log" style="margin:14px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <form method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=bap-auditoria&subtab=escaneres#bap-box-server-log' ) ); ?>" style="margin:14px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
             <?php wp_nonce_field( 'bap_srv_log_action', 'bap_srv_log_nonce' ); ?>
             <label for="bap_srv_log_path"><strong>Ruta del archivo .log:</strong></label>
             <input type="text" id="bap_srv_log_path" name="bap_srv_log_path" value="<?php echo esc_attr( $log_path ); ?>" class="regular-text code" style="width:380px;" placeholder="/var/log/nginx/tudominio-error.log" required />
@@ -179,7 +179,7 @@ function bap_render_server_error_log_scanner_box() {
                 <div class="notice notice-warning inline" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:8px 12px;">
                     <span>Se han detectado <strong><?php echo count( $scan_res['suspects'] ); ?></strong> IP(s) con actividad sospechosa en <code>error.log</code>:</span>
                     <?php if ( $unbanned_cnt > 0 ) : ?>
-                        <form method="post" action="#bap-box-server-log" style="margin:0;" onsubmit="return confirm('Anadir las <?php echo (int) $unbanned_cnt; ?> IPs nuevas a la Lista Negra permanente?');">
+                        <form method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=bap-auditoria&subtab=escaneres#bap-box-server-log' ) ); ?>" style="margin:0;" onsubmit="return confirm('Anadir las <?php echo (int) $unbanned_cnt; ?> IPs nuevas a la Lista Negra permanente?');">
                             <?php wp_nonce_field( 'bap_srv_log_action', 'bap_srv_log_nonce' ); ?>
                             <input type="hidden" name="bap_srv_log_path" value="<?php echo esc_attr( $log_path ); ?>" />
                             <button type="submit" name="bap_ban_all_log_ips" class="button button-secondary" style="color:#d63638;border-color:#d63638;">+ Bloquear todas en Lista Negra (<?php echo (int) $unbanned_cnt; ?>)</button>
@@ -204,7 +204,7 @@ function bap_render_server_error_log_scanner_box() {
                                     <?php if ( $already ) : ?>
                                         <span style="color:#d63638;font-weight:700;font-size:11px;">En Lista Negra</span>
                                     <?php else : ?>
-                                        <form method="post" action="#bap-box-server-log" style="display:inline;">
+                                        <form method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=bap-auditoria&subtab=escaneres#bap-box-server-log' ) ); ?>" style="display:inline;">
                                             <?php wp_nonce_field( 'bap_srv_log_action', 'bap_srv_log_nonce' ); ?>
                                             <input type="hidden" name="bap_srv_log_path" value="<?php echo esc_attr( $log_path ); ?>" />
                                             <input type="hidden" name="bap_target_log_ip" value="<?php echo esc_attr( $s['ip'] ); ?>" />
@@ -221,3 +221,29 @@ function bap_render_server_error_log_scanner_box() {
     </div>
     <?php
 }
+?>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  var box = document.getElementById("bap-box-server-log");
+  if (!box || !window.fetch) return;
+  box.addEventListener("submit", function(e) {
+    var form = e.target;
+    if (!form || form.tagName !== "FORM") return;
+    var btn = form.querySelector("button[type=submit]");
+    e.preventDefault();
+    var fd = new FormData(form);
+    if (btn && btn.name) fd.append(btn.name, btn.value || "1");
+    var orig = btn ? btn.textContent : "";
+    if (btn) { btn.disabled = true; btn.textContent = "Procesando..."; }
+    fetch(window.location.href, { method: "POST", body: fd, credentials: "same-origin" })
+      .then(function(r){ return r.text(); })
+      .then(function(html){
+        var doc = new DOMParser().parseFromString(html, "text/html");
+        var fresh = doc.getElementById("bap-box-server-log");
+        if (fresh) { box.innerHTML = fresh.innerHTML; }
+      })
+      .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
+  });
+});
+</script>
+<?php
