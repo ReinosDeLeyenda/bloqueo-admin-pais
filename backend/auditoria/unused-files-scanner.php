@@ -159,7 +159,7 @@ function bap_render_unused_files_scanner_box() {
     echo '<h2 style="margin-top:0;">Buscador de Archivos, Temas y Plugins sin Uso</h2>';
     echo '<p class="description">Detecta temas inactivos, plugins desactivados y archivos en <code>wp-content/uploads/</code> que no estan en la Biblioteca de Medios ni referenciados en posts, metadatos u opciones.</p>';
     echo wp_kses_post( $notice );
-    echo '<form method="post" style="margin:14px 0;">';
+    echo '<form method="post" action="#bap-box-unused-files" style="margin:14px 0;">';
     wp_nonce_field( 'bap_unused_files_action', 'bap_unused_files_nonce' );
     echo '<button type="submit" name="bap_run_unused_files_scan" class="button button-primary">Buscar archivos sin uso ahora</button></form>';
     if ( is_array( $findings ) ) {
@@ -188,7 +188,10 @@ function bap_render_unused_files_scanner_box() {
                 echo '</div>';
             }
 
-            echo '<table class="widefat striped" style="margin-top:10px;"><thead><tr><th style="width:130px;">Tipo</th><th>Ruta relativa</th><th style="width:95px;">Tamano</th><th>Diagnostico</th><th style="width:240px;">Acciones</th></tr></thead><tbody>';
+            echo '<details open style="margin-top:12px;border:1px solid #dcdcde;border-radius:6px;padding:10px 14px;background:#fff;">';
+echo '<summary style="cursor:pointer;font-weight:700;user-select:none;">&#9662; Mostrar / Ocultar lista de elementos detectados (' . count( $findings ) . ')</summary>';
+echo '<div style="margin-top:10px;max-height:420px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:4px;">';
+echo '<table class="widefat striped" style="border:0;"><thead><tr><th style="width:130px;">Tipo</th><th>Ruta relativa</th><th style="width:95px;">Tamano</th><th>Diagnostico</th><th style="width:240px;">Acciones</th></tr></thead><tbody>';
             foreach ( $findings as $item ) {
                 $bg = ( 'Upload huerfano' === $item['category'] ) ? '#d97706' : '#2271b1';
                 echo '<tr><td>' . bap_render_status_badge( $item['category'], $bg ) . '</td>';
@@ -196,25 +199,25 @@ function bap_render_unused_files_scanner_box() {
                 echo '<td><small>' . esc_html( $item['size'] ) . '</small></td>';
                 echo '<td><small>' . esc_html( $item['detail'] ) . '</small></td><td style="white-space:nowrap;">';
                 if ( empty( $item['is_dir'] ) ) {
-                    echo '<form method="post" style="display:inline;">';
+                    echo '<form method="post" action="#bap-box-unused-files" style="display:inline;">';
                     wp_nonce_field( 'bap_unused_files_action', 'bap_unused_files_nonce' );
                     echo '<input type="hidden" name="bap_unused_path" value="' . esc_attr( $item['path'] ) . '" />';
                     echo '<button type="submit" name="bap_preview_unused_file" class="button button-small">Ver</button></form> ';
                     if ( function_exists( 'bap_quarantine_move_file' ) ) {
-                        echo '<form method="post" style="display:inline;">';
+                        echo '<form method="post" action="#bap-box-unused-files" style="display:inline;">';
                         wp_nonce_field( 'bap_quarantine_action', 'bap_quarantine_nonce' );
                         echo '<input type="hidden" name="bap_q_rel_path" value="' . esc_attr( $item['path'] ) . '" />';
                         echo '<input type="hidden" name="bap_q_reason" value="Archivo huerfano sin uso" />';
                         echo '<button type="submit" name="bap_quarantine_file_now" class="button button-small" style="color:#d63638;">Cuarentena</button></form> ';
                     }
                 }
-                echo '<form method="post" style="display:inline;">';
+                echo '<form method="post" action="#bap-box-unused-files" style="display:inline;">';
                 wp_nonce_field( 'bap_unused_files_action', 'bap_unused_files_nonce' );
                 echo '<input type="hidden" name="bap_unused_path" value="' . esc_attr( $item['path'] ) . '" />';
                 echo '<button type="submit" name="bap_approve_unused_file" class="button button-small">Ignorar</button></form>';
                 echo '</td></tr>';
             }
-            echo '</tbody></table>';
+            echo '</tbody></table></div>';
         }
     }
     echo '</div>';
