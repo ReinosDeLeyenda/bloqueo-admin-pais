@@ -160,6 +160,7 @@ function bap_render_db_backup_telegram_card() {
     <div class="card" style="max-width:760px;padding:16px 24px;margin-top:24px;">
         <h2>Copia de Seguridad de Base de Datos (.sql.gz)</h2>
         <p class="description">Genera un volcado comprimido de las tablas de WordPress (omitiendo logs de ataques para mantenerlo ligero), descargalo o programalo para recibirlo automaticamente en Telegram.</p>
+        <div class="notice notice-info inline" style="margin:10px 0 14px 0;padding:8px 12px;"><p style="margin:0;"><strong>¿Dónde configurar Telegram?</strong> El <strong>Token API del Bot</strong> y el <strong>Chat ID del canal o chat</strong> se configuran en <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-notificaciones' ) ); ?>"><strong>5. Notificaciones</strong></a>.</p></div>
         <?php echo wp_kses_post( $notice ); ?>
         <form method="post" style="margin-top:12px;">
             <?php wp_nonce_field( 'bap_db_backup_action', 'bap_db_backup_nonce' ); ?>
