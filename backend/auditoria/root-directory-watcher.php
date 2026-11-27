@@ -117,6 +117,30 @@ function bap_render_root_directory_watcher_box() {
         $notice = '<div class="notice notice-success inline"><p><strong>Limpieza completada:</strong> Se han eliminado <strong>' . (int) $deleted . '</strong> archivo(s) obsoleto(s) de versiones antiguas de WordPress.</p></div>';
     }
 
+    if ( isset( $_POST['bap_bulk_approve_root_files'] ) && check_admin_referer( 'bap_root_watch_action', 'bap_root_watch_nonce' ) ) {
+        $selected = array_filter( array_map( fn( $x ) => basename( sanitize_text_field( wp_unslash( (string) $x ) ) ), (array) ( $_POST['bap_root_selected_files'] ?? [] ) ) );
+        if ( ! empty( $selected ) ) {
+            $app = get_option( 'bap_approved_root_files', [] );
+            $app = is_array( $app ) ? $app : [];
+            update_option( 'bap_approved_root_files', array_values( array_unique( array_merge( $app, $selected ) ) ), false );
+            $notice = '<div class="notice notice-success inline"><p>Se han aprobado <strong>' . count( $selected ) . '</strong> archivo(s) en la lista blanca de raiz.</p></div>';
+        }
+    }
+
+    if ( isset( $_POST['bap_bulk_delete_root_files'] ) && check_admin_referer( 'bap_root_watch_action', 'bap_root_watch_nonce' ) ) {
+        $selected = array_filter( array_map( fn( $x ) => basename( sanitize_text_field( wp_unslash( (string) $x ) ) ), (array) ( $_POST['bap_root_selected_files'] ?? [] ) ) );
+        $official = bap_get_official_wp_root_files();
+        $deleted  = 0;
+        foreach ( $selected as $fname ) {
+            if ( in_array( strtolower( $fname ), $official, true ) ) { continue; }
+            $full = wp_normalize_path( $root . $fname );
+            if ( 0 === strpos( $full, $root ) && is_file( $full ) && @unlink( $full ) ) {
+                $deleted++;
+            }
+        }
+        $notice = '<div class="notice notice-success inline"><p><strong>Borrado masivo completado:</strong> Se han eliminado <strong>' . (int) $deleted . '</strong> archivo(s) seleccionado(s).</p></div>';
+    }
+
     if ( isset( $_POST['bap_approve_root_file'] ) && check_admin_referer( 'bap_root_watch_action', 'bap_root_watch_nonce' ) ) {
         $fname = basename( sanitize_text_field( wp_unslash( $_POST['bap_root_fname'] ?? '' ) ) );
         if ( '' !== $fname ) {
@@ -193,10 +217,11 @@ function bap_render_root_directory_watcher_box() {
 
         <?php if ( ! empty( $res['findings'] ) ) : ?>
             <table class="widefat striped" style="margin-top:10px;">
-                <thead><tr><th>Archivo en raiz</th><th>Riesgo / Uso detectado</th><th>Tamano / Fecha</th><th style="width:265px;">Acciones</th></tr></thead>
+                <thead><tr><td class="manage-column column-cb check-column" style="width:32px;padding:8px 0 8px 10px;"><input type="checkbox" id="bap-root-select-all" onclick="document.querySelectorAll('.bap-root-cb').forEach(cb => cb.checked = this.checked);" title="Seleccionar todo" /></td><th>Archivo en raiz</th><th>Riesgo / Uso detectado</th><th>Tamano / Fecha</th><th style="width:265px;">Acciones</th></tr></thead>
                 <tbody>
                     <?php foreach ( $res['findings'] as $f ) : ?>
                         <tr>
+                            <th scope="row" class="check-column" style="padding:8px 0 8px 10px;"><input type="checkbox" form="bap-root-bulk-form" name="bap_root_selected_files[]" value="<?php echo esc_attr( $f['name'] ); ?>" class="bap-root-cb" /></th>
                             <td><strong><?php echo esc_html( $f['name'] ); ?></strong></td>
                             <td>
                                 <?php echo bap_render_status_badge( $f['risk'], $f['is_exec'] ? '#d63638' : '#d97706' ); ?>
@@ -229,6 +254,11 @@ function bap_render_root_directory_watcher_box() {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            <form id="bap-root-bulk-form" method="post" style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <?php wp_nonce_field( 'bap_root_watch_action', 'bap_root_watch_nonce' ); ?>
+                <button type="submit" name="bap_bulk_approve_root_files" class="button button-secondary" onclick="return document.querySelectorAll('.bap-root-cb:checked').length > 0 || (alert('Selecciona al menos un archivo.'), false);">Aprobar seleccionados</button>
+                <button type="submit" name="bap_bulk_delete_root_files" class="button button-secondary" style="color:#d63638;border-color:#d63638;" onclick="var n=document.querySelectorAll('.bap-root-cb:checked').length; if(!n){alert('Selecciona al menos un archivo.');return false;} return confirm('¿BORRAR PERMANENTEMENTE los ' + n + ' archivo(s) seleccionado(s) de la carpeta raiz?');">Borrar seleccionados</button>
+            </form>
         <?php endif; ?>
     </div>
     <?php
