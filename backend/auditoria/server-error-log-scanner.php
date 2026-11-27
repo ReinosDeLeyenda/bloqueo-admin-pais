@@ -219,21 +219,17 @@ function bap_render_server_error_log_scanner_box() {
             <?php endif; ?>
         <?php endif; ?>
     </div>
-    <?php
-}
-
-add_action( 'admin_footer', function() {
-    if ( wp_doing_ajax() || 'bap-auditoria' !== ( $_GET['page'] ?? '' ) ) { return; }
-    ?>
     <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    (function() {
       var box = document.getElementById("bap-box-server-log");
-      if (!box || !window.fetch) return;
+      if (!box || !window.fetch || box.dataset.bapAjaxBound) return;
+      box.dataset.bapAjaxBound = "1";
       box.addEventListener("submit", function(e) {
         var form = e.target;
         if (!form || form.tagName !== "FORM") return;
-        var btn = form.querySelector("button[type=submit]");
         e.preventDefault();
+        var y = window.scrollY;
+        var btn = form.querySelector("button[type=submit]");
         var fd = new FormData(form);
         if (btn && btn.name) fd.append(btn.name, btn.value || "1");
         var orig = btn ? btn.textContent : "";
@@ -243,11 +239,11 @@ add_action( 'admin_footer', function() {
           .then(function(html){
             var doc = new DOMParser().parseFromString(html, "text/html");
             var fresh = doc.getElementById("bap-box-server-log");
-            if (fresh) { box.innerHTML = fresh.innerHTML; }
+            if (fresh) { box.innerHTML = fresh.innerHTML; window.scrollTo(0, y); }
           })
           .catch(function(){ if (btn) { btn.disabled = false; btn.textContent = orig; } form.submit(); });
       });
-    });
+    })();
     </script>
     <?php
-} );
+}
