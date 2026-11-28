@@ -224,3 +224,103 @@ function bap_calculate_visits_session_metrics( $table, $where_sql, array $params
         'bounce_rate'       => $sessions > 0 ? round( ( $bounces / $sessions ) * 100, 1 ) : 0.0,
     ];
 }
+function bap_render_visits_compact_charts( $table, $extra_where ) {
+    global $wpdb;
+
+    // 1. Datos 14 días
+    $since = gmdate( 'Y-m-d 00:00:00', strtotime( '-13 days' ) );
+    $rows  = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT DATE(created_at) AS day, COUNT(*) AS total FROM `{$table}` WHERE created_at >= %s{$extra_where} GROUP BY DATE(created_at) ORDER BY day ASC",
+            $since
+        ),
+        ARRAY_A
+    );
+    $by_day = [];
+    foreach ( (array) $rows as $r ) { $by_day[ $r['day'] ] = (int) $r['total']; }
+
+    $days    = [];
+    $max_day = 1;
+    for ( $i = 13; $i >= 0; $i-- ) {
+        $d   = gmdate( 'Y-m-d', strtotime( "-{$i} days" ) );
+        $cnt = $by_day[ $d ] ?? 0;
+        if ( $cnt > $max_day ) { $max_day = $cnt; }
+        $days[] = [ 'date' => $d, 'label' => gmdate( 'd/m', strtotime( $d ) ), 'count' => $cnt ];
+    }
+
+    // 2. Datos por hora
+    $h_rows = $wpdb->get_results( "SELECT HOUR(created_at) AS hr, COUNT(*) AS total FROM `{$table}` WHERE 1=1{$extra_where} GROUP BY HOUR(created_at)", ARRAY_A );
+    $hours  = array_fill( 0, 24, 0 );
+    foreach ( (array) $h_rows as $hr ) {
+        $h = (int) $hr['hr'];
+        if ( $h >= 0 && $h <= 23 ) { $hours[ $h ] = (int) $hr['total']; }
+    }
+    $max_hr  = max( 1, max( $hours ) );
+    $peak_hr = array_search( max( $hours ), $hours, true );
+
+    $w = 520; $h_svg = 150; $pad_x = 18; $pad_top = 16; $pad_bot = 22;
+    $plot_w = $w - ( $pad_x * 2 ); $plot_h = $h_svg - $pad_top - $pad_bot;
+    $pts = []; $coords = [];
+    for ( $i = 0; $i < 24; $i++ ) {
+        $x = round( $pad_x + ( $i / 23 ) * $plot_w, 1 );
+        $y = round( $pad_top + $plot_h - ( ( $hours[ $i ] / $max_hr ) * $plot_h ), 1 );
+        $pts[] = $x . ',' . $y;
+        $coords[] = [ 'h' => $i, 'cnt' => $hours[ $i ], 'x' => $x, 'y' => $y ];
+    }
+    $line_pts = implode( ' ', $pts );
+    $area_pts = $pad_x . ',' . ( $pad_top + $plot_h ) . ' ' . $line_pts . ' ' . ( $pad_x + $plot_w ) . ',' . ( $pad_top + $plot_h );
+    $ns = 'http://' . 'www.w3.org/2000/svg';
+    ?>
+    <div class="card" style="padding:14px 16px;margin:0;display:flex;flex-direction:column;justify-content:space-between;min-width:0;">
+        <h3 style="margin:0 0 10px 0;font-size:14px;">Evolución de visitas (Últimos 14 días)</h3>
+        <div style="display:flex;align-items:flex-end;gap:4px;height:145px;padding:10px 4px 4px;border-bottom:1px solid #3c434a;background:rgba(0,0,0,0.18);border-radius:4px 4px 0 0;">
+            <?php foreach ( $days as $item ) :
+                $pct = $item['count'] > 0 ? max( 6, (int) round( ( $item['count'] / $max_day ) * 100 ) ) : 2;
+                $bg  = $item['count'] > 0 ? '#2271b1' : '#3c434a';
+            ?>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;" title="<?php echo esc_attr( $item['date'] . ': ' . $item['count'] . ' visitas' ); ?>">
+                    <?php if ( $item['count'] > 0 ) : ?>
+                        <span style="font-size:9px;color:#cbd5e1;margin-bottom:2px;font-weight:700;"><?php echo (int) $item['count']; ?></span>
+                    <?php endif; ?>
+                    <div style="width:100%;max-width:22px;height:<?php echo (int) $pct; ?>%;background:<?php echo esc_attr( $bg ); ?>;border-radius:3px 3px 0 0;"></div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <div style="display:flex;gap:4px;padding:4px 4px 0;">
+            <?php foreach ( $days as $idx => $item ) : ?>
+                <div style="flex:1;text-align:center;font-size:9px;color:#8c8f94;"><?php echo ( 0 === $idx % 2 || 13 === $idx ) ? esc_html( $item['label'] ) : ''; ?></div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
+    <div class="card" style="padding:14px 16px;margin:0;display:flex;flex-direction:column;justify-content:space-between;min-width:0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
+            <h3 style="margin:0;font-size:14px;">Distribución horaria (00:00 – 23:59)</h3>
+            <?php if ( max( $hours ) > 0 ) : ?>
+                <span style="font-size:11px;color:#8c8f94;">Punta: <strong style="color:#38bdf8;"><?php printf( '%02d:00h', (int) $peak_hr ); ?></strong> (<?php echo number_format_i18n( $hours[ $peak_hr ] ); ?>)</span>
+            <?php endif; ?>
+        </div>
+        <svg viewBox="0 0 <?php echo (int) $w; ?> <?php echo (int) $h_svg; ?>" style="width:100%;height:165px;display:block;overflow:visible;" xmlns="<?php echo esc_attr( $ns ); ?>">
+            <defs>
+                <linearGradient id="bapVisHourGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#00a32a" stop-opacity="0.35" />
+                    <stop offset="100%" stop-color="#00a32a" stop-opacity="0.02" />
+                </linearGradient>
+            </defs>
+            <line x1="<?php echo (int) $pad_x; ?>" y1="<?php echo (int) ( $pad_top + $plot_h ); ?>" x2="<?php echo (int) ( $pad_x + $plot_w ); ?>" y2="<?php echo (int) ( $pad_top + $plot_h ); ?>" stroke="#3c434a" stroke-width="1" />
+            <line x1="<?php echo (int) $pad_x; ?>" y1="<?php echo (int) ( $pad_top + ( $plot_h / 2 ) ); ?>" x2="<?php echo (int) ( $pad_x + $plot_w ); ?>" y2="<?php echo (int) ( $pad_top + ( $plot_h / 2 ) ); ?>" stroke="#2c3338" stroke-dasharray="4 4" stroke-width="1" />
+            <polygon points="<?php echo esc_attr( $area_pts ); ?>" fill="url(#bapVisHourGrad)" />
+            <polyline fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="<?php echo esc_attr( $line_pts ); ?>" />
+            <?php foreach ( $coords as $c ) : ?>
+                <g>
+                    <title><?php printf( '%02d:00h — %s visitas', (int) $c['h'], number_format_i18n( $c['cnt'] ) ); ?></title>
+                    <circle cx="<?php echo esc_attr( $c['x'] ); ?>" cy="<?php echo esc_attr( $c['y'] ); ?>" r="3.2" fill="<?php echo $c['cnt'] === max( $hours ) && $c['cnt'] > 0 ? '#38bdf8' : '#4ade80'; ?>" stroke="#0f172a" stroke-width="1.2" />
+                    <?php if ( 0 === $c['h'] % 3 || 23 === $c['h'] ) : ?>
+                        <text x="<?php echo esc_attr( $c['x'] ); ?>" y="<?php echo (int) ( $h_svg - 3 ); ?>" text-anchor="middle" fill="#8c8f94" font-size="9.5" font-family="sans-serif"><?php printf( '%02dh', (int) $c['h'] ); ?></text>
+                    <?php endif; ?>
+                </g>
+            <?php endforeach; ?>
+        </svg>
+    </div>
+    <?php
+}

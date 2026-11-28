@@ -223,58 +223,96 @@ function bap_render_normal_visits_subtab() {
         </form>
     </div>
 
-    <div class="bap-stats-top-grid" style="display:grid;grid-template-columns:310px 110px minmax(0,1.15fr) minmax(0,1fr);gap:14px;margin:16px 0;">
-        <div style="display:flex;flex-direction:column;gap:12px;">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div class="card" style="padding:12px 14px;margin:0;">
-                    <h3 style="margin:0 0 6px 0;font-size:13px;">Total Visitas</h3>
-                    <p style="font-size:24px;font-weight:bold;color:#00a32a;margin:0;line-height:1.1;"><?php echo number_format_i18n( $total_vis ); ?></p>
+    <style>
+.bap-vis-hero-grid { display: grid; grid-template-columns: 260px minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; margin: 16px 0; align-items: stretch; }
+.bap-vis-hero-grid .card { min-width: 0 !important; max-width: none !important; width: auto !important; box-sizing: border-box; }
+.bap-vis-top3-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0 0 18px 0; align-items: stretch; }
+.bap-vis-top3-grid .card { min-width: 0 !important; max-width: none !important; width: auto !important; margin: 0 !important; box-sizing: border-box; }
+@media (max-width: 1150px) {
+    .bap-vis-hero-grid { grid-template-columns: 1fr; }
+    .bap-vis-top3-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="bap-vis-hero-grid">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="card" style="padding:12px 15px;margin:0;flex:1;display:flex;flex-direction:column;justify-content:center;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                <div>
+                    <div style="font-size:12px;font-weight:600;color:#8c8f94;margin-bottom:2px;">Total Visitas</div>
+                    <div style="font-size:26px;font-weight:800;color:#00a32a;line-height:1.1;"><?php echo number_format_i18n( $total_vis ); ?></div>
                 </div>
-                <div class="card" style="padding:12px 14px;margin:0;">
-                    <h3 style="margin:0 0 6px 0;font-size:13px;">Visitas (24h)</h3>
-                    <p style="font-size:24px;font-weight:bold;color:#38bdf8;margin:0;line-height:1.1;"><?php echo number_format_i18n( $vis_24h ); ?></p>
+                <div style="text-align:right;">
+                    <div style="font-size:11px;color:#8c8f94;">IPs Únicas</div>
+                    <div style="font-size:17px;font-weight:700;color:#2271b1;"><?php echo number_format_i18n( $unique_vis ); ?></div>
                 </div>
             </div>
-            <div class="card" style="padding:10px 14px;margin:0;">
-                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:4px;">
-                    <span>IPs Únicas: <strong style="color:#2271b1;"><?php echo number_format_i18n( $unique_vis ); ?></strong></span>
-                    <span>Sesiones (30m): <strong style="color:#8b5cf6;"><?php echo number_format_i18n( (int) $session_metrics['sessions'] ); ?></strong></span>
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;border-top:1px solid #f0f0f1;padding-top:4px;">
-                    <span>Págs / Sesión: <strong><?php echo esc_html( $session_metrics['pages_per_session'] ); ?></strong></span>
-                    <span>Rebote: <strong style="color:<?php echo $session_metrics['bounce_rate'] >= 75 ? '#d97706' : '#00a32a'; ?>;"><?php echo esc_html( $session_metrics['bounce_rate'] ); ?>%</strong></span>
-                </div>
+        </div>
+
+        <div class="card" style="padding:12px 15px;margin:0;flex:1;display:flex;flex-direction:column;justify-content:center;">
+            <div style="font-size:12px;font-weight:600;color:#8c8f94;margin-bottom:2px;">Visitas (Últimas 24h)</div>
+            <div style="font-size:24px;font-weight:800;color:#38bdf8;line-height:1.1;"><?php echo number_format_i18n( $vis_24h ); ?></div>
+        </div>
+
+        <div class="card" style="padding:11px 15px;margin:0;flex:1;display:flex;flex-direction:column;justify-content:center;">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:5px;">
+                <span style="color:#8c8f94;">Sesiones (30m):</span>
+                <strong style="font-size:14px;color:#a855f7;"><?php echo number_format_i18n( (int) $session_metrics['sessions'] ); ?></strong>
             </div>
-        </div>
-        <div class="card" style="padding:14px;margin:0;">
-            <h3 style="margin:0 0 10px 0;">Top Paises</h3>
-            <?php if ( empty( $top_countries ) ) : ?><p>Sin datos.</p><?php else : ?>
-                <ul style="margin:0;padding:0;list-style:none;">
-                    <?php foreach ( $top_countries as $tc ) : ?><li style="margin-bottom:4px;"><strong><?php echo esc_html( $tc->country_code ); ?></strong>: <?php echo (int) $tc->total; ?></li><?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
-        </div>
-        <div class="card" style="padding:14px 16px;margin:0;">
-            <h3 style="margin:0 0 10px 0;">Top ASNs / Operadores</h3>
-            <?php if ( empty( $top_asns ) ) : ?><p>Sin datos.</p><?php else : ?>
-                <ul style="margin:0;"><?php foreach ( $top_asns as $ta ) : ?><li style="margin-bottom:4px;"><small><strong><?php echo esc_html( $ta->asn ); ?></strong>: <?php echo (int) $ta->total; ?></small></li><?php endforeach; ?></ul>
-            <?php endif; ?>
-        </div>
-        <div class="card" style="padding:14px 16px;margin:0;">
-            <h3 style="margin:0 0 10px 0;">Top Paginas Visitadas</h3>
-            <?php if ( empty( $top_uris ) ) : ?><p>Sin datos.</p><?php else : ?>
-                <ul style="margin:0;"><?php foreach ( $top_uris as $tu ) : ?><li style="margin-bottom:4px;word-break:break-all;"><code><?php echo esc_html( $tu->request_uri ); ?></code>: <strong><?php echo (int) $tu->total; ?></strong></li><?php endforeach; ?></ul>
-            <?php endif; ?>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;border-top:1px solid rgba(148,163,184,0.2);padding-top:5px;">
+                <span>Págs/Sesión: <strong><?php echo esc_html( number_format_i18n( (float) $session_metrics['pages_per_session'], 2 ) ); ?></strong></span>
+                <span>Rebote: <strong style="color:<?php echo $session_metrics['bounce_rate'] >= 75 ? '#d97706' : '#00a32a'; ?>;"><?php echo esc_html( $session_metrics['bounce_rate'] ); ?>%</strong></span>
+            </div>
         </div>
     </div>
-    <?php
-    if ( function_exists( 'bap_render_estadisticas_charts' ) ) {
-        $v_base_url = admin_url( 'admin.php?page=bap-admin-estadisticas&subtab=visitas' );
-        bap_render_estadisticas_charts( $table, $total_vis, $top_countries, $top_uris, $v_base_url, $seo_where, 'visits' );
-    }
-    ?>
 
-    <h2 style="margin:18px 0 10px 0;">Ultimas 100 visitas normales</h2>
+    <?php bap_render_visits_compact_charts( $table, $extra_where ); ?>
+</div>
+
+<div class="bap-vis-top3-grid">
+    <div class="card" style="padding:14px 16px;">
+        <h3 style="margin:0 0 10px 0;font-size:14px;">Top Países</h3>
+        <?php if ( empty( $top_countries ) ) : ?><p class="description">Sin datos.</p><?php else : ?>
+            <ul style="margin:0;padding:0;list-style:none;">
+                <?php foreach ( $top_countries as $tc ) : ?>
+                    <li style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px;">
+                        <strong><?php echo esc_html( $tc->country_code ); ?></strong>
+                        <span><?php echo number_format_i18n( (int) $tc->total ); ?></span>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    </div>
+
+    <div class="card" style="padding:14px 16px;">
+        <h3 style="margin:0 0 10px 0;font-size:14px;">Top ASNs / Operadores</h3>
+        <?php if ( empty( $top_asns ) ) : ?><p class="description">Sin datos.</p><?php else : ?>
+            <ul style="margin:0;padding:0;list-style:none;">
+                <?php foreach ( $top_asns as $ta ) : ?>
+                    <li style="margin-bottom:5px;font-size:12px;word-break:break-word;">
+                        <strong><?php echo esc_html( $ta->asn ); ?></strong>: <?php echo number_format_i18n( (int) $ta->total ); ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    </div>
+
+    <div class="card" style="padding:14px 16px;">
+        <h3 style="margin:0 0 10px 0;font-size:14px;">Top Páginas Visitadas</h3>
+        <?php if ( empty( $top_uris ) ) : ?><p class="description">Sin datos.</p><?php else : ?>
+            <ul style="margin:0;padding:0;list-style:none;">
+                <?php foreach ( $top_uris as $tu ) : ?>
+                    <li style="margin-bottom:5px;font-size:12px;word-break:break-all;">
+                        <code><?php echo esc_html( $tu->request_uri ); ?></code>: <strong><?php echo number_format_i18n( (int) $tu->total ); ?></strong>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    </div>
+</div>
+
+<?php bap_render_visits_analytics_cards( $analytics_data ); ?>
+<h2 style="margin:18px 0 10px 0;">Ultimas 100 visitas normales</h2>
     <div style="overflow-x:auto;">
         <table class="widefat striped">
             <thead>
