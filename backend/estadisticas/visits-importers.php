@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 function bap_find_newstatpress_table() {
     global $wpdb;
-    $cand = $wpdb->prefix . 'statpress';
+    $cand  = $wpdb->prefix . 'statpress';
     $found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $cand ) );
     if ( is_string( $found ) && '' !== $found ) {
         return $found;
@@ -16,12 +16,12 @@ function bap_find_newstatpress_table() {
 
 function bap_find_iawp_views_table() {
     global $wpdb;
-    $cand = $wpdb->prefix . 'independent_analytics_views';
+    $cand  = $wpdb->prefix . 'independent_analytics_views';
     $found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $cand ) );
     return ( is_string( $found ) && '' !== $found ) ? $found : '';
 }
 
-function bap_import_newstatpress_visits() {
+function bap_import_newstatpress_batch( $offset = 0, $limit = 2500 ) {
     global $wpdb;
     bap_maybe_create_visits_table();
 
@@ -30,78 +30,72 @@ function bap_import_newstatpress_visits() {
         return new WP_Error( 'no_nsp', 'No se encontro la tabla de NewStatPress en MySQL.' );
     }
 
+    $total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$src}` WHERE (spider IS NULL OR spider = '')" );
+    $rows  = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT date, time, ip, urlrequested, agent, referrer
+             FROM `{$src}`
+             WHERE (spider IS NULL OR spider = '')
+             LIMIT %d OFFSET %d",
+            $limit,
+            $offset
+        ),
+        ARRAY_A
+    );
+
+    if ( empty( $rows ) ) {
+        return [ 'done' => true, 'imported' => 0, 'next_offset' => $offset, 'total' => $total ];
+    }
+
     $dst       = bap_get_visits_table_name();
-    $batch     = 1000;
-    $offset    = 0;
     $imported  = 0;
     $asn_cache = [];
     $cc_cache  = [];
+    $values    = [];
+    $params    = [];
 
-    while ( true ) {
-        $rows = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT date, time, ip, urlrequested, agent, referrer, spider
-                 FROM `{$src}`
-                 WHERE (spider IS NULL OR spider = '')
-                 LIMIT %d OFFSET %d",
-                $batch,
-                $offset
-            ),
-            ARRAY_A
-        );
-        if ( empty( $rows ) ) {
-            break;
+    foreach ( $rows as $r ) {
+        $ip = trim( (string) ( $r['ip'] ?? '' ) );
+        if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+            continue;
+        }
+        if ( ! isset( $cc_cache[ $ip ] ) ) {
+            $cc_cache[ $ip ] = function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'DESCONOCIDO';
+        }
+        if ( ! isset( $asn_cache[ $ip ] ) ) {
+            $asn_cache[ $ip ] = function_exists( 'bap_get_asn_by_ip' ) ? bap_get_asn_by_ip( $ip ) : '';
         }
 
-        $values = [];
-        $params = [];
+        $d_raw = preg_replace( '/[^0-9]/', '', (string) ( $r['date'] ?? '' ) );
+        $t_raw = trim( (string) ( $r['time'] ?? '00:00:00' ) );
+        $dt    = ( 8 === strlen( $d_raw ) )
+            ? substr( $d_raw, 0, 4 ) . '-' . substr( $d_raw, 4, 2 ) . '-' . substr( $d_raw, 6, 2 ) . ' ' . ( '' !== $t_raw ? $t_raw : '00:00:00' )
+            : current_time( 'mysql' );
 
-        foreach ( $rows as $r ) {
-            $ip = trim( (string) ( $r['ip'] ?? '' ) );
-            if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-                continue;
-            }
+        $uri = trim( (string) ( $r['urlrequested'] ?? '' ) );
+        $uri = '' !== $uri ? '/' . ltrim( $uri, '/' ) : '/';
+        $ref = mb_substr( esc_url_raw( (string) ( $r['referrer'] ?? '' ) ), 0, 500 );
+        $ua  = mb_substr( sanitize_text_field( (string) ( $r['agent'] ?? '' ) ), 0, 500 );
 
-            if ( ! isset( $cc_cache[ $ip ] ) ) {
-                $cc_cache[ $ip ] = function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'DESCONOCIDO';
-            }
-            if ( ! isset( $asn_cache[ $ip ] ) ) {
-                $asn_cache[ $ip ] = function_exists( 'bap_get_asn_by_ip' ) ? bap_get_asn_by_ip( $ip ) : '';
-            }
-
-            $d_raw = preg_replace( '/[^0-9]/', '', (string) ( $r['date'] ?? '' ) );
-            $t_raw = trim( (string) ( $r['time'] ?? '00:00:00' ) );
-            if ( 8 === strlen( $d_raw ) ) {
-                $dt = substr( $d_raw, 0, 4 ) . '-' . substr( $d_raw, 4, 2 ) . '-' . substr( $d_raw, 6, 2 ) . ' ' . ( '' !== $t_raw ? $t_raw : '00:00:00' );
-            } else {
-                $dt = current_time( 'mysql' );
-            }
-
-            $uri = trim( (string) ( $r['urlrequested'] ?? '' ) );
-            $uri = '' !== $uri ? '/' . ltrim( $uri, '/' ) : '/';
-            $ref = mb_substr( esc_url_raw( (string) ( $r['referrer'] ?? '' ) ), 0, 500 );
-            $ua  = mb_substr( sanitize_text_field( (string) ( $r['agent'] ?? '' ) ), 0, 500 );
-
-            $values[] = '(%s, %s, %s, %s, %s, %s, %s)';
-            array_push( $params, $ip, $cc_cache[ $ip ], $asn_cache[ $ip ], $uri, $ref, $ua, $dt );
-            $imported++;
-        }
-
-        if ( ! empty( $values ) ) {
-            $sql = "INSERT INTO `{$dst}` (ip_address, country_code, asn, request_uri, referer, user_agent, created_at) VALUES " . implode( ', ', $values );
-            $wpdb->query( $wpdb->prepare( $sql, $params ) );
-        }
-
-        $offset += $batch;
+        $values[] = '(%s, %s, %s, %s, %s, %s, %s)';
+        array_push( $params, $ip, $cc_cache[ $ip ], $asn_cache[ $ip ], $uri, $ref, $ua, $dt );
+        $imported++;
     }
 
-    if ( 0 === $imported ) {
-        return new WP_Error( 'empty_nsp', 'No se encontraron visitas humanas validas en NewStatPress.' );
+    if ( ! empty( $values ) ) {
+        $sql = "INSERT INTO `{$dst}` (ip_address, country_code, asn, request_uri, referer, user_agent, created_at) VALUES " . implode( ', ', $values );
+        $wpdb->query( $wpdb->prepare( $sql, $params ) );
     }
 
-    return [ 'hits' => $imported ];
+    $next = $offset + count( $rows );
+    return [
+        'done'        => ( count( $rows ) < $limit || $next >= $total ),
+        'imported'    => $imported,
+        'next_offset' => $next,
+        'total'       => max( $total, $next ),
+    ];
 }
-function bap_import_independent_analytics_visits() {
+function bap_import_iawp_batch( $offset = 0, $limit = 2500 ) {
     global $wpdb;
     bap_maybe_create_visits_table();
 
@@ -110,6 +104,7 @@ function bap_import_independent_analytics_visits() {
         return new WP_Error( 'no_iawp', 'No se encontraron las tablas de Independent Analytics en MySQL.' );
     }
 
+    $total  = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$v_tbl}`" );
     $p      = $wpdb->prefix . 'independent_analytics_';
     $s_tbl  = $p . 'sessions';
     $r_tbl  = $p . 'resources';
@@ -152,67 +147,81 @@ function bap_import_independent_analytics_visits() {
         $joins .= " LEFT JOIN `{$r_tbl}` r ON r.resource_id = v.resource_id";
     }
 
-    $dst      = bap_get_visits_table_name();
-    $batch    = 1000;
-    $offset   = 0;
-    $imported = 0;
-
-    while ( true ) {
-        $sql = $wpdb->prepare(
+    $rows = $wpdb->get_results(
+        $wpdb->prepare(
             "SELECT {$date_col} AS dt, {$url_col} AS uri, {$cc_col} AS cc, {$ref_col} AS ref_dom,
                     {$br_col} AS br, {$os_col} AS os_name, {$dv_col} AS dev, v.session_id AS sid
              FROM `{$v_tbl}` v {$joins}
              LIMIT %d OFFSET %d",
-            $batch,
+            $limit,
             $offset
-        );
-        $rows = $wpdb->get_results( $sql, ARRAY_A );
-        if ( empty( $rows ) ) {
-            break;
-        }
+        ),
+        ARRAY_A
+    );
 
-        $values = [];
-        $params = [];
-
-        foreach ( $rows as $r ) {
-            $dt  = trim( (string) ( $r['dt'] ?? '' ) ) ?: current_time( 'mysql' );
-            $raw_u = trim( (string) ( $r['uri'] ?? '' ) );
-            $path  = '' !== $raw_u ? (string) wp_parse_url( $raw_u, PHP_URL_PATH ) : '/';
-            $uri   = '' !== $path ? $path : '/';
-
-            $cc = strtoupper( trim( (string) ( $r['cc'] ?? '' ) ) );
-            if ( 2 !== strlen( $cc ) ) {
-                $cc = 'DESCONOCIDO';
-            }
-
-            $ref_dom = trim( (string) ( $r['ref_dom'] ?? '' ) );
-            $ref     = ( '' !== $ref_dom && false === strpos( $ref_dom, '://' ) ) ? 'https://' . $ref_dom : $ref_dom;
-
-            $ua_parts = array_filter( [
-                trim( (string) ( $r['br'] ?? '' ) ),
-                trim( (string) ( $r['os_name'] ?? '' ) ),
-                trim( (string) ( $r['dev'] ?? '' ) ),
-            ] );
-            $ua = ! empty( $ua_parts ) ? implode( ' / ', $ua_parts ) . ' (IAWP)' : 'Independent Analytics';
-
-            $sid_label = 'iawp-sess-' . (int) ( $r['sid'] ?? 0 );
-
-            $values[] = '(%s, %s, %s, %s, %s, %s, %s)';
-            array_push( $params, $sid_label, $cc, 'Independent Analytics', $uri, $ref, $ua, $dt );
-            $imported++;
-        }
-
-        if ( ! empty( $values ) ) {
-            $ins = "INSERT INTO `{$dst}` (ip_address, country_code, asn, request_uri, referer, user_agent, created_at) VALUES " . implode( ', ', $values );
-            $wpdb->query( $wpdb->prepare( $ins, $params ) );
-        }
-
-        $offset += $batch;
+    if ( empty( $rows ) ) {
+        return [ 'done' => true, 'imported' => 0, 'next_offset' => $offset, 'total' => $total ];
     }
 
-    if ( 0 === $imported ) {
-        return new WP_Error( 'empty_iawp', 'No se encontraron vistas registradas en Independent Analytics.' );
+    $dst      = bap_get_visits_table_name();
+    $imported = 0;
+    $values   = [];
+    $params   = [];
+
+    foreach ( $rows as $r ) {
+        $dt    = trim( (string) ( $r['dt'] ?? '' ) ) ?: current_time( 'mysql' );
+        $raw_u = trim( (string) ( $r['uri'] ?? '' ) );
+        $path  = '' !== $raw_u ? (string) wp_parse_url( $raw_u, PHP_URL_PATH ) : '/';
+        $uri   = '' !== $path ? $path : '/';
+
+        $cc = strtoupper( trim( (string) ( $r['cc'] ?? '' ) ) );
+        if ( 2 !== strlen( $cc ) ) {
+            $cc = 'DESCONOCIDO';
+        }
+
+        $ref_dom = trim( (string) ( $r['ref_dom'] ?? '' ) );
+        $ref     = ( '' !== $ref_dom && false === strpos( $ref_dom, '://' ) ) ? 'https://' . $ref_dom : $ref_dom;
+
+        $ua_parts = array_filter( [
+            trim( (string) ( $r['br'] ?? '' ) ),
+            trim( (string) ( $r['os_name'] ?? '' ) ),
+            trim( (string) ( $r['dev'] ?? '' ) ),
+        ] );
+        $ua        = ! empty( $ua_parts ) ? implode( ' / ', $ua_parts ) . ' (IAWP)' : 'Independent Analytics';
+        $sid_label = 'iawp-sess-' . (int) ( $r['sid'] ?? 0 );
+
+        $values[] = '(%s, %s, %s, %s, %s, %s, %s)';
+        array_push( $params, $sid_label, $cc, 'Independent Analytics', $uri, $ref, $ua, $dt );
+        $imported++;
     }
 
-    return [ 'hits' => $imported ];
+    if ( ! empty( $values ) ) {
+        $ins = "INSERT INTO `{$dst}` (ip_address, country_code, asn, request_uri, referer, user_agent, created_at) VALUES " . implode( ', ', $values );
+        $wpdb->query( $wpdb->prepare( $ins, $params ) );
+    }
+
+    $next = $offset + count( $rows );
+    return [
+        'done'        => ( count( $rows ) < $limit || $next >= $total ),
+        'imported'    => $imported,
+        'next_offset' => $next,
+        'total'       => max( $total, $next ),
+    ];
 }
+
+add_action( 'wp_ajax_bap_import_visits_step', function() {
+    if ( ! current_user_can( 'manage_options' ) || ! check_ajax_referer( 'bap_visits_action', 'nonce', false ) ) {
+        wp_send_json_error( 'No autorizado.' );
+    }
+    $source = sanitize_key( $_POST['source'] ?? '' );
+    $offset = max( 0, (int) ( $_POST['offset'] ?? 0 ) );
+
+    $res = ( 'newstatpress' === $source )
+        ? bap_import_newstatpress_batch( $offset, 2500 )
+        : bap_import_iawp_batch( $offset, 2500 );
+
+    if ( is_wp_error( $res ) ) {
+        wp_send_json_error( $res->get_error_message() );
+    }
+    wp_send_json_success( $res );
+} );

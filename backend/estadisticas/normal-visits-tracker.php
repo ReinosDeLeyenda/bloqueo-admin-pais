@@ -239,10 +239,10 @@ function bap_render_normal_visits_subtab() {
             <button type="submit" name="bap_toggle_visits_tracking" class="button button-primary">Guardar</button>
             <button type="submit" name="bap_export_visits_csv" class="button button-secondary">Exportar CSV</button>
             <?php if ( function_exists( 'bap_find_newstatpress_table' ) && '' !== bap_find_newstatpress_table() ) : ?>
-                <button type="submit" name="bap_import_newstatpress" class="button button-secondary" onclick="return confirm('Importar historial de visitas desde NewStatPress?');">Importar de NewStatPress</button>
+                <button type="button" class="button button-secondary bap-ajax-import-visits" data-source="newstatpress" data-label="NewStatPress">Importar de NewStatPress</button>
             <?php endif; ?>
             <?php if ( function_exists( 'bap_find_iawp_views_table' ) && '' !== bap_find_iawp_views_table() ) : ?>
-                <button type="submit" name="bap_import_iawp" class="button button-secondary" onclick="return confirm('Importar historial de vistas desde Independent Analytics?');">Importar de Independent Analytics</button>
+                <button type="button" class="button button-secondary bap-ajax-import-visits" data-source="iawp" data-label="Independent Analytics">Importar de Independent Analytics</button>
             <?php endif; ?>
             <?php if ( $total_vis > 0 ) : ?>
                 <button type="submit" name="bap_clear_normal_visits" class="button button-link-delete" onclick="return confirm('Vaciar historial de visitas normales?');">Vaciar</button>
@@ -266,6 +266,72 @@ function bap_render_normal_visits_subtab() {
             <?php endif; ?>
         </form>
     </div>
+    <div id="bap-visits-import-progress" style="display:none;margin:10px 0;padding:12px 16px;background:#0f172a;color:#f8fafc;border:1px solid #38bdf8;border-radius:6px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+            <strong id="bap-imp-status-txt">Preparando importación...</strong>
+            <strong id="bap-imp-pct-txt" style="color:#38bdf8;">0%</strong>
+        </div>
+        <div style="width:100%;height:10px;background:#1e293b;border-radius:5px;overflow:hidden;">
+            <div id="bap-imp-bar" style="width:0%;height:100%;background:#22c55e;transition:width 0.2s;"></div>
+        </div>
+    </div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var nonce = <?php echo wp_json_encode( wp_create_nonce( 'bap_visits_action' ) ); ?>;
+        var box = document.getElementById("bap-visits-import-progress");
+        var txt = document.getElementById("bap-imp-status-txt");
+        var pctEl = document.getElementById("bap-imp-pct-txt");
+        var bar = document.getElementById("bap-imp-bar");
+
+        document.querySelectorAll(".bap-ajax-import-visits").forEach(function(btn) {
+            btn.addEventListener("click", function() {
+                var src = btn.getAttribute("data-source");
+                var lbl = btn.getAttribute("data-label");
+                if (!confirm("¿Iniciar la migración por lotes desde " + lbl + "? No cierres esta pestaña hasta que llegue al 100%.")) return;
+
+                document.querySelectorAll(".bap-ajax-import-visits").forEach(function(b){ b.disabled = true; });
+                box.style.display = "block";
+                var totalImported = 0;
+
+                function runStep(offset) {
+                    var fd = new FormData();
+                    fd.append("action", "bap_import_visits_step");
+                    fd.append("nonce", nonce);
+                    fd.append("source", src);
+                    fd.append("offset", offset);
+
+                    fetch(ajaxurl, { method: "POST", body: fd, credentials: "same-origin" })
+                        .then(function(r) { return r.json(); })
+                        .then(function(res) {
+                            if (!res || !res.success) {
+                                txt.textContent = "Error: " + (res && res.data ? res.data : "Fallo en el lote");
+                                document.querySelectorAll(".bap-ajax-import-visits").forEach(function(b){ b.disabled = false; });
+                                return;
+                            }
+                            var d = res.data;
+                            totalImported += (d.imported || 0);
+                            var pct = d.total > 0 ? Math.min(100, Math.round((d.next_offset / d.total) * 100)) : 100;
+                            bar.style.width = pct + "%";
+                            pctEl.textContent = pct + "%";
+                            txt.textContent = "Importando " + lbl + ": " + totalImported.toLocaleString() + " registros migrados (" + d.next_offset.toLocaleString() + " / " + d.total.toLocaleString() + ")...";
+
+                            if (!d.done) {
+                                runStep(d.next_offset);
+                            } else {
+                                txt.textContent = "¡Migración completada! Total importado: " + totalImported.toLocaleString() + " registros. Recargando...";
+                                setTimeout(function(){ window.location.reload(); }, 1000);
+                            }
+                        })
+                        .catch(function() {
+                            txt.textContent = "Reintentando lote en offset " + offset + "...";
+                            setTimeout(function(){ runStep(offset); }, 1500);
+                        });
+                }
+                runStep(0);
+            });
+        });
+    });
+    </script>
     <style>
     .bap-vis-hero-grid { display: grid; grid-template-columns: 260px minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; margin: 16px 0; align-items: stretch; }
     .bap-vis-hero-grid .card { min-width: 0 !important; max-width: none !important; width: auto !important; box-sizing: border-box; }
