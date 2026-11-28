@@ -25,9 +25,9 @@ function bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $
         : 'margin:0;padding:12px 16px;';
     $cfg_url      = admin_url( 'admin.php?page=bap-admin-db&subtab=configuracion' );
     ?>
-    <div style="display:flex;gap:16px;margin:20px 0;flex-wrap:wrap;align-items:stretch;">
-        <div style="flex:0 0 215px;display:flex;flex-direction:column;gap:12px;">
-            <div class="card" style="margin:0;padding:12px 16px;flex:1;">
+    <div style="display:grid;grid-template-columns:205px 125px minmax(0,1.4fr) minmax(0,1fr);gap:14px;margin:20px 0;align-items:stretch;">
+        <div style="min-width:0;display:flex;flex-direction:column;gap:12px;">
+            <div class="card" style="margin:0;padding:12px 16px;min-width:0;max-width:none;flex:1;">
                 <h3 style="margin:0 0 6px 0;">Total Bloqueados</h3>
                 <p style="font-size:26px;font-weight:bold;color:#d63638;margin:0;">
                     <?php echo number_format_i18n( $total_blocks ); ?>
@@ -38,7 +38,7 @@ function bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $
                     <?php endif; ?>
                 </p>
             </div>
-            <div class="card" style="<?php echo esc_attr( $api_card_css ); ?>">
+            <div class="card" style="min-width:0;max-width:none;<?php echo esc_attr( $api_card_css ); ?>">
                 <h3 style="margin:0 0 4px 0;font-size:13px;">Cupo API AbuseIPDB</h3>
                 <?php if ( $key_count > 0 ) : ?>
                     <p style="font-size:18px;font-weight:bold;color:<?php echo esc_attr( $num_color ); ?>;margin:0 0 2px 0;">
@@ -53,7 +53,7 @@ function bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $
                 <?php endif; ?>
             </div>
         </div>
-        <div class="card" style="flex:0 0 135px;margin:0;padding:14px 16px;text-align:left;">
+        <div class="card" style="min-width:0;max-width:none;margin:0;padding:14px 16px;text-align:left;">
             <h3 style="margin-top:0;">Top Paises</h3>
             <?php if ( empty( $top_countries ) ) : ?><p>Sin datos.</p><?php else : ?>
                 <ul style="margin:0;padding:0;list-style:none;text-align:left;"><?php foreach ( $top_countries as $tc ) : ?>
@@ -61,7 +61,7 @@ function bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $
                 <?php endforeach; ?></ul>
             <?php endif; ?>
         </div>
-        <div class="card" style="flex:1.6;min-width:250px;margin:0;">
+        <div class="card" style="min-width:0;max-width:none;margin:0;padding:14px 18px;">
             <h3 style="margin-top:0;">Top ASNs / Proveedores</h3>
             <?php if ( empty( $top_asns ) ) : ?><p>Sin datos.</p><?php else : ?>
                 <ul style="margin:0;"><?php foreach ( $top_asns as $ta ) : ?>
@@ -69,7 +69,7 @@ function bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $
                 <?php endforeach; ?></ul>
             <?php endif; ?>
         </div>
-        <div class="card" style="flex:1.3;min-width:240px;margin:0;">
+        <div class="card" style="min-width:0;max-width:none;margin:0;padding:14px 18px;">
             <h3 style="margin-top:0;">Top Rutas Atacadas</h3>
             <?php if ( empty( $top_uris ) ) : ?><p>Sin datos.</p><?php else : ?>
                 <ul style="margin:0;"><?php foreach ( $top_uris as $tu ) :
