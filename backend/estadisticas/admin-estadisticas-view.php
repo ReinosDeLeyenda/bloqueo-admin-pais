@@ -9,6 +9,7 @@ $sub   = isset( $_GET['subtab'] ) ? sanitize_key( wp_unslash( $_GET['subtab'] ) 
 $valid = [
     'bloqueos'  => 'Bloqueos',
     'actividad' => 'Actividad Admin',
+    'visitas'   => 'Visitas Normales',
 ];
 if ( ! isset( $valid[ $sub ] ) ) {
     $sub = 'bloqueos';
@@ -30,7 +31,9 @@ $stats_base_url = add_query_arg(
 
     <?php bap_render_subtabs( $tab_base_url, $valid, $sub ); ?>
 
-    <?php if ( 'actividad' === $sub ) : ?>
+    <?php if ( 'visitas' === $sub ) : ?>
+        <?php if ( function_exists( 'bap_render_normal_visits_subtab' ) ) { bap_render_normal_visits_subtab(); } ?>
+    <?php elseif ( 'actividad' === $sub ) : ?>
         <?php if ( function_exists( 'bap_render_activity_logs_subtab' ) ) { bap_render_activity_logs_subtab(); } ?>
     <?php else : ?>
         <?php echo wp_kses_post( $notice ); ?>

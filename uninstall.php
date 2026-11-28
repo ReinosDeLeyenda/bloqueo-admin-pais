@@ -67,6 +67,7 @@ global $wpdb;
 
 // 1. Eliminar tabla local de registros
 $wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}bap_blocked_logs`" );
+$wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}bap_normal_visits`" );
 
 // 2. Eliminar todas las opciones y transients del plugin
 $wpdb->query( "DELETE FROM `{$wpdb->options}` WHERE option_name LIKE 'bap\_%' OR option_name LIKE '\_transient\_bap\_%' OR option_name LIKE '\_transient\_timeout\_bap\_%'" );
