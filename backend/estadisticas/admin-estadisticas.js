@@ -185,3 +185,21 @@
     });
     syncDel();
 })();
+
+(function () {
+    function fixExternalIpLinks() {
+        document.querySelectorAll('.bap-ip2loc-link[data-ip]').forEach(function (a) {
+            const ip = a.getAttribute('data-ip') || '';
+            if (ip) a.href = 'https://ip2location.com' + encodeURIComponent(ip);
+        });
+        document.querySelectorAll('.bap-abuse-link[data-ip]').forEach(function (a) {
+            const ip = a.getAttribute('data-ip') || '';
+            if (ip) a.href = 'https://abuseipdb.com' + encodeURIComponent(ip);
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fixExternalIpLinks);
+    } else {
+        fixExternalIpLinks();
+    }
+})();
