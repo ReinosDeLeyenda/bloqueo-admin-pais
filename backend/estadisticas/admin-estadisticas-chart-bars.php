@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-function bap_render_top_bars_row( $total_blocks, $top_countries, $top_uris, $stats_base_url ) {
+function bap_render_top_bars_row( $total_blocks, $top_countries, $top_uris, $stats_base_url, $mode = 'blocks' ) {
     $palette = [ '#d63638', '#2271b1', '#d97706', '#00a32a', '#646970' ];
     ?>
     <div style="display:flex;gap:16px;margin:0 0 20px 0;flex-wrap:wrap;">
@@ -34,7 +34,7 @@ function bap_render_top_bars_row( $total_blocks, $top_countries, $top_uris, $sta
         </div>
 
         <div class="card" style="flex:1;min-width:280px;margin:0;padding:16px 20px;">
-            <h3 style="margin-top:0;margin-bottom:12px;">Distribución URLs Atacadas (Top 5)</h3>
+            <h3 style="margin-top:0;margin-bottom:12px;"><?php echo esc_html( 'visits' === $mode ? 'Distribución Páginas Visitadas (Top 5)' : 'Distribución URLs Atacadas (Top 5)' ); ?></h3>
             <?php if ( empty( $top_uris ) || $total_blocks <= 0 ) : ?>
                 <p class="description">Aún no hay suficientes datos.</p>
             <?php else : ?>
@@ -44,7 +44,7 @@ function bap_render_top_bars_row( $total_blocks, $top_countries, $top_uris, $sta
                         $share    = round( ( $cnt / $total_blocks ) * 100, 1 );
                         $bar_w    = max( 3, min( 100, $share ) );
                         $color    = $palette[ $i % count( $palette ) ];
-                        $uri_link = '' !== $stats_base_url ? add_query_arg( 'filter_uri', rawurlencode( $tu->request_uri ), $stats_base_url ) : '#';
+                        $uri_link = '' !== $stats_base_url ? add_query_arg( 'visits' === $mode ? 'v_q' : 'filter_uri', rawurlencode( $tu->request_uri ), $stats_base_url ) : '#';
                     ?>
                         <div>
                             <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-bottom:3px;">

@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-function bap_render_hourly_line_chart( $table, $type_where_sql = '' ) {
+function bap_render_hourly_line_chart( $table, $type_where_sql = '', $mode = 'blocks' ) {
     global $wpdb;
     $rows = $wpdb->get_results( "SELECT HOUR(created_at) AS hr, COUNT(*) AS total FROM `{$table}` WHERE 1=1{$type_where_sql} GROUP BY HOUR(created_at)", ARRAY_A );
 
@@ -40,9 +40,9 @@ function bap_render_hourly_line_chart( $table, $type_where_sql = '' ) {
     ?>
     <div class="card" style="flex:1.2;min-width:320px;margin:0;padding:16px 20px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-            <h3 style="margin:0;">Distribución horaria de bloqueos (00:00 – 23:59)</h3>
+            <h3 style="margin:0;"><?php echo esc_html( 'visits' === $mode ? 'Distribución horaria de visitas (00:00 – 23:59)' : 'Distribución horaria de bloqueos (00:00 – 23:59)' ); ?></h3>
             <?php if ( max( $hours ) > 0 ) : ?>
-                <span style="font-size:12px;color:#8c8f94;">Hora punta: <strong style="color:#f86368;"><?php printf( '%02d:00h', (int) $peak_hr ); ?></strong> (<?php echo number_format_i18n( $hours[ $peak_hr ] ); ?> bloqueos)</span>
+                <span style="font-size:12px;color:#8c8f94;">Hora punta: <strong style="color:#f86368;"><?php printf( '%02d:00h', (int) $peak_hr ); ?></strong> (<?php echo number_format_i18n( $hours[ $peak_hr ] ); ?> <?php echo esc_html( 'visits' === $mode ? 'visitas' : 'bloqueos' ); ?>)</span>
             <?php endif; ?>
         </div>
         <svg viewBox="0 0 <?php echo (int) $w; ?> <?php echo (int) $h_svg; ?>" style="width:100%;height:155px;display:block;overflow:visible;" xmlns="<?php echo esc_attr( $ns ); ?>">

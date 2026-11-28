@@ -213,7 +213,7 @@ function bap_render_normal_visits_subtab() {
 
         <form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" style="display:flex;align-items:center;gap:8px;margin:0;flex-wrap:wrap;">
             <input type="hidden" name="page" value="bap-admin-estadisticas" />
-            <input type="hidden" name="subtab" value="visitas" />
+            <input type="hidden" name="subtab" value="visitas" /><select name="v_range" onchange="this.form.submit();" style="font-weight:600;"><option value="today" <?php selected( $range, 'today' ); ?>>Hoy</option><option value="7d" <?php selected( $range, '7d' ); ?>>Últimos 7 días</option><option value="30d" <?php selected( $range, '30d' ); ?>>Últimos 30 días</option><option value="all" <?php selected( $range, 'all' ); ?>>Todo el historial</option></select>
             <label style="font-size:12px;"><input type="checkbox" name="v_no_seo" value="1" <?php checked( $hide_seo_q ); ?> onchange="this.form.submit();" /> Ocultar bots SEO</label>
             <input type="text" name="v_q" value="<?php echo esc_attr( $filter_q ); ?>" placeholder="Filtrar IP, pais, ASN o URL..." class="regular-text" style="width:210px;" />
             <button type="submit" class="button button-secondary">Filtrar</button>
@@ -235,9 +235,15 @@ function bap_render_normal_visits_subtab() {
                     <p style="font-size:24px;font-weight:bold;color:#38bdf8;margin:0;line-height:1.1;"><?php echo number_format_i18n( $vis_24h ); ?></p>
                 </div>
             </div>
-            <div class="card" style="padding:11px 14px;margin:0;">
-                <h3 style="margin:0 0 4px 0;font-size:13px;">Visitantes Unicos (IPs)</h3>
-                <p style="margin:0;font-size:16px;font-weight:bold;color:#2271b1;"><?php echo number_format_i18n( $unique_vis ); ?></p>
+            <div class="card" style="padding:10px 14px;margin:0;">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:4px;">
+                    <span>IPs Únicas: <strong style="color:#2271b1;"><?php echo number_format_i18n( $unique_vis ); ?></strong></span>
+                    <span>Sesiones (30m): <strong style="color:#8b5cf6;"><?php echo number_format_i18n( (int) $session_metrics['sessions'] ); ?></strong></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;border-top:1px solid #f0f0f1;padding-top:4px;">
+                    <span>Págs / Sesión: <strong><?php echo esc_html( $session_metrics['pages_per_session'] ); ?></strong></span>
+                    <span>Rebote: <strong style="color:<?php echo $session_metrics['bounce_rate'] >= 75 ? '#d97706' : '#00a32a'; ?>;"><?php echo esc_html( $session_metrics['bounce_rate'] ); ?>%</strong></span>
+                </div>
             </div>
         </div>
         <div class="card" style="padding:14px;margin:0;">
@@ -264,7 +270,7 @@ function bap_render_normal_visits_subtab() {
     <?php
     if ( function_exists( 'bap_render_estadisticas_charts' ) ) {
         $v_base_url = admin_url( 'admin.php?page=bap-admin-estadisticas&subtab=visitas' );
-        bap_render_estadisticas_charts( $table, $total_vis, $top_countries, $top_uris, $v_base_url, $seo_where );
+        bap_render_estadisticas_charts( $table, $total_vis, $top_countries, $top_uris, $v_base_url, $seo_where, 'visits' );
     }
     ?>
 
@@ -277,7 +283,7 @@ function bap_render_normal_visits_subtab() {
                     <th style="width:135px;">Direccion IP</th>
                     <th style="width:65px;">Pais</th>
                     <th>ASN / Proveedor</th>
-                    <th>Pagina Visitada</th>
+                    <th>Pagina Visitada</th><th>Origen (Referer)</th>
                     <th>Navegador / User-Agent</th>
                 </tr>
             </thead>
@@ -291,7 +297,7 @@ function bap_render_normal_visits_subtab() {
                             <td><code><?php echo esc_html( $r->ip_address ); ?></code></td>
                             <td><strong><?php echo esc_html( $r->country_code ); ?></strong></td>
                             <td><small><?php echo esc_html( $r->asn ?: 'N/D' ); ?></small></td>
-                            <td style="word-break:break-word;"><code><?php echo esc_html( $r->request_uri ); ?></code></td>
+                            <td style="word-break:break-word;"><code><?php echo esc_html( $r->request_uri ); ?></code></td><td style="word-break:break-all;"><small><?php echo '' !== trim( (string) $r->referer ) ? esc_html( wp_parse_url( $r->referer, PHP_URL_HOST ) ?: $r->referer ) : '<span style="color:#8c8f94;">Directo</span>'; ?></small></td>
                             <td><small style="color:#50575e;"><?php echo esc_html( mb_substr( (string) $r->user_agent, 0, 95 ) ?: 'No registrado' ); ?></small></td>
                         </tr>
                     <?php endforeach; ?>

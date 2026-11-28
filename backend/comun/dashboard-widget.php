@@ -34,6 +34,13 @@ function bap_render_dashboard_widget() {
     global $wpdb;
     $table = bap_get_logs_table_name();
     $since = gmdate( 'Y-m-d H:i:s', strtotime( '-30 days' ) );
+    $total_blocks_30d = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$table}` WHERE created_at >= %s", $since ) );
+    $visits_table     = function_exists( 'bap_get_visits_table_name' ) ? bap_get_visits_table_name() : $wpdb->prefix . 'bap_normal_visits';
+    $has_visits_tbl   = ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $visits_table ) ) === $visits_table );
+    $total_visits_30d = $has_visits_tbl ? (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$visits_table}` WHERE created_at >= %s", $since ) ) : 0;
+    $traffic_sum_30d  = max( 1, $total_blocks_30d + $total_visits_30d );
+    $visits_pct_30d   = round( ( $total_visits_30d / $traffic_sum_30d ) * 100, 1 );
+    $blocks_pct_30d   = round( 100 - $visits_pct_30d, 1 );
 
     $top_ips = $wpdb->get_results(
         $wpdb->prepare(
@@ -115,6 +122,19 @@ function bap_render_dashboard_widget() {
             <div>
                 <strong style="font-size:16px;color:#ffffff;display:block;line-height:1.1;">Bloqueo Admin y Web</strong>
                 <span style="font-size:11px;color:#38bdf8;">Resumen de seguridad (30 días)</span>
+            </div>
+        </div>
+                <div style="background:#0f172a;border:1px solid #1e293b;border-radius:6px;padding:12px 14px;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <strong style="color:#ffffff;font-size:13px;">Balance de Tráfico (30 días)</strong>
+                <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-estadisticas&subtab=visitas' ) ); ?>" style="color:#38bdf8;font-size:11px;text-decoration:none;">Ver visitas &rarr;</a>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;">
+                <span style="color:#4ade80;">&#9679; Visitas legítimas: <strong><?php echo number_format_i18n( $total_visits_30d ); ?></strong> (<?php echo esc_html( $visits_pct_30d ); ?>%)</span>
+                <span style="color:#f87171;">&#9679; Bloqueados: <strong><?php echo number_format_i18n( $total_blocks_30d ); ?></strong> (<?php echo esc_html( $blocks_pct_30d ); ?>%)</span>
+            </div>
+            <div style="width:100%;height:8px;background:#ef4444;border-radius:4px;overflow:hidden;display:flex;">
+                <div style="width:<?php echo esc_attr( $visits_pct_30d ); ?>%;height:100%;background:#22c55e;"></div>
             </div>
         </div>
         <h3 style="color:#ffffff;font-size:15px;margin:0 0 8px 0;">Principales 5 IPs bloqueadas</h3>

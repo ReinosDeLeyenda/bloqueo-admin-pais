@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once plugin_dir_path( __FILE__ ) . 'admin-estadisticas-chart-hourly.php';
 require_once plugin_dir_path( __FILE__ ) . 'admin-estadisticas-chart-bars.php';
 
-function bap_render_estadisticas_charts( $table, $total_blocks, $top_countries, $top_uris = [], $stats_base_url = '', $type_where_sql = '' ) {
+function bap_render_estadisticas_charts( $table, $total_blocks, $top_countries, $top_uris = [], $stats_base_url = '', $type_where_sql = '', $mode = 'blocks' ) {
     global $wpdb;
 
     $since = gmdate( 'Y-m-d 00:00:00', strtotime( '-13 days' ) );
@@ -36,7 +36,7 @@ function bap_render_estadisticas_charts( $table, $total_blocks, $top_countries, 
     ?>
     <div style="display:flex;gap:16px;margin:0 0 20px 0;flex-wrap:wrap;">
         <div class="card" style="flex:1;min-width:320px;margin:0;padding:16px 20px;">
-            <h3 style="margin-top:0;margin-bottom:12px;">Evolución de bloqueos (Últimos 14 días)</h3>
+            <h3 style="margin-top:0;margin-bottom:12px;"><?php echo esc_html( 'visits' === $mode ? 'Evolución de visitas (Últimos 14 días)' : 'Evolución de bloqueos (Últimos 14 días)' ); ?></h3>
             <div style="display:flex;align-items:flex-end;gap:6px;height:130px;padding:10px 6px 4px;border-bottom:1px solid #dcdcde;background:#f9f9f9;border-radius:4px 4px 0 0;">
                 <?php foreach ( $days as $item ) :
                     $pct = $item['count'] > 0 ? max( 6, (int) round( ( $item['count'] / $max_day ) * 100 ) ) : 2;
@@ -57,9 +57,9 @@ function bap_render_estadisticas_charts( $table, $total_blocks, $top_countries, 
             </div>
         </div>
 
-        <?php bap_render_hourly_line_chart( $table, $type_where_sql ); ?>
+        <?php bap_render_hourly_line_chart( $table, $type_where_sql, $mode ); ?>
     </div>
 
-    <?php bap_render_top_bars_row( $total_blocks, $top_countries, $top_uris, $stats_base_url ); ?>
+    <?php bap_render_top_bars_row( $total_blocks, $top_countries, $top_uris, $stats_base_url, $mode ); ?>
     <?php
 }
