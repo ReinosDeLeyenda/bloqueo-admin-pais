@@ -31,7 +31,7 @@ function bap_check_frontend_rules() {
         }
     }
 
-    $verdict = bap_evaluate_rule_profile( $ip, $country, $rule, false );
+    $verdict = bap_evaluate_rule_profile( $ip, $country, $rule, false, 'Cumple las reglas', false );
     if ( 'block' === $verdict['status'] ) {
         $scope_tag = ( '__all__' === $matched['scope'] ) ? 'Web Global' : 'Web (' . $matched['scope'] . ')';
         $reason    = $verdict['reason'];

@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-function bap_build_single_condition_check( $key, $ip, $country, array $profile, $auto_ban_abuse ) {
+function bap_build_single_condition_check( $key, $ip, $country, array $profile, $auto_ban_abuse, $allow_live_api = true ) {
     if ( 'tor' === $key ) {
         if ( '1' !== (string) ( $profile['block_tor'] ?? '0' ) || ! function_exists( 'bap_is_tor_exit_node' ) ) {
             return null;
@@ -30,7 +30,7 @@ function bap_build_single_condition_check( $key, $ip, $country, array $profile, 
         if ( $min_risk <= 0 || ! function_exists( 'bap_get_abuseipdb_score' ) ) {
             return null;
         }
-        $score = bap_get_abuseipdb_score( $ip );
+        $score = bap_get_abuseipdb_score( $ip, $allow_live_api );
         $fail  = ( null !== $score && $score >= $min_risk );
         if ( $fail && $auto_ban_abuse ) {
             bap_add_ip_to_blacklist( $ip, true );
@@ -72,7 +72,7 @@ function bap_build_single_condition_check( $key, $ip, $country, array $profile, 
     return null;
 }
 
-function bap_evaluate_rule_profile( $ip, $country, array $profile, $auto_ban_abuse = false, $ok_msg = 'Cumple las reglas' ) {
+function bap_evaluate_rule_profile( $ip, $country, array $profile, $auto_ban_abuse = false, $ok_msg = 'Cumple las reglas', $allow_live_api = true ) {
     if ( bap_ip_in_list( $ip, bap_parse_list( get_option( 'bap_blacklist_ips', '' ) ) ) ) {
         return [ 'status' => 'block', 'reason' => 'IP/Rango en lista negra' ];
     }
@@ -83,7 +83,7 @@ function bap_evaluate_rule_profile( $ip, $country, array $profile, $auto_ban_abu
     $checks = [];
 
     foreach ( $order as $pos => $key ) {
-        $item = bap_build_single_condition_check( $key, $ip, $country, $norm, $auto_ban_abuse );
+        $item = bap_build_single_condition_check( $key, $ip, $country, $norm, $auto_ban_abuse, $allow_live_api );
         if ( null !== $item ) {
             $item['op'] = ( $pos > 0 ) ? ( $ops[ $pos - 1 ] ?? 'AND' ) : null;
             $checks[]   = $item;
@@ -149,7 +149,7 @@ function bap_evaluate_ip_access( $ip, $country, $context = 'admin', $auto_ban_ab
             ];
         }
         $scope_lbl = ( '__all__' === $matched['scope'] ) ? 'Web Global' : 'Web (' . $matched['scope'] . ')';
-        return bap_evaluate_rule_profile( $ip, $country, $rule, $auto_ban_abuse, 'Cumple las reglas de ' . $scope_lbl );
+        return bap_evaluate_rule_profile( $ip, $country, $rule, $auto_ban_abuse, 'Cumple las reglas de ' . $scope_lbl, false );
     }
 
     $c_mode  = (string) get_option( 'bap_country_mode', 'allow' );

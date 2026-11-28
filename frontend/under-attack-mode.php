@@ -38,7 +38,7 @@ add_action( 'init', function() {
     } elseif ( function_exists( 'bap_is_in_firehol' ) && false !== bap_is_in_firehol( $ip ) ) {
         $reason = 'Web: Modo Bajo Ataque (Red FireHOL)';
     } elseif ( function_exists( 'bap_get_abuseipdb_score' ) ) {
-        $score = bap_get_abuseipdb_score( $ip );
+        $score = bap_get_abuseipdb_score( $ip, false );
         if ( null !== $score && $score >= 25 ) {
             $reason = "Web: Modo Bajo Ataque (AbuseIPDB {$score}%)";
         }
