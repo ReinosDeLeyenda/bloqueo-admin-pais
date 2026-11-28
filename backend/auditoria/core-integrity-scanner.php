@@ -487,7 +487,7 @@ function bap_render_core_integrity_box() {
                         <?php endforeach; ?>
                         <?php foreach ( $scan_res['missing'] as $item ) : ?>
                             <tr>
-                                <td><?php echo bap_render_status_badge( 'FALTANTE', '#646970' ); ?></td>
+                                <th scope="row" class="check-column" style="padding:8px 0 8px 10px;"><input type="checkbox" form="bap-core-bulk-form" name="bap_core_selected[]" value="<?php echo esc_attr( $item['file'] ); ?>" class="bap-core-cb" /></th><td><?php echo bap_render_status_badge( 'FALTANTE', '#646970' ); ?></td>
                                 <td><code><?php echo esc_html( $item['file'] ); ?></code></td>
                                 <td>
                                     <form method="post" style="display:inline;" onsubmit="return confirm('¿Descargar y restaurar este archivo faltante desde WordPress.org?');">
