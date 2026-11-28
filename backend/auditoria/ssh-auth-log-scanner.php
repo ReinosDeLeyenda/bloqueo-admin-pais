@@ -64,14 +64,26 @@ function bap_analyze_ssh_auth_log( $filepath ) {
             $user = '[TCP Refused]'; $ip = $m[1];
         }
         if ( '' === $ip || ! filter_var( $ip, FILTER_VALIDATE_IP ) || $ip === $my_ip || bap_is_server_ip( $ip ) || bap_ip_in_list( $ip, $wl ) ) { continue; }
+        $log_ts = '';
+        if ( preg_match( '/^(\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2})/', $line, $tm ) ) {
+            $log_ts = str_replace( 'T', ' ', $tm[1] );
+        } elseif ( preg_match( '/^([A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})/', $line, $tm ) ) {
+            $log_ts = preg_replace( '/\s+/', ' ', $tm[1] );
+        }
         if ( ! isset( $suspects[ $ip ] ) ) {
             $suspects[ $ip ] = [
-                'ip'      => $ip,
-                'count'   => 0,
-                'country' => function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'N/D',
-                'asn'     => function_exists( 'bap_get_asn_by_ip' ) ? bap_get_asn_by_ip( $ip ) : 'N/D',
-                'users'   => [],
+                'ip'         => $ip,
+                'count'      => 0,
+                'first_seen' => $log_ts,
+                'last_seen'  => $log_ts,
+                'country'    => function_exists( 'bap_get_country_by_ip' ) ? bap_get_country_by_ip( $ip ) : 'N/D',
+                'asn'        => function_exists( 'bap_get_asn_by_ip' ) ? bap_get_asn_by_ip( $ip ) : 'N/D',
+                'users'      => [],
             ];
+        }
+        if ( '' !== $log_ts ) {
+            if ( '' === $suspects[ $ip ]['first_seen'] ) { $suspects[ $ip ]['first_seen'] = $log_ts; }
+            $suspects[ $ip ]['last_seen'] = $log_ts;
         }
         $suspects[ $ip ]['count']++;
         if ( '' !== $user && count( $suspects[ $ip ]['users'] ) < 6 && ! in_array( $user, $suspects[ $ip ]['users'], true ) ) {
@@ -190,9 +202,10 @@ function bap_render_ssh_auth_log_scanner_box() {
 <table class="widefat striped" style="border:0;width:100%;table-layout:fixed;"><thead><tr><th>IP Atacante</th><th>País / ASN</th><th style="width:95px;">Fallos SSH</th><th>Usuarios probados</th><th style="width:135px;">Acción</th></tr></thead><tbody>';
             foreach ( $scan_res['suspects'] as $s ) {
                 $already = bap_ip_in_list( $s['ip'], $cur_bl );
-                echo '<tr><td><code>' . esc_html( $s['ip'] ) . '</code></td>';
+                $tip_txt = 'Primer ataque: ' . ( $s['first_seen'] ?: 'N/D' ) . ' | Ultimo ataque: ' . ( $s['last_seen'] ?: 'N/D' );
+                echo '<tr><td><code title="' . esc_attr( $tip_txt ) . '" style="cursor:help;">' . esc_html( $s['ip'] ) . '</code></td>';
                 echo '<td><strong>' . esc_html( $s['country'] ) . '</strong><br><small>' . esc_html( $s['asn'] ) . '</small></td>';
-                echo '<td>' . bap_render_status_badge( $s['count'] . ' fallos', '#d63638' ) . '</td>';
+                echo '<td title="' . esc_attr( $tip_txt ) . '" style="cursor:help;">' . bap_render_status_badge( $s['count'] . ' fallos', '#d63638' ) . '</td>';
                 echo '<td><small><code>' . esc_html( implode( ', ', $s['users'] ) ?: 'N/D' ) . '</code></small></td><td>';
                 if ( $already ) {
                     echo '<span style="color:#d63638;font-weight:700;font-size:11px;">En Lista Negra</span>';
