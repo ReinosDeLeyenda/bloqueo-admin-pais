@@ -151,6 +151,19 @@ function bap_render_normal_visits_subtab() {
         $notice = '<div class="notice notice-success is-dismissible"><p>Configuracion de visitas normales guardada.</p></div>';
     }
 
+    if ( isset( $_POST['bap_import_newstatpress'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_visits_action' ) ) {
+        $res = function_exists( 'bap_import_newstatpress_visits' ) ? bap_import_newstatpress_visits() : new WP_Error( 'missing', 'Importador no disponible.' );
+        $notice = is_wp_error( $res )
+            ? '<div class="notice notice-error is-dismissible"><p><strong>Error al importar NewStatPress:</strong> ' . esc_html( $res->get_error_message() ) . '</p></div>'
+            : '<div class="notice notice-success is-dismissible"><p><strong>Migracion completada:</strong> Se han importado <strong>' . number_format_i18n( (int) $res['hits'] ) . '</strong> visitas desde NewStatPress.</p></div>';
+    }
+
+    if ( isset( $_POST['bap_import_iawp'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_visits_action' ) ) {
+        $res = function_exists( 'bap_import_independent_analytics_visits' ) ? bap_import_independent_analytics_visits() : new WP_Error( 'missing', 'Importador no disponible.' );
+        $notice = is_wp_error( $res )
+            ? '<div class="notice notice-error is-dismissible"><p><strong>Error al importar Independent Analytics:</strong> ' . esc_html( $res->get_error_message() ) . '</p></div>'
+            : '<div class="notice notice-success is-dismissible"><p><strong>Migracion completada:</strong> Se han importado <strong>' . number_format_i18n( (int) $res['hits'] ) . '</strong> vistas desde Independent Analytics.</p></div>';
+    }
     if ( isset( $_POST['bap_clear_normal_visits'] ) && current_user_can( 'manage_options' ) && check_admin_referer( 'bap_visits_action' ) ) {
         $wpdb->query( "TRUNCATE TABLE `{$table}`" );
         $notice = '<div class="notice notice-success is-dismissible"><p>Historial de visitas normales vaciado.</p></div>';
@@ -225,6 +238,12 @@ function bap_render_normal_visits_subtab() {
             <label><input type="checkbox" name="bap_visits_exclude_seo" value="1" <?php checked( $excl_seo_on ); ?> /> Excluir bots SEO (Googlebot/Bingbot)</label>
             <button type="submit" name="bap_toggle_visits_tracking" class="button button-primary">Guardar</button>
             <button type="submit" name="bap_export_visits_csv" class="button button-secondary">Exportar CSV</button>
+            <?php if ( function_exists( 'bap_find_newstatpress_table' ) && '' !== bap_find_newstatpress_table() ) : ?>
+                <button type="submit" name="bap_import_newstatpress" class="button button-secondary" onclick="return confirm('Importar historial de visitas desde NewStatPress?');">Importar de NewStatPress</button>
+            <?php endif; ?>
+            <?php if ( function_exists( 'bap_find_iawp_views_table' ) && '' !== bap_find_iawp_views_table() ) : ?>
+                <button type="submit" name="bap_import_iawp" class="button button-secondary" onclick="return confirm('Importar historial de vistas desde Independent Analytics?');">Importar de Independent Analytics</button>
+            <?php endif; ?>
             <?php if ( $total_vis > 0 ) : ?>
                 <button type="submit" name="bap_clear_normal_visits" class="button button-link-delete" onclick="return confirm('Vaciar historial de visitas normales?');">Vaciar</button>
             <?php endif; ?>
