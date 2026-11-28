@@ -101,11 +101,37 @@ function bap_render_db_settings_card( $db_freq ) {
         <form method="post" action="options.php">
             <?php settings_fields( 'bap_db_settings_group' ); ?>
             <table class="form-table">
-                <tr>
-                    <th>API Key AbuseIPDB (Opcional)</th>
+                                <tr>
+                    <th>API Key(s) AbuseIPDB (Opcional)</th>
                     <td>
-                        <input type="password" name="bap_abuseipdb_key" value="<?php echo esc_attr( get_option( 'bap_abuseipdb_key', '' ) ); ?>" class="regular-text code" placeholder="Sin clave usa espejo público >=90%" />
-                        <p class="description">Permite descargar listas con puntuación exacta (0-100 %) y consultar IPs en vivo.</p>
+                        <?php
+                        $ab_keys   = function_exists( 'bap_get_abuseipdb_keys' ) ? bap_get_abuseipdb_keys() : [];
+                        $ab_stats  = function_exists( 'bap_get_abuseipdb_usage_stats' ) ? bap_get_abuseipdb_usage_stats() : [ 'used' => 0, 'exhausted' => [] ];
+                        $key_count = count( $ab_keys );
+                        $daily_cap = max( 1000, $key_count * 1000 );
+                        $used_cnt  = (int) ( $ab_stats['used'] ?? 0 );
+                        $exh_list  = (array) ( $ab_stats['exhausted'] ?? [] );
+                        $pct_used  = $key_count > 0 ? min( 100, round( ( $used_cnt / $daily_cap ) * 100, 1 ) ) : 0;
+                        $bar_color = ( $pct_used >= 90 ) ? '#d63638' : ( ( $pct_used >= 65 ) ? '#dba617' : '#00a32a' );
+                        ?>
+                        <textarea name="bap_abuseipdb_key" rows="3" class="regular-text code" placeholder="Una o varias API Keys (una por linea). Sin clave usa espejo publico >=90%"><?php echo esc_textarea( get_option( 'bap_abuseipdb_key', '' ) ); ?></textarea>
+                        <p class="description">Puedes anadir <strong>varias claves gratuitas (una por linea)</strong>: si una agota sus 1,000 consultas diarias, rotara automaticamente a la siguiente.</p>
+                        <?php if ( $key_count > 0 ) : ?>
+                            <div style="margin-top:10px;padding:10px 12px;background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;max-width:460px;">
+                                <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
+                                    <span><strong>Consumo hoy (UTC):</strong> <?php echo number_format_i18n( $used_cnt ); ?> / <?php echo number_format_i18n( $daily_cap ); ?> consultas</span>
+                                    <strong style="color:<?php echo esc_attr( $bar_color ); ?>;"><?php echo esc_html( $pct_used ); ?>%</strong>
+                                </div>
+                                <div style="width:100%;height:8px;background:#dcdcde;border-radius:4px;overflow:hidden;margin-bottom:6px;">
+                                    <div style="width:<?php echo esc_attr( $pct_used ); ?>%;height:100%;background:<?php echo esc_attr( $bar_color ); ?>;"></div>
+                                </div>
+                                <small style="color:#50575e;">
+                                    Claves configuradas: <strong><?php echo (int) $key_count; ?></strong> |
+                                    Agotadas hoy: <strong><?php echo count( $exh_list ); ?></strong> |
+                                    Reinicio diario: <code>00:00 UTC</code>
+                                </small>
+                            </div>
+                        <?php endif; ?>
                     </td>
                 </tr>
                 <tr>

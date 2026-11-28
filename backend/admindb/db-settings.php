@@ -5,7 +5,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 add_action( 'admin_init', function() {
     register_setting( 'bap_db_settings_group', 'bap_abuseipdb_key', [
-        'sanitize_callback' => fn( $i ) => trim( sanitize_text_field( (string) $i ) ),
+        'sanitize_callback' => function( $i ) {
+            $lines = array_filter( array_map( 'trim', preg_split( '/[\r\n,;]+/', (string) $i ) ) );
+            return implode( "\n", array_unique( array_map( 'sanitize_text_field', $lines ) ) );
+        },
         'default'           => '',
     ]);
     register_setting( 'bap_db_settings_group', 'bap_db_auto_update_freq', [

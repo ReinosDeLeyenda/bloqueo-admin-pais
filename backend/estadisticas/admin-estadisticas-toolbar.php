@@ -15,6 +15,37 @@ function bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $
                 <?php endif; ?>
             </p>
         </div>
+        <?php
+        $ab_keys   = function_exists( 'bap_get_abuseipdb_keys' ) ? bap_get_abuseipdb_keys() : [];
+        $key_count = count( $ab_keys );
+        if ( $key_count > 0 ) :
+            $ab_stats   = function_exists( 'bap_get_abuseipdb_usage_stats' ) ? bap_get_abuseipdb_usage_stats() : [ 'used' => 0, 'exhausted' => [] ];
+            $daily_cap  = $key_count * 1000;
+            $used_cnt   = (int) ( $ab_stats['used'] ?? 0 );
+            $exh_cnt    = count( (array) ( $ab_stats['exhausted'] ?? [] ) );
+            $is_exhaust = ( $exh_cnt >= $key_count || $used_cnt >= $daily_cap );
+            $pct_used   = min( 100, round( ( $used_cnt / $daily_cap ) * 100, 1 ) );
+            $card_style = $is_exhaust
+                ? 'flex:1;min-width:190px;margin:0;border:2px solid #d63638;background-color:rgba(214,54,56,0.12);'
+                : 'flex:1;min-width:190px;margin:0;';
+            $num_color  = $is_exhaust ? '#d63638' : ( $pct_used >= 75 ? '#dba617' : '#00a32a' );
+        ?>
+            <div class="card" style="<?php echo esc_attr( $card_style ); ?>">
+                <h3>Cupo API AbuseIPDB</h3>
+                <p style="font-size:22px;font-weight:bold;color:<?php echo esc_attr( $num_color ); ?>;margin:0 0 4px 0;">
+                    <?php echo number_format_i18n( $used_cnt ); ?> <span style="font-size:13px;font-weight:normal;color:#646970;">/ <?php echo number_format_i18n( $daily_cap ); ?></span>
+                </p>
+                <?php if ( $is_exhaust ) : ?>
+                    <p style="margin:0;font-size:11px;font-weight:700;color:#d63638;">
+                        AGOTADO (00:00 UTC) &middot; <a href="<?php echo esc_url( admin_url( 'admin.php?page=bap-admin-db&subtab=configuracion' ) ); ?>" style="color:#d63638;">+ Claves</a>
+                    </p>
+                <?php else : ?>
+                    <p style="margin:0;font-size:11px;color:#646970;">
+                        <?php echo esc_html( $pct_used ); ?>% usado (<?php echo (int) $key_count; ?> clave<?php echo $key_count > 1 ? 's' : ''; ?>)
+                    </p>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
         <div class="card" style="flex:1;min-width:190px;margin:0;">
             <h3>Top Paises</h3>
             <?php if ( empty( $top_countries ) ) : ?><p>Sin datos.</p><?php else : ?>
