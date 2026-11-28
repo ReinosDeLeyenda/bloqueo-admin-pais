@@ -145,7 +145,7 @@ function bap_render_estadisticas_page() {
     }
     $excluded_count = $has_excludes ? max( 0, $total_blocks - $filtered_total ) : 0;
 
-    $sql  = "SELECT * FROM `{$table}` {$where_sql} ORDER BY id DESC LIMIT {$fetch_limit}";
+    $sql  = "SELECT MAX(id) AS id, ip_address, MAX(country_code) AS country_code, MAX(asn) AS asn, MAX(block_type) AS block_type, reason, request_uri, MAX(user_agent) AS user_agent, MAX(created_at) AS created_at, COUNT(*) AS group_hits FROM `{$table}` {$where_sql} GROUP BY ip_address, request_uri, reason ORDER BY id DESC LIMIT {$fetch_limit}";
     $logs = ! empty( $params ) ? $wpdb->get_results( $wpdb->prepare( $sql, $params ) ) : $wpdb->get_results( $sql );
 
     if ( ! empty( $abuse_filters ) && ! empty( $logs ) ) {
