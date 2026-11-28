@@ -25,31 +25,31 @@ function bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $
     $api_border = $is_exhaust ? 'border:2px solid #d63638 !important;background-color:rgba(214,54,56,0.12) !important;' : '';
     $cfg_url    = admin_url( 'admin.php?page=bap-admin-db&subtab=configuracion' );
     ?>
-    <style>
-        .bap-stats-top-grid { display:grid; grid-template-columns: 310px 110px minmax(0, 1.15fr) minmax(0, 1fr); gap:14px; margin:20px 0; align-items:stretch; }
-        .bap-stats-top-grid .card { min-width:0 !important; max-width:none !important; width:auto !important; margin:0 !important; box-sizing:border-box; }
-        @media (max-width: 1150px) { .bap-stats-top-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    </style>
-    <div class="bap-stats-top-grid">
-        <div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div class="card" style="padding:12px 14px;">
-                    <h3 style="margin:0 0 6px 0;font-size:13px;">Total Bloqueados</h3>
-                    <p style="font-size:24px;font-weight:bold;color:#d63638;margin:0;line-height:1.1;">
-                        <?php echo number_format_i18n( $total_blocks ); ?>
-                    </p>
-                    <?php if ( $excluded_count > 0 ) : ?>
-                        <span style="display:inline-block;font-size:10px;font-weight:600;color:#646970;background:#f0f0f1;padding:1px 6px;border-radius:10px;margin-top:4px;">Excl: <?php echo number_format_i18n( $excluded_count ); ?></span>
-                    <?php endif; ?>
-                </div>
-                <div class="card" style="padding:12px 14px;">
-                    <h3 style="margin:0 0 6px 0;font-size:13px;">Bloqueos (24h)</h3>
-                    <p style="font-size:24px;font-weight:bold;color:#38bdf8;margin:0;line-height:1.1;">
-                        <?php echo number_format_i18n( $blocks_24h ); ?>
-                    </p>
-                </div>
-            </div>
-
+<style>
+.bap-stats-top-grid{display:grid;grid-template-columns:310px 110px minmax(0,1.15fr) minmax(0,1fr);gap:14px;margin:20px 0;align-items:stretch;}
+.bap-stats-top-grid .card{min-width:0!important;max-width:none!important;width:auto!important;margin:0!important;box-sizing:border-box;}
+@media(max-width:1150px){.bap-stats-top-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+</style>
+<div class="bap-stats-top-grid">
+<div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+<div class="card" style="padding:12px 14px;"><h3 style="margin:0 0 6px 0;font-size:13px;">Total Bloqueados</h3>
+<p style="font-size:24px;font-weight:bold;color:#d63638;margin:0;line-height:1.1;"><?php echo number_format_i18n( $total_blocks ); ?></p>
+<?php if ( $excluded_count > 0 ) : ?><span style="display:inline-block;font-size:10px;font-weight:600;color:#646970;background:#f0f0f1;padding:1px 6px;border-radius:10px;margin-top:4px;">Excl: <?php echo number_format_i18n( $excluded_count ); ?></span><?php endif; ?></div>
+<div class="card" style="padding:12px 14px;"><h3 style="margin:0 0 6px 0;font-size:13px;">Bloqueos (24h)</h3>
+<p style="font-size:24px;font-weight:bold;color:#38bdf8;margin:0;line-height:1.1;"><?php echo number_format_i18n( $blocks_24h ); ?></p></div></div>
+<div class="card" style="padding:11px 14px;<?php echo esc_attr( $api_border ); ?>">
+<h3 style="margin:0 0 4px 0;font-size:13px;">Cupo API AbuseIPDB</h3>
+<?php if ( $key_count > 0 ) : ?><p style="margin:0;font-size:14px;font-weight:bold;color:<?php echo esc_attr( $num_color ); ?>;"><?php echo number_format_i18n( $used_cnt ); ?> <span style="font-size:12px;font-weight:normal;color:#8c8f94;">/ <?php echo number_format_i18n( $daily_cap ); ?> &middot; <?php echo $is_exhaust ? 'AGOTADO (00:00 UTC)' : esc_html( $pct_used . '% usado' ); ?></span></p>
+<?php else : ?><p style="margin:0;font-size:12px;color:#8c8f94;">Espejo local activo</p><?php endif; ?></div></div>
+<div class="card" style="padding:14px;text-align:left;"><h3 style="margin:0 0 10px 0;">Top Paises</h3>
+<?php if ( empty( $top_countries ) ) : ?><p>Sin datos.</p><?php else : ?><ul style="margin:0;padding:0;list-style:none;"><?php foreach ( $top_countries as $tc ) : ?><li style="margin-bottom:4px;"><strong><?php echo esc_html( $tc->country_code ); ?></strong>: <?php echo (int) $tc->total; ?></li><?php endforeach; ?></ul><?php endif; ?></div>
+<div class="card" style="padding:14px 16px;"><h3 style="margin:0 0 10px 0;">Top ASNs / Proveedores</h3>
+<?php if ( empty( $top_asns ) ) : ?><p>Sin datos.</p><?php else : ?><ul style="margin:0;"><?php foreach ( $top_asns as $ta ) : ?><li style="margin-bottom:4px;"><small><strong><?php echo esc_html( $ta->asn ); ?></strong>: <?php echo (int) $ta->total; ?></small></li><?php endforeach; ?></ul><?php endif; ?></div>
+<div class="card" style="padding:14px 16px;"><h3 style="margin:0 0 10px 0;">Top Rutas Atacadas</h3>
+<?php if ( empty( $top_uris ) ) : ?><p>Sin datos.</p><?php else : ?><ul style="margin:0;"><?php foreach ( $top_uris as $tu ) : $u_lnk = add_query_arg( 'filter_uri', rawurlencode( $tu->request_uri ), $stats_base_url ); ?><li style="margin-bottom:4px;word-break:break-all;"><a href="<?php echo esc_url( $u_lnk ); ?>" style="text-decoration:none;"><code><?php echo esc_html( $tu->request_uri ); ?></code></a>: <strong><?php echo (int) $tu->total; ?></strong></li><?php endforeach; ?></ul><?php endif; ?></div>
+</div><?php
+}
 
 function bap_render_estadisticas_toolbar( array $filter_rows, $filter_type, $stats_base_url ) {
     if ( empty( $filter_rows ) ) { $filter_rows = [ [ 'val' => '', 'field' => 'any', 'mode' => 'include' ] ]; }
@@ -131,6 +131,5 @@ function bap_render_estadisticas_toolbar( array $filter_rows, $filter_type, $sta
             <button type="submit" name="bap_save_retention" class="button button-secondary">Guardar</button>
         </form>
     </div>
-
     <?php
 }
