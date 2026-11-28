@@ -2,7 +2,87 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 function bap_render_estadisticas_summary_cards( $total_blocks, $top_countries, $top_asns, $top_uris, $stats_base_url, $excluded_count = 0 ) {
-    // [Código de renderizado HTML/PHP de las tarjetas - consultar el script completo para ver el contenido exacto]
+    $ab_keys    = function_exists( 'bap_get_abuseipdb_keys' ) ? bap_get_abuseipdb_keys() : [];
+    $key_count  = count( $ab_keys );
+    $is_exhaust = false;
+    $used_cnt   = 0;
+    $daily_cap  = 1000;
+    $pct_used   = 0;
+    $num_color  = '#00a32a';
+
+    if ( $key_count > 0 ) {
+        $ab_stats   = function_exists( 'bap_get_abuseipdb_usage_stats' ) ? bap_get_abuseipdb_usage_stats() : [ 'used' => 0, 'exhausted' => [] ];
+        $daily_cap  = $key_count * 1000;
+        $used_cnt   = (int) ( $ab_stats['used'] ?? 0 );
+        $exh_cnt    = count( (array) ( $ab_stats['exhausted'] ?? [] ) );
+        $is_exhaust = ( $exh_cnt >= $key_count || $used_cnt >= $daily_cap );
+        $pct_used   = min( 100, round( ( $used_cnt / $daily_cap ) * 100, 1 ) );
+        $num_color  = $is_exhaust ? '#d63638' : ( $pct_used >= 75 ? '#dba617' : '#00a32a' );
+    }
+
+    $api_card_css = $is_exhaust
+        ? 'margin:0;padding:12px 16px;border:2px solid #d63638;background-color:rgba(214,54,56,0.12);'
+        : 'margin:0;padding:12px 16px;';
+    $cfg_url      = admin_url( 'admin.php?page=bap-admin-db&subtab=configuracion' );
+    ?>
+    <div style="display:flex;gap:16px;margin:20px 0;flex-wrap:wrap;align-items:stretch;">
+        <div style="flex:0 0 215px;display:flex;flex-direction:column;gap:12px;">
+            <div class="card" style="margin:0;padding:12px 16px;flex:1;">
+                <h3 style="margin:0 0 6px 0;">Total Bloqueados</h3>
+                <p style="font-size:26px;font-weight:bold;color:#d63638;margin:0;">
+                    <?php echo number_format_i18n( $total_blocks ); ?>
+                    <?php if ( $excluded_count > 0 ) : ?>
+                        <span style="display:inline-block;font-size:11px;font-weight:600;color:#646970;background:#f0f0f1;padding:2px 7px;border-radius:12px;vertical-align:middle;margin-left:4px;">
+                            Excluidas (<?php echo number_format_i18n( $excluded_count ); ?>)
+                        </span>
+                    <?php endif; ?>
+                </p>
+            </div>
+            <div class="card" style="<?php echo esc_attr( $api_card_css ); ?>">
+                <h3 style="margin:0 0 4px 0;font-size:13px;">Cupo API AbuseIPDB</h3>
+                <?php if ( $key_count > 0 ) : ?>
+                    <p style="font-size:18px;font-weight:bold;color:<?php echo esc_attr( $num_color ); ?>;margin:0 0 2px 0;">
+                        <?php echo number_format_i18n( $used_cnt ); ?> <span style="font-size:12px;font-weight:normal;color:#8c8f94;">/ <?php echo number_format_i18n( $daily_cap ); ?></span>
+                    </p>
+                    <p style="margin:0;font-size:11px;font-weight:<?php echo $is_exhaust ? '700' : 'normal'; ?>;color:<?php echo $is_exhaust ? '#d63638' : '#8c8f94'; ?>;">
+                        <?php echo $is_exhaust ? 'AGOTADO (00:00 UTC)' : esc_html( $pct_used . '% usado (' . $key_count . ' clave' . ( $key_count > 1 ? 's' : '' ) . ')' ); ?>
+                        &middot; <a href="<?php echo esc_url( $cfg_url ); ?>" style="color:inherit;text-decoration:underline;">Configurar</a>
+                    </p>
+                <?php else : ?>
+                    <p style="margin:0;font-size:12px;color:#8c8f94;">Espejo local activo &middot; <a href="<?php echo esc_url( $cfg_url ); ?>">Añadir API Key</a></p>
+                <?php endif; ?>
+            </div>
+        </div>
+        <div class="card" style="flex:0 0 135px;margin:0;padding:14px 16px;text-align:left;">
+            <h3 style="margin-top:0;">Top Paises</h3>
+            <?php if ( empty( $top_countries ) ) : ?><p>Sin datos.</p><?php else : ?>
+                <ul style="margin:0;padding:0;list-style:none;text-align:left;"><?php foreach ( $top_countries as $tc ) : ?>
+                    <li style="margin-bottom:4px;"><strong><?php echo esc_html( $tc->country_code ); ?></strong>: <?php echo (int) $tc->total; ?></li>
+                <?php endforeach; ?></ul>
+            <?php endif; ?>
+        </div>
+        <div class="card" style="flex:1.6;min-width:250px;margin:0;">
+            <h3 style="margin-top:0;">Top ASNs / Proveedores</h3>
+            <?php if ( empty( $top_asns ) ) : ?><p>Sin datos.</p><?php else : ?>
+                <ul style="margin:0;"><?php foreach ( $top_asns as $ta ) : ?>
+                    <li><small><strong><?php echo esc_html( $ta->asn ); ?></strong>: <?php echo (int) $ta->total; ?></small></li>
+                <?php endforeach; ?></ul>
+            <?php endif; ?>
+        </div>
+        <div class="card" style="flex:1.3;min-width:240px;margin:0;">
+            <h3 style="margin-top:0;">Top Rutas Atacadas</h3>
+            <?php if ( empty( $top_uris ) ) : ?><p>Sin datos.</p><?php else : ?>
+                <ul style="margin:0;"><?php foreach ( $top_uris as $tu ) :
+                    $uri_link = add_query_arg( 'filter_uri', rawurlencode( $tu->request_uri ), $stats_base_url );
+                ?>
+                    <li style="margin-bottom:4px;word-break:break-all;">
+                        <a href="<?php echo esc_url( $uri_link ); ?>" style="text-decoration:none;"><code><?php echo esc_html( $tu->request_uri ); ?></code></a>: <strong><?php echo (int) $tu->total; ?></strong>
+                    </li>
+                <?php endforeach; ?></ul>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php
 }
 
 function bap_render_estadisticas_toolbar( array $filter_rows, $filter_type, $stats_base_url ) {
